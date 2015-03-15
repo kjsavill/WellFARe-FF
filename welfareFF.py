@@ -27,11 +27,11 @@ def iofiles(argv):
          outputfile = arg
    if inputfile == '':
       print "Input file not specified on command line. Will use default."
-      inputfile="/Users/lein/devel/welfareFF/orca-ethane.log"
+      inputfile="g09-ethane.log"
    print "Input file is : ", inputfile
    if outputfile == "":
       print "Output file not specified on command line. Will use default."
-      outputfile="geometry.xyz"
+      outputfile="WellFAReFF.log"
    print "Output file is: ", outputfile
    return (inputfile, outputfile)
 
@@ -532,6 +532,13 @@ def findDihedrals(angles):
 #--------------------------------------------------------------
 # The main part of the program starts here
 #--------------------------------------------------------------
+
+# Print GPL v3 statement
+print "WellFAReFF  Copyright (C) 2015 Matthias Lein"
+print "This program comes with ABSOLUTELY NO WARRANTY"
+print "This is free software, and you are welcome to redistribute it"
+print "under certain conditions."
+print
 
 # Determine the name of the file to be read (outfile currently unused)
 infile, outfile = iofiles(sys.argv[1:])
