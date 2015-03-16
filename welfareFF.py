@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/bin/python3
 
 import sys
 import getopt
@@ -15,24 +15,24 @@ def iofiles(argv):
    try:
       opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
    except getopt.GetoptError:
-      print 'test.py -i <inputfile> -o <outputfile>'
+      print ('test.py -i <inputfile> -o <outputfile>')
       sys.exit(2)
    for opt, arg in opts:
       if opt == '-h':
-         print 'test.py -i <inputfile> -o <outputfile>'
+         print ('test.py -i <inputfile> -o <outputfile>')
          sys.exit()
       elif opt in ("-i", "--ifile"):
          inputfile = arg
       elif opt in ("-o", "--ofile"):
          outputfile = arg
    if inputfile == '':
-      print "Input file not specified on command line. Will use default."
+      print ("Input file not specified on command line. Will use default.")
       inputfile="g09-ethane.log"
-   print "Input file is : ", inputfile
+   print ("Input file is : ", inputfile)
    if outputfile == "":
-      print "Output file not specified on command line. Will use default."
+      print ("Output file not specified on command line. Will use default.")
       outputfile="WellFAReFF.log"
-   print "Output file is: ", outputfile
+   print ("Output file is: ", outputfile)
    return (inputfile, outputfile)
 
 # Define dictionary to convert atomic symbols to atomic numbers
@@ -424,9 +424,9 @@ def extractCoordinates(filename):
     for line in f:
       if line.find("Standard orientation:") != -1:
         for i in range(0,4):
-          readBuffer = f.next()
+          readBuffer = f.__next__()
         while True:
-          readBuffer = f.next()
+          readBuffer = f.__next__()
           if readBuffer.find("-----------") == -1:
             geom.append(readBuffer)
           else:
@@ -440,9 +440,9 @@ def extractCoordinates(filename):
     f = open(filename,'r')
     for line in f:
       if line.find("CARTESIAN COORDINATES (ANGSTROEM)") != -1:
-        readBuffer = f.next()
+        readBuffer = f.__next__()
         while True:
-          readBuffer = f.next()
+          readBuffer = f.__next__()
           if readBuffer and readBuffer.strip():
             geom.append(readBuffer)
           else:
@@ -496,7 +496,7 @@ def findBonds(geom,method):
            if calcDistance(geom[i],geom[j])<=(SymbolToRadius[geom[i][0]]+SymbolToRadius[geom[j][0]])*1.1:
               bonds.append([i,j])
   elif method == 1:
-    print "Not implemented yet!"
+    print ("Not implemented yet!")
   return bonds
 
 # Routine to find angles based on the bonds already identified
@@ -534,11 +534,11 @@ def findDihedrals(angles):
 #--------------------------------------------------------------
 
 # Print GPL v3 statement
-print "WellFAReFF  Copyright (C) 2015 Matthias Lein"
-print "This program comes with ABSOLUTELY NO WARRANTY"
-print "This is free software, and you are welcome to redistribute it"
-print "under certain conditions."
-print
+print ("WellFAReFF  Copyright (C) 2015 Matthias Lein")
+print ("This program comes with ABSOLUTELY NO WARRANTY")
+print ("This is free software, and you are welcome to redistribute it")
+print ("under certain conditions.")
+print ()
 
 # Determine the name of the file to be read (outfile currently unused)
 infile, outfile = iofiles(sys.argv[1:])
@@ -551,21 +551,21 @@ angles = findAngles(bonds)
 dihedrals = findDihedrals(angles)
 
 # Print coordinates in a nice, readable way
-print
+print ()
 for i in range(0,len(geometry)):
-  print "{:<3} {: .8f} {: .8f} {: .8f}".format(geometry[i][0], geometry[i][1], geometry[i][2], geometry[i][3])
+  print ("{:<3} {: .8f} {: .8f} {: .8f}".format(geometry[i][0], geometry[i][1], geometry[i][2], geometry[i][3]))
 
 # Print bonds in a nice, readable way
-print
+print ()
 for i in range(0,len(bonds)):
-    print geometry[bonds[i][0]][0],"-",geometry[bonds[i][1]][0]," bond (%.4f)" % calcDistance(geometry[bonds[i][0]],geometry[bonds[i][1]])," between atoms ",bonds[i][0]," and ", bonds[i][1]
+    print (geometry[bonds[i][0]][0],"-",geometry[bonds[i][1]][0]," bond (%.4f)" % calcDistance(geometry[bonds[i][0]],geometry[bonds[i][1]])," between atoms ",bonds[i][0]," and ", bonds[i][1])
 
 # Print angles in a nice, readable way
-print
+print ()
 for i in range(0,len(angles)):
-    print geometry[angles[i][0]][0],"-",geometry[angles[i][1]][0],"-",geometry[angles[i][2]][0]," angle between atoms ",angles[i][0],angles[i][1],angles[i][2], " ({:7.3f})".format(calcAngle(geometry[angles[i][0]],geometry[angles[i][1]],geometry[angles[i][2]]))
+    print (geometry[angles[i][0]][0],"-",geometry[angles[i][1]][0],"-",geometry[angles[i][2]][0]," angle between atoms ",angles[i][0],angles[i][1],angles[i][2], " ({:7.3f})".format(calcAngle(geometry[angles[i][0]],geometry[angles[i][1]],geometry[angles[i][2]])))
 
 # Print dihedrals in a nice, readable way
-print
+print ()
 for i in range(0,len(dihedrals)):
-    print geometry[dihedrals[i][0]][0],"-",geometry[dihedrals[i][1]][0],"-",geometry[dihedrals[i][2]][0],"-",geometry[dihedrals[i][3]][0]," dihedral between atoms ",dihedrals[i][0],dihedrals[i][1],dihedrals[i][2],dihedrals[i][3]," ({:8.3f})".format(calcDihedral(geometry[dihedrals[i][0]],geometry[dihedrals[i][1]],geometry[dihedrals[i][2]],geometry[dihedrals[i][3]]))
+    print (geometry[dihedrals[i][0]][0],"-",geometry[dihedrals[i][1]][0],"-",geometry[dihedrals[i][2]][0],"-",geometry[dihedrals[i][3]][0]," dihedral between atoms ",dihedrals[i][0],dihedrals[i][1],dihedrals[i][2],dihedrals[i][3]," ({:8.3f})".format(calcDihedral(geometry[dihedrals[i][0]],geometry[dihedrals[i][1]],geometry[dihedrals[i][2]],geometry[dihedrals[i][3]])))
