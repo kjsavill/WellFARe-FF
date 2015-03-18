@@ -5,37 +5,94 @@ import getopt
 import math
 import numpy
 
-#--------------------------------------------------------------
-# Define some handy functions that will come in useful
-#--------------------------------------------------------------
-
 def iofiles(argv):
    inputfile = ''
-   outputfile = ''
    try:
       opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
    except getopt.GetoptError:
-      print ('test.py -i <inputfile> -o <outputfile>')
+      print ('./wellfareFF.py -i <inputfile>')
       sys.exit(2)
    for opt, arg in opts:
       if opt == '-h':
-         print ('test.py -i <inputfile> -o <outputfile>')
+         print ('./wellfareFF.py -i <inputfile>')
          sys.exit()
       elif opt in ("-i", "--ifile"):
          inputfile = arg
-      elif opt in ("-o", "--ofile"):
-         outputfile = arg
    if inputfile == '':
-      print ("Input file not specified on command line. Will use default.")
       inputfile="g09-ethane.log"
-   print ("Input file is : ", inputfile)
-   if outputfile == "":
-      print ("Output file not specified on command line. Will use default.")
-      outputfile="WellFAReFF.log"
-   print ("Output file is: ", outputfile)
-   return (inputfile, outputfile)
+   return (inputfile)
 
-# Define dictionary to convert atomic symbols to atomic numbers
+def Ang2Bohr(ang):
+    return ang*1.889725989
+
+def Bohr2Ang(bohr):
+    return bohr/1.889725989
+
+def isInt(s):
+    try: 
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+class Atom:
+  """ An atom with an atomic symbol and cartesian coordinates"""
+  
+  def __init__(self, sym, x, y, z):
+    """ (Atom, int, str, number, number, number) -> NoneType
+    
+    Create an Atom with (string) symbol sym,
+    and (float) cartesian coordinates (x, y, z).
+    (int) charge charge and (float) mass mass are set
+    automatically according to symbol.
+    """
+    
+    self.symbol = sym
+    self.charge = SymbolToNumber[sym]
+    self.mass = SymbolToMass[sym]
+    self.coord = [x, y, z]
+  
+  def __str__(self):
+    """ (Atom) -> str
+    
+    Return a string representation of this Atom in this format:
+    
+      (SYMBOL, X, Y, Z)
+    """
+    
+    return '({0}, {1}, {2}, {3})'.format(self.symbol, self.coord[0], self.coord[1], self.coord[2])
+  
+  def __repr__(self):
+    """ (Atom) -> str
+    
+    Return a string representation of this Atom in this format:"
+    
+      Atom("SYMBOL", charge, mass, X, Y, Z)
+    """
+    
+    return '("{0}", {1}, {2}, {3}, {4}, {5})'.format(self.symbol, self.charge, self.mass, self.coord[0], self.coord[1], self.coord[2])
+  
+  def x(self, x):
+    """ (Atom) -> NoneType
+    
+    Set x coordinate to x
+    """
+    self.coord[0]=x
+    
+  def y(self, y):
+    """ (Atom) -> NoneType
+    
+    Set y coordinate to y
+    """
+    self.coord[1]=y
+
+  def z(self, z):
+    """ (Atom) -> NoneType
+    
+    Set z coordinate to z
+    """
+    self.coord[2]=z
+    
 SymbolToNumber = {
 "H"  :1,
 "He" :2,
@@ -159,7 +216,6 @@ SymbolToNumber = {
 # Invert the above: atomic numbers to atomic symbols
 NumberToSymbol = {v: k for k, v in SymbolToNumber.items()}
 
-# Define dictionary to convert atomic symbols to masses
 SymbolToMass = {
 "H" : 1.00794,
 "He": 4.002602,
@@ -400,15 +456,254 @@ SymbolToRadius = {
 "Uus" : 1.50,
 "Uuo" : 1.50}
 
-def Ang2Bohr(ang):
-    return ang*1.889725989
+class Molecule:
+  """A molecule with a name, charge and a list of atoms"""
+  
+  def __init__(self, name, charge):
+    """ (Molecule, str, int) -> NoneType
+    
+    Create a Molecule named name with charge charge and no atoms
+    (int) Multiplicity mult is automatically set to the lowest
+    possible value (1 or 2) and the lists of bonds, angles and
+    dihedrals are empty.
+    """
+    
+    self.name = name
+    self.charge = charge
+    self.mult = 1
+    self.atoms = []
+    self.bonds = []
+    self.angles = []
+    self.dihedrals = []
+    self.ffstretch = []
+    self.ff13str = []
+    self.ffbend = []
+    self.fftors = []
+    self.ffinv = []
+    
+  
+  def addAtom(self, a):
+    """ (Molecule, Atom) -> NoneType
+    
+    Add a to my list of Atoms.
+    """
+    
+    self.atoms.append(a)
+    nucchg = 0
+    for i in self.atoms:
+      nucchg = nucchg + i.charge
+    if (nucchg - self.charge) % 2 != 0:
+      self.mult = 2
+    else:
+      self.mult = 1
+  
+  def __str__(self):
+    """ (Molecule) -> str
+    
+    Return a string representation of this Molecule in this format:
+    (NAME, CHARGE, MULT, (ATOM1, ATOM2, ...))
+    """
+    
+    res = ''
+    for atom in self.atoms:
+      res = res + str(atom) + ', '
+    res = res[:-2]
+    return '({0}, {1}, {2}, ({3}))'.format(self.name, self.charge, self.mult, res)
+  
+  def __repr__(self):
+    """ (Molecule) -> str
+    
+    Return a string representation of this Molecule in this format:
+    (NAME, CHARGE, MULT, (ATOM1, ATOM2, ...))
+    """
+    
+    res = ''
+    for atom in self.atoms:
+      res = res + str(atom) + ', '
+    res = res[:-2]
+    return '({0}, {1}, {2}, ({3}))'.format(self.name, self.charge, self.mult, res)
+  
+  def mass(self):
+    """ (Molecule) -> number
+    
+    Return the molar mass as sum of atomic masses
+    """
+    
+    mass = 0.0
+    for atom in self.atoms:
+      mass = mass + atom.mass
+      
+    return mass
+  
+  def numatoms(self):
+    """ (Molecule) -> int
+    
+    Return the number of atoms in the molecule
+    """
+    
+    return int(len(self.atoms))
+  
+  def chatom(self, n, at):
+    """ (Molecule) -> NoneType
+    
+    Change the nth atom of the Molecule
+    """
+    
+    self.atoms[n]=at
+  
+  def movatom(self, n, x, y, z):
+    """ (Molecule) -> NoneType
+    
+    Move the nth atom to position x, y, z
+    """
+    
+    self.atoms[n].x(x)
+    self.atoms[n].y(y)
+    self.atoms[n].z(z)
+  
+  def atmmass(self, n, m):
+    """ (Molecule) -> NoneType
+    
+    Change the mass of the nth atom to m
+    """
+    
+    self.atoms[n].mass=m
+  
+  def atmatmdist(self, i,j):
+    """ (Molecule) -> number
+    
+    Report the distance between atoms i and j
+    """
+    
+    distance=(self.atoms[i].coord[0]-self.atoms[j].coord[0])*(self.atoms[i].coord[0]-self.atoms[j].coord[0])
+    distance=distance+(self.atoms[i].coord[1]-self.atoms[j].coord[1])*(self.atoms[i].coord[1]-self.atoms[j].coord[1])
+    distance=distance+(self.atoms[i].coord[2]-self.atoms[j].coord[2])*(self.atoms[i].coord[2]-self.atoms[j].coord[2])
+    
+    return math.sqrt(distance)
 
-def Bohr2Ang(bohr):
-    return bohr/1.889725989
-
-def extractCoordinates(filename):
+  
+  def orient(self):
+    """ (Molecule) -> NoneType
+    
+    Translate centre of mass to coordinate origin and
+    (re-)Orient the molecule along the principal axes of inertia.
+    """
+    
+    # The molecular center of mass
+    xValue = 0.0
+    yValue = 0.0
+    zValue = 0.0
+    for i in self.atoms:
+      xValue = xValue+(i.mass*i.coord[0])
+      yValue = yValue+(i.mass*i.coord[1])
+      zValue = zValue+(i.mass*i.coord[2])
+    xValue = xValue/(self.mass())
+    yValue = yValue/(self.mass())
+    zValue = zValue/(self.mass())
+    
+    # Translate whole molecule into the center of mass reference frame
+    for i in self.atoms:
+      i.coord[0]=i.coord[0]-xValue
+      i.coord[1]=i.coord[1]-yValue
+      i.coord[2]=i.coord[2]-zValue
+    
+    # Build inertia tensor
+    inertiaTensor = []
+    Ixx = 0.0
+    Ixy = 0.0
+    Ixz = 0.0
+    Iyx = 0.0
+    Iyy = 0.0
+    Iyz = 0.0
+    Izx = 0.0
+    Izy = 0.0
+    Izz = 0.0
+    for i in self.atoms:
+      Ixx = Ixx + (i.mass*((Ang2Bohr(i.coord[1])*Ang2Bohr(i.coord[1]))+(Ang2Bohr(i.coord[2])*Ang2Bohr(i.coord[2]))))
+      Ixy = Ixy - i.mass*Ang2Bohr(i.coord[0])*Ang2Bohr(i.coord[1])
+      Ixz = Ixz - i.mass*Ang2Bohr(i.coord[0])*Ang2Bohr(i.coord[2])
+      Iyx = Iyx - i.mass*Ang2Bohr(i.coord[1])*Ang2Bohr(i.coord[0])
+      Iyy = Iyy + (i.mass*((Ang2Bohr(i.coord[0])*Ang2Bohr(i.coord[0]))+(Ang2Bohr(i.coord[2])*Ang2Bohr(i.coord[2]))))
+      Iyz = Iyz - i.mass*Ang2Bohr(i.coord[1])*Ang2Bohr(i.coord[2])
+      Izx = Izx - i.mass*Ang2Bohr(i.coord[2])*Ang2Bohr(i.coord[0])
+      Izy = Izy - i.mass*Ang2Bohr(i.coord[2])*Ang2Bohr(i.coord[1])
+      Izz = Izz + (i.mass*((Ang2Bohr(i.coord[0])*Ang2Bohr(i.coord[0]))+(Ang2Bohr(i.coord[1])*Ang2Bohr(i.coord[1]))))
+    inertiaTensor.append([Ixx, Ixy, Ixz])
+    inertiaTensor.append([Iyx, Iyy, Iyz])
+    inertiaTensor.append([Izx, Izy, Izz])
+    inertiaTensor = numpy.matrix(inertiaTensor)
+    
+    # Diagonalise inertia tensor
+    inertiaMoments, inertialAxes = numpy.linalg.eig(inertiaTensor)
+    
+    # Orthogonalise eigenvectors (only sometimes necessary)...
+    inertialAxes, r = numpy.linalg.qr(inertialAxes)
+    
+    # Sort moments from highest to lowest
+    idx = inertiaMoments.argsort()[::-1]
+    inertiaMoments = inertiaMoments[idx]
+    inertialAxes = inertialAxes[:,idx]
+    
+    # Transform molecular coordinates into new frame of principal axes of inertia
+    for i in self.atoms:
+      vector = [i.coord[0],i.coord[1],i.coord[2]]
+      vector = numpy.matrix(vector)
+      vector = numpy.matrix.transpose(inertialAxes).dot(numpy.matrix.transpose(vector))
+      vector = numpy.array(vector).flatten().tolist()
+      i.coord[0] = vector[0]
+      i.coord[1] = vector[1]
+      i.coord[2] = vector[2]
+  
+  def addBond(self, a, b):
+    """ (Molecule) -> NoneType
+    
+    Adds a bond between atoms a and b to the list of bonds
+    """
+    # Make sure a < b
+    if a < b:
+      c = a
+      d = b
+    else:
+      c = b
+      d = a
+    
+    # Check if the bond already exists
+    exists = False
+    for i in self.bonds:
+      if i == [c, d]:
+        exists = True
+    
+    # Append bond to list if doesn't exist and is plausible
+    if exists == False and a >= 0 and b >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c != d:
+      self.bonds.append([c, d])
+  
+  def delBond(self, a, b):
+    """ (Molecule) -> NoneType
+    
+    Deletes the bond between atoms a and b from the list of bonds
+    """
+    # Make sure a < b
+    if a < b:
+      c = a
+      d = b
+    else:
+      c = b
+      d = a
+    
+    # Check if the bond actually exists
+    exists = False
+    for i in self.bonds:
+      if i == [c, d]:
+        exists = True
+    
+    # Remove if it does
+    if exists == True:
+      self.bonds.remove([c, d])
+  
+def extractCoordinates(filename, molecule):
   f = open(filename,'r')
   program = "N/A"
+  # Determine which QM program we're dealing with
   for line in f:
   	if line.find("Entering Gaussian System, Link 0=g09") != -1:
   	  program = "g09"
@@ -417,12 +712,15 @@ def extractCoordinates(filename):
   	  program = "orca"
   	  break
   f.close()
+  
+  # GEOMETRY READING SECTION
   geom = []
-  geom2 = []
+  # Read through Gaussian file, read *last* "Standard orientation"
   if program == "g09":
     f = open(filename,'r')
     for line in f:
       if line.find("Standard orientation:") != -1:
+        del geom[:]
         for i in range(0,4):
           readBuffer = f.__next__()
         while True:
@@ -431,15 +729,16 @@ def extractCoordinates(filename):
             geom.append(readBuffer)
           else:
             break
-        break
     for i in geom:
       readBuffer=i.split()
-      geom2.append([NumberToSymbol[int(readBuffer[1])],float(readBuffer[3]),float(readBuffer[4]),float(readBuffer[5])])
+      molecule.addAtom(Atom(NumberToSymbol[int(readBuffer[1])],float(readBuffer[3]),float(readBuffer[4]),float(readBuffer[5])))
     f.close()
+  # Read through ORCA file, read *last* set of cartesian coordinates
   elif program == "orca":
     f = open(filename,'r')
     for line in f:
       if line.find("CARTESIAN COORDINATES (ANGSTROEM)") != -1:
+        del geom[:]
         readBuffer = f.__next__()
         while True:
           readBuffer = f.__next__()
@@ -447,125 +746,98 @@ def extractCoordinates(filename):
             geom.append(readBuffer)
           else:
             break
-        break
     for i in geom:
       readBuffer=i.split()
-      geom2.append([readBuffer[0],float(readBuffer[1]),float(readBuffer[2]),float(readBuffer[3])])
+      molecule.addAtom(Atom(readBuffer[0],float(readBuffer[1]),float(readBuffer[2]),float(readBuffer[3])))
     f.close()
-  return geom2
+    
+  # BOND ORDER READING SECTION
+  bo = []
+  bo = numpy.zeros((molecule.numatoms(), molecule.numatoms()))
+  if program == "g09":
+    f = open(filename,'r')
+    for line in f:
+      if line.find("Atomic Valencies and Mayer Atomic Bond Orders:") != -1:
+        bo = numpy.zeros((molecule.numatoms(), molecule.numatoms()))
+        while True:
+          readBuffer = f.__next__()
+          # Check if the whole line is integers only (Header line)
+          if isInt("".join(readBuffer.split())) == True:
+            # And use this information to label the columns
+            columns = readBuffer.split()
+          # If we get to the Löwdin charges, we're done reading
+          elif readBuffer.find("Lowdin Atomic Charges") != -1:
+            break
+          else:
+            row = readBuffer.split()
+            j = 1
+            for i in columns:
+              j = j + 1
+              bo[int(row[0])-1][int(i)-1] = float(row[j])
+    f.close()
+  if program == "orca":
+    f = open(filename,'r')
+    for line in f:
+      if line.find("Mayer bond orders larger than 0.1") != -1:
+        bo = numpy.zeros((molecule.numatoms(), molecule.numatoms()))
+        while True:
+          readBuffer = f.__next__()
+          # Check if the whole line isn't empty (in that case we're done)
+          if readBuffer and readBuffer.strip():
+            # Break the line into pieces
+            readBuffer = readBuffer[1:].strip()
+            readBuffer = readBuffer.split("B")
+            for i in readBuffer:
+              bondpair1=int(i[1:4].strip())
+              bondpair2=int(i[8:11].strip())
+              order = i[-9:].strip()
+              bo[bondpair1][bondpair2] = order
+              bo[bondpair2][bondpair1] = order
+          else:
+            break
+    f.close()
+  # Test if we actually have Mayer Bond orders
+  if numpy.count_nonzero(bo) != 0:
+    for i in range(0,molecule.numatoms()):
+     for j in range(i+1,molecule.numatoms()):
+         if bo[i][j] >= 0.45:
+            molecule.addBond(i,j)
+  # Else use 130% of the sum of covalent radii as criterion for a bond
+  else:
+    for i in range(0,molecule.numatoms()):
+     for j in range(i+1,molecule.numatoms()):
+         if molecule.atmatmdist(i,j)<=(SymbolToRadius[molecule.atoms[i].symbol]+SymbolToRadius[molecule.atoms[j].symbol])*1.3:
+            molecule.addBond(i,j)
+    
+  # End of routine
 
-def calcDistance(atom1, atom2):
-    distance=(atom1[1]-atom2[1])*(atom1[1]-atom2[1])
-    distance=distance+((atom1[2]-atom2[2])*(atom1[2]-atom2[2]))
-    distance=distance+((atom1[3]-atom2[3])*(atom1[3]-atom2[3]))
-    return math.sqrt(distance)
-
-def calcAngle(atom1,atom2,atom3):
-    v1 = [atom1[1]-atom2[1],atom1[2]-atom2[2],atom1[3]-atom2[3]]
-    v2 = [atom3[1]-atom2[1],atom3[2]-atom2[2],atom3[3]-atom2[3]]
-    v1mag = math.sqrt((v1[0]*v1[0])+(v1[1]*v1[1])+(v1[2]*v1[2]))
-    v1norm = [v1[0]/v1mag, v1[1]/v1mag, v1[2]/v1mag]
-    v2mag = math.sqrt((v2[0]*v2[0])+(v2[1]*v2[1])+(v2[2]*v2[2]))
-    v2norm = [v2[0]/v2mag, v2[1]/v2mag, v2[2]/v2mag]
-    res = (v1norm[0]*v2norm[0])+(v1norm[1]*v2norm[1])+(v1norm[2]*v2norm[2])
-    return round(math.degrees(math.acos(res)),3)
-
-def calcDihedral(atom1,atom2,atom3,atom4):
-    v1 = [atom1[1]-atom2[1],atom1[2]-atom2[2],atom1[3]-atom2[3]]
-    v1 = v1/numpy.linalg.norm(v1)
-    v2 = [atom3[1]-atom2[1],atom3[2]-atom2[2],atom3[3]-atom2[3]]
-    v2 = v2/numpy.linalg.norm(v2)
-    v3 = [atom4[1]-atom3[1],atom4[2]-atom3[2],atom4[3]-atom3[3]]
-    v3 = v3/numpy.linalg.norm(v3)
-    n1 = numpy.cross(v1,v2)
-    n1 = n1/numpy.linalg.norm(n1)
-    n2 = numpy.cross(v2,v3)
-    n2 = n2/numpy.linalg.norm(n2)
-    res1 = numpy.dot(n1,n2)
-    res2 = numpy.cross(n1,v2)
-    res3 = numpy.dot(res2,n2)
-    return round(math.degrees(math.atan2(res3,res1)),3)
-
-# Routine to find bonds based on several alternatives
-# method: 0 = within 110% of covalent radius, 1 = Wiberg Bond Index > 0.5 (TBI)
-def findBonds(geom,method):
-  bonds = []
-  if method == 0:
-    for i in range(0,len(geom)):
-       for j in range(i+1,len(geom)):
-           if calcDistance(geom[i],geom[j])<=(SymbolToRadius[geom[i][0]]+SymbolToRadius[geom[j][0]])*1.1:
-              bonds.append([i,j])
-  elif method == 1:
-    print ("Not implemented yet!")
-  return bonds
-
-# Routine to find angles based on the bonds already identified
-def findAngles(bonds):
-  angles = []
-  for i in range(0,len(bonds)):
-      for j in range(i+1,len(bonds)):
-          if bonds[i][0]==bonds[j][0]:
-              angles.append([bonds[i][1],bonds[i][0],bonds[j][1]])
-          if bonds[i][0]==bonds[j][1]:
-              angles.append([bonds[i][1],bonds[i][0],bonds[j][0]])
-          if bonds[i][1]==bonds[j][0]:
-              angles.append([bonds[i][0],bonds[i][1],bonds[j][1]])
-          if bonds[i][1]==bonds[j][1]:
-              angles.append([bonds[i][0],bonds[i][1],bonds[j][0]])
-  return angles
-
-# Routine to find dihedrals based on the angles already identified
-def findDihedrals(angles):
-  dihedrals = []
-  for i in range(0,len(angles)):
-      for j in range(i+1,len(angles)):
-          if angles[i][1]==angles[j][0] and angles[i][2]==angles[j][1]:
-              dihedrals.append([angles[i][0],angles[i][1],angles[i][2],angles[j][2]])
-          if angles[i][1]==angles[j][2] and angles[i][2]==angles[j][1]:
-              dihedrals.append([angles[i][0],angles[i][1],angles[i][2],angles[j][0]])
-          if angles[i][1]==angles[j][0] and angles[i][0]==angles[j][1]:
-              dihedrals.append([angles[i][2],angles[j][0],angles[j][1],angles[j][2]])
-          if angles[i][1]==angles[j][2] and angles[i][0]==angles[j][1]:
-              dihedrals.append([angles[i][2],angles[j][2],angles[j][1],angles[j][0]])
-  return dihedrals
-
-#--------------------------------------------------------------
-# The main part of the program starts here
-#--------------------------------------------------------------
+###############################################################################
+#                                                                             #
+# The main part of the program starts here                                    #
+#                                                                             #
+###############################################################################
 
 # Print GPL v3 statement
-print ("WellFAReFF  Copyright (C) 2015 Matthias Lein")
+print ("WellFAReFF Copyright (C) 2015 Matthias Lein")
 print ("This program comes with ABSOLUTELY NO WARRANTY")
 print ("This is free software, and you are welcome to redistribute it")
 print ("under certain conditions.")
 print ()
 
-# Determine the name of the file to be read (outfile currently unused)
-infile, outfile = iofiles(sys.argv[1:])
+# Determine the name of the file to be read
+infile = iofiles(sys.argv[1:])
 
-# Extract coordinates from file, then find bonds (based on distance or bond order)
-# then determine angles and dihedrals based on bonds and angles respectively.
-geometry = extractCoordinates(infile)
-bonds = findBonds(geometry,0)
-angles = findAngles(bonds)
-dihedrals = findDihedrals(angles)
+print("Start")
+molecule = Molecule(infile,0)
+extractCoordinates(infile,molecule)
 
-# Print coordinates in a nice, readable way
-print ()
-for i in range(0,len(geometry)):
-  print ("{:<3} {: .8f} {: .8f} {: .8f}".format(geometry[i][0], geometry[i][1], geometry[i][2], geometry[i][3]))
+print("Number of Atoms: ", molecule.numatoms(), "Multiplicity: ", molecule.mult)
 
-# Print bonds in a nice, readable way
-print ()
-for i in range(0,len(bonds)):
-    print (geometry[bonds[i][0]][0],"-",geometry[bonds[i][1]][0]," bond (%.4f)" % calcDistance(geometry[bonds[i][0]],geometry[bonds[i][1]])," between atoms ",bonds[i][0]," and ", bonds[i][1])
+print(molecule)
+print("Molecular mass = ", molecule.mass())
+molecule.orient()
 
-# Print angles in a nice, readable way
-print ()
-for i in range(0,len(angles)):
-    print (geometry[angles[i][0]][0],"-",geometry[angles[i][1]][0],"-",geometry[angles[i][2]][0]," angle between atoms ",angles[i][0],angles[i][1],angles[i][2], " ({:7.3f})".format(calcAngle(geometry[angles[i][0]],geometry[angles[i][1]],geometry[angles[i][2]])))
+print(molecule)
+for i in molecule.bonds:
+  print(i)
 
-# Print dihedrals in a nice, readable way
-print ()
-for i in range(0,len(dihedrals)):
-    print (geometry[dihedrals[i][0]][0],"-",geometry[dihedrals[i][1]][0],"-",geometry[dihedrals[i][2]][0],"-",geometry[dihedrals[i][3]][0]," dihedral between atoms ",dihedrals[i][0],dihedrals[i][1],dihedrals[i][2],dihedrals[i][3]," ({:8.3f})".format(calcDihedral(geometry[dihedrals[i][0]],geometry[dihedrals[i][1]],geometry[dihedrals[i][2]],geometry[dihedrals[i][3]])))
