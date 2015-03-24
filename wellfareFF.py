@@ -700,6 +700,42 @@ class Molecule:
     if exists == True:
       self.bonds.remove([c, d])
   
+  def addAngle(self, a, b, c):
+    """ (Molecule) -> NoneType
+    
+    Adds an angle between atoms a, b and c to the list of angles
+    """
+    
+    # Check if the angle already exists
+    exists = False
+    for i in self.angles:
+      if i == [a, b, c]:
+        exists = True
+    
+    # Append angle to list if doesn't exist and is plausible
+    # (its a bit unsatisfactory, but I don't think there are
+    # better sanity checks)
+    if exists == False and a >= 0 and b >= 0 and c >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and a != b and a != c and b != c:
+      self.angles.append([a, b, c])
+  
+  def addDihedral(self, a, b, c, d):
+    """ (Molecule) -> NoneType
+    
+    Adds a dihedral between atoms a, b, c and d to the list of dihedrals
+    """
+    
+    # Check if the dihedral already exists
+    exists = False
+    for i in self.dihedrals:
+      if i == [a, b, c, d]:
+        exists = True
+    
+    # Append dihedral to list if doesn't exist and is plausible
+    # (its a bit unsatisfactory, but I don't think there are
+    # better sanity checks)
+    if exists == False and a >= 0 and b >= 0 and c >= 0 and d >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and d <= len(self.atoms) and a != b and a != c and a != d and b != c and b != d and c != d:
+      self.dihedrals.append([a, b, c, d])
+      
 def extractCoordinates(filename, molecule):
   f = open(filename,'r')
   program = "N/A"
@@ -809,6 +845,33 @@ def extractCoordinates(filename, molecule):
          if molecule.atmatmdist(i,j)<=(SymbolToRadius[molecule.atoms[i].symbol]+SymbolToRadius[molecule.atoms[j].symbol])*1.3:
             molecule.addBond(i,j)
     
+  # Insert sanity checks here: Look for disconnected fragments and find shortest
+  # possible connection
+  
+  # Now that we know where the bonds are, find angles
+  for i in range(0,len(molecule.bonds)):
+    for j in range(i+1,len(molecule.bonds)):
+      if molecule.bonds[i][0]==molecule.bonds[j][0]:
+        molecule.addAngle(molecule.bonds[i][1],molecule.bonds[i][0],molecule.bonds[j][1])
+      if molecule.bonds[i][0]==molecule.bonds[j][1]:
+        molecule.addAngle(molecule.bonds[i][1],molecule.bonds[i][0],molecule.bonds[j][0])
+      if molecule.bonds[i][1]==molecule.bonds[j][0]:
+        molecule.addAngle(molecule.bonds[i][0],molecule.bonds[i][1],molecule.bonds[j][1])
+      if molecule.bonds[i][1]==molecule.bonds[j][1]:
+        molecule.addAngle(molecule.bonds[i][0],molecule.bonds[i][1],molecule.bonds[j][0])
+  
+  # Same for dihedrals: Use angles to determine where they are
+  for i in range(0,len(molecule.angles)):
+    for j in range(i+1,len(molecule.angles)):
+        if molecule.angles[i][1]==molecule.angles[j][0] and molecule.angles[i][2]==molecule.angles[j][1]:
+            molecule.addDihedral(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.angles[j][2])
+        if molecule.angles[i][1]==molecule.angles[j][2] and molecule.angles[i][2]==molecule.angles[j][1]:
+            molecule.addDihedral(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.angles[j][0])
+        if molecule.angles[i][1]==molecule.angles[j][0] and molecule.angles[i][0]==molecule.angles[j][1]:
+            molecule.addDihedral(molecule.angles[i][2],molecule.angles[j][0],molecule.angles[j][1],molecule.angles[j][2])
+        if molecule.angles[i][1]==molecule.angles[j][2] and molecule.angles[i][0]==molecule.angles[j][1]:
+            molecule.addDihedral(molecule.angles[i][2],molecule.angles[j][2],molecule.angles[j][1],molecule.angles[j][0])
+            
   # End of routine
 
 ###############################################################################
@@ -831,13 +894,17 @@ print("Start")
 molecule = Molecule(infile,0)
 extractCoordinates(infile,molecule)
 
-print("Number of Atoms: ", molecule.numatoms(), "Multiplicity: ", molecule.mult)
+#print("Number of Atoms: ", molecule.numatoms(), "Multiplicity: ", molecule.mult)
 
-print(molecule)
-print("Molecular mass = ", molecule.mass())
-molecule.orient()
+#print(molecule)
+#print("Molecular mass = ", molecule.mass())
+#molecule.orient()
 
 print(molecule)
 for i in molecule.bonds:
+  print(i)
+for i in molecule.angles:
+  print(i)
+for i in molecule.dihedrals:
   print(i)
 
