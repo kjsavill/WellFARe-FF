@@ -3,6 +3,17 @@
 import sys
 import getopt
 import math
+
+# Check for numpy, exist immediately if not available
+import imp
+try:
+    imp.find_module('numpy')
+    foundnp = True
+except ImportError:
+    foundnp = False
+if not foundnp:
+    print("Numpy is required. Exiting")
+    sys.exit()
 import numpy
 
 def iofiles(argv):
@@ -19,7 +30,7 @@ def iofiles(argv):
       elif opt in ("-i", "--ifile"):
          inputfile = arg
    if inputfile == '':
-      inputfile="g09-ethane.log"
+      inputfile="g09-h2o.log"
    return (inputfile)
 
 def Ang2Bohr(ang):
@@ -34,6 +45,156 @@ def isInt(s):
         return True
     except ValueError:
         return False
+
+def potMorse(r, r0, D, b):
+    """
+    Morse oscillator potential
+    """
+    
+    u = D * (1 - math.exp(-b*(r-r0))) ** 2
+
+    return u
+
+def potHarmonic(a, a0, k):
+    """"
+    Harmonic potential (for stretches and bends)
+    """
+    
+    u = 0.5 * k * (a-a0) ** 2
+    
+    return u
+
+class FFStretch:
+  """ A stretching potential"""
+  
+  def __init__(self, a, b, r0, typ, arg):
+    """ (FFStretch, int, int, number, int, [number]) -> NoneType
+    
+    A stretch potential between atoms number a and b with equilibrium
+    distance r0, of type typ with arguments [arg]
+    """
+    
+    self.atom1 = a
+    self.atom2 = b
+    self.r0 = r0
+    if typ == 1:
+      self.typ = typ
+      self.k = arg[0]
+    elif typ == 2:
+      self.D = arg[0]
+      self.b = arg[1]
+    else:
+      self.typ = 1
+      self.k = arg[0]
+  
+  def __str__(self):
+    """ (FFStretch) -> str
+    
+    Return a string representation of the stretching potential in this format:
+    
+    (atom1, atom2, r0, type, arguments)
+    
+    """
+    
+    s = '({0}, {1}, {2}, {3}, '.format(self.atom1, self.atom2, self.r0, self.typ)
+    
+    if self.typ == 1:
+      r = '{0})'.format(self.k)
+    elif self.typ == 2:
+      r = '{0}, {1})'.format(self.D, self.b)
+    
+    return s+r
+  
+  def __repr__(self):
+    """ (FFStretch) -> str
+    
+    Return a string representation of the stretching potential in this format:
+    
+    (atom1, atom2, r0, type, arguments)
+    
+    """
+    
+    s = '({0}, {1}, {2}, {3}, '.format(self.atom1, self.atom2, self.r0, self.typ)
+    
+    if self.typ == 1:
+      r = '{0})'.format(self.k)
+    elif self.typ == 2:
+      r = '{0}, {1})'.format(self.D, self.b)
+    
+    return s+r
+  
+  def energy(self, r):
+    """ Returns the energy of this stretching potential at distance r"""
+    
+    energy = 0.0
+    if self.typ == 1:
+      energy = potHarmonic(r, self.r0, self.k)
+    elif self.typ == 2:
+      energy = potMorse(r, self.r0, D, b)
+    
+    return energy
+
+class FFBend:
+  """ A bending potential"""
+  
+  def __init__(self, a, b, c, a0, typ, arg):
+    """ (FFStretch, int, int, int, number, int, [number]) -> NoneType
+    
+    A bending potential between atoms number a, b and c with equilibrium
+    angle a0, of type typ with arguments [arg]
+    """
+    
+    self.atom1 = a
+    self.atom2 = b
+    self.atom3 = c
+    self.a0 = a0
+    if typ == 1:
+      self.typ = typ
+      self.k = arg[0]
+    else:
+      self.typ = 1
+      self.k = arg[0]
+  
+  def __str__(self):
+    """ (FFStretch) -> str
+    
+    Return a string representation of the bending potential in this format:
+    
+    (atom1, atom2, atom3, a0, type, arguments)
+    
+    """
+    
+    s = '({0}, {1}, {2}, {3}, '.format(self.atom1, self.atom2, self.atom3, self.a0, self.typ)
+    
+    if self.typ == 1:
+      r = '{0})'.format(self.k)
+    
+    return s+r
+  
+  def __repr__(self):
+    """ (FFStretch) -> str
+    
+    Return a string representation of the bending potential in this format:
+    
+    (atom1, atom2, atom3, a0, type, arguments)
+    
+    """
+    
+    s = '({0}, {1}, {2}, {3}, '.format(self.atom1, self.atom2, self.atom3, self.a0, self.typ)
+    
+    if self.typ == 1:
+      r = '{0})'.format(self.k)
+    
+    return s+r
+  
+  def energy(self, r):
+    """ Returns the energy of this bending potential at angle a"""
+    
+    energy = 0.0
+    if self.typ == 1:
+      energy = potHarmonic(a, self.a0, self.k)
+    
+    return energy
 
 class Atom:
   """ An atom with an atomic symbol and cartesian coordinates"""
@@ -475,11 +636,11 @@ class Molecule:
     self.bonds = []
     self.angles = []
     self.dihedrals = []
-    self.ffstretch = []
-    self.ff13str = []
-    self.ffbend = []
-    self.fftors = []
-    self.ffinv = []
+    self.stretch = []
+    self.str13 = []
+    self.bend = []
+    self.tors = []
+    self.inv = []
     
   
   def addAtom(self, a):
@@ -736,6 +897,45 @@ class Molecule:
     if exists == False and a >= 0 and b >= 0 and c >= 0 and d >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and d <= len(self.atoms) and a != b and a != c and a != d and b != c and b != d and c != d:
       self.dihedrals.append([a, b, c, d])
       
+  def xyzString(self):
+    """ (Molecule) -> str
+    
+    Returns a string containing an xyz file
+    """
+    
+    s = str(self.numatoms()) + "\n" + self.name + "\n"
+    for i in self.atoms:
+      t = "{:<3} {: .8f} {: .8f} {: .8f}\n".format(i.symbol, i.coord[0], i.coord[1], i.coord[2])
+      s = s + t
+    
+    return s
+  
+  def gamessString(self):
+    """ (Molecule) -> str
+    
+      Returns a string containing cartesian coordinates in Gamess format
+    """
+    
+    s = " $DATA\n" + self.name + "\nC1\n"
+    for i in self.atoms:
+      t = "{:<3} {:<3d} {: .8f} {: .8f} {: .8f}\n".format(i.symbol, i.charge, i.coord[0], i.coord[1], i.coord[2])
+      s = s + t
+    s =s + " $END\n"
+    return s
+  
+  def gaussString(self):
+    """ (Molecule) -> str
+    
+      Returns a string containing cartesian coordinates in Gaussian format
+    """
+    
+    s = "\n" + self.name + "\n\n" + str(molecule.charge) + " "+ str(molecule.mult) + "\n"
+    for i in self.atoms:
+      t = "{:<3} {: .8f} {: .8f} {: .8f}\n".format(i.symbol, i.coord[0], i.coord[1], i.coord[2])
+      s = s + t
+    s =s + "\n"
+    return s
+  
 def extractCoordinates(filename, molecule):
   f = open(filename,'r')
   program = "N/A"
@@ -845,8 +1045,8 @@ def extractCoordinates(filename, molecule):
          if molecule.atmatmdist(i,j)<=(SymbolToRadius[molecule.atoms[i].symbol]+SymbolToRadius[molecule.atoms[j].symbol])*1.3:
             molecule.addBond(i,j)
     
-  # Insert sanity checks here: Look for disconnected fragments and find shortest
-  # possible connection
+  # Insert sanity checks here: Maybe look for disconnected fragments and find shortest
+  # possible connection or check atoms that are too close.
   
   # Now that we know where the bonds are, find angles
   for i in range(0,len(molecule.bonds)):
@@ -873,7 +1073,7 @@ def extractCoordinates(filename, molecule):
             molecule.addDihedral(molecule.angles[i][2],molecule.angles[j][2],molecule.angles[j][1],molecule.angles[j][0])
             
   # End of routine
-
+  
 ###############################################################################
 #                                                                             #
 # The main part of the program starts here                                    #
@@ -900,7 +1100,7 @@ extractCoordinates(infile,molecule)
 #print("Molecular mass = ", molecule.mass())
 #molecule.orient()
 
-print(molecule)
+print(molecule.gaussString())
 for i in molecule.bonds:
   print(i)
 for i in molecule.angles:
