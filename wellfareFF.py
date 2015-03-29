@@ -4,6 +4,18 @@ import sys
 import getopt
 import math
 
+# ASCII FONTS from: http://patorjk.com/software/taag/
+# Font = "Big"
+def ProgramAbort():
+  print ("  _____                     _                _           _ ")
+  print (" |  __ \                   | |              | |         | |")
+  print (" | |__) |   _ _ __     __ _| |__   ___  _ __| |_ ___  __| |")
+  print (" |  _  / | | | '_ \   / _` | '_ \ / _ \| '__| __/ _ \/ _` |")
+  print (" | | \ \ |_| | | | | | (_| | |_) | (_) | |  | ||  __/ (_| |")
+  print (" |_|  \_\__,_|_| |_|  \__,_|_.__/ \___/|_|   \__\___|\__,_|")
+  sys.exit()
+  return
+
 # Check for numpy, exist immediately if not available
 import imp
 try:
@@ -13,8 +25,28 @@ except ImportError:
     foundnp = False
 if not foundnp:
     print("Numpy is required. Exiting")
-    sys.exit()
+    ProgramAbort()
 import numpy
+
+def ProgramWarning():
+  print (" __          __              _             ")
+  print (" \ \        / /             (_)            ")
+  print ("  \ \  /\  / /_ _ _ __ _ __  _ _ __   __ _ ")
+  print ("   \ \/  \/ / _` | '__| '_ \| | '_ \ / _` |")
+  print ("    \  /\  / (_| | |  | | | | | | | | (_| |")
+  print ("     \/  \/ \__,_|_|  |_| |_|_|_| |_|\__, |")
+  print ("                                      __/ |")
+  print ("                                     |___/ ")
+  return
+
+def ProgramError():
+  print ("  ______                     ")
+  print (" |  ____|                    ")
+  print (" | |__   _ __ _ __ ___  _ __ ")
+  print (" |  __| | '__| '__/ _ \| '__|")
+  print (" | |____| |  | | | (_) | |   ")
+  print (" |______|_|  |_|  \___/|_|   ")
+  return
 
 def iofiles(argv):
    inputfile = ''
@@ -33,12 +65,26 @@ def iofiles(argv):
       inputfile="g09-h2o.log"
    return (inputfile)
 
+# Conversion of mass in atomic mass units (AMU) to
+# atomic units (electron masses)
+def AMU2au(amu):
+  return amu*1822.88839
+
+# Same in reverse
+def au2AMU(au):
+  return au/1822.88839
+
+# Conversion of length in Angstroms to  to
+# atomic units (Bohrs)
 def Ang2Bohr(ang):
     return ang*1.889725989
 
+# Same in reverse
 def Bohr2Ang(bohr):
     return bohr/1.889725989
 
+# Test if the argument is (can be converted to)
+# an integer number
 def isInt(s):
     try: 
         int(s)
@@ -1032,6 +1078,35 @@ def extractCoordinates(filename, molecule):
           else:
             break
     f.close()
+    
+  # FORCE CONSTANT READING SECTION
+  H = []
+  H = numpy.zeros((3*molecule.numatoms(), 3*molecule.numatoms()))
+  if program == "g09":
+    f = open(filename,'r')
+    for line in f:
+      if line.find("Force constants in Cartesian coordinates") != -1:
+        H = numpy.zeros((3*molecule.numatoms(), 3*molecule.numatoms()))
+        while True:
+          readBuffer = f.__next__()
+          # Check if the whole line is integers only (Header line)
+          if isInt("".join(readBuffer.split())) == True:
+            # And use this information to label the columns
+            columns = readBuffer.split()
+          # Once we find the FormGI statement, we're done reading
+          elif readBuffer.find("FormGI is forming") != -1:
+            break
+          else:
+            row = readBuffer.split()
+            for i in range(0,len(row)-1):
+              H[int(row[0])-1][int(columns[i])-1] =  row[i+1].replace('D','E')
+              H[int(columns[i])-1][int(row[0])-1] =  row[i+1].replace('D','E')
+    #print("Here are the Force Constants:")
+    #numpy.set_printoptions(precision=3)
+    #numpy.set_printoptions(suppress=True)
+    #print(H)
+    f.close()
+  
   # Test if we actually have Mayer Bond orders
   if numpy.count_nonzero(bo) != 0:
     for i in range(0,molecule.numatoms()):
@@ -1081,11 +1156,18 @@ def extractCoordinates(filename, molecule):
 ###############################################################################
 
 # Print GPL v3 statement
+print (" __          __  _ _ ______      _____      ______ ______ ")
+print (" \ \        / / | | |  ____/\   |  __ \    |  ____|  ____|")
+print ("  \ \  /\  / /__| | | |__ /  \  | |__) |___| |__  | |__   ")
+print ("   \ \/  \/ / _ \ | |  __/ /\ \ |  _  // _ \  __| |  __|  ")
+print ("    \  /\  /  __/ | | | / ____ \| | \ \  __/ |    | |     ")
+print ("     \/  \/ \___|_|_|_|/_/    \_\_|  \_\___|_|    |_|     ")
+print ("")
 print ("WellFAReFF Copyright (C) 2015 Matthias Lein")
 print ("This program comes with ABSOLUTELY NO WARRANTY")
-print ("This is free software, and you are welcome to redistribute it")
-print ("under certain conditions.")
-print ()
+print ("This is free software, and you are welcome to")
+print ("redistribute it under certain conditions.")
+print ("")
 
 # Determine the name of the file to be read
 infile = iofiles(sys.argv[1:])
@@ -1108,3 +1190,11 @@ for i in molecule.angles:
 for i in molecule.dihedrals:
   print(i)
 
+print ("  _____                                                      _     ")
+print (" |  __ \                                                    | |    ")
+print (" | |__) | __ ___   __ _ _ __ __ _ _ __ ___     ___ _ __   __| |___ ")
+print (" |  ___/ '__/ _ \ / _` | '__/ _` | '_ ` _ \   / _ \ '_ \ / _` / __|")
+print (" | |   | | | (_) | (_| | | | (_| | | | | | | |  __/ | | | (_| \__ \ ")
+print (" |_|   |_|  \___/ \__, |_|  \__,_|_| |_| |_|  \___|_| |_|\__,_|___/")
+print ("                   __/ |                                           ")
+print ("                  |___/                                            ")
