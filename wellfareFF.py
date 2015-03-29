@@ -3,20 +3,83 @@
 import sys
 import getopt
 import math
+import time
 
+def timestamp(s):
+  print (s + time.strftime("%Y/%m/%d %X"))
+  
 # ASCII FONTS from: http://patorjk.com/software/taag/
 # Font = "Big"
+def ProgramHeader():
+  print ("###################################################################")
+  print ("Wellington Fast Assessment of Reactions using Force Fields")
+  print (" __          __  _ _ ______      _____      ______ ______ ")
+  print (" \ \        / / | | |  ____/\   |  __ \    |  ____|  ____|")
+  print ("  \ \  /\  / /__| | | |__ /  \  | |__) |___| |__  | |__   ")
+  print ("   \ \/  \/ / _ \ | |  __/ /\ \ |  _  // _ \  __| |  __|  ")
+  print ("    \  /\  /  __/ | | | / ____ \| | \ \  __/ |    | |     ")
+  print ("     \/  \/ \___|_|_|_|/_/    \_\_|  \_\___|_|    |_|     ")
+  print ("                                              Version 0.01")
+  print ("      WellFAReFF Copyright (C) 2015 Matthias Lein         ")
+  print ("    This program comes with ABSOLUTELY NO WARRANTY        ")
+  print ("     This is free software, and you are welcome to        ")
+  print ("       redistribute it under certain conditions.          ")
+  timestamp('Program started at: ')
+  print ("###################################################################")
+
+def ProgramFooter():
+  print ("###################################################################")
+  print ("  _____                                                      _     ")
+  print (" |  __ \                                                    | |    ")
+  print (" | |__) | __ ___   __ _ _ __ __ _ _ __ ___     ___ _ __   __| |___ ")
+  print (" |  ___/ '__/ _ \ / _` | '__/ _` | '_ ` _ \   / _ \ '_ \ / _` / __|")
+  print (" | |   | | | (_) | (_| | | | (_| | | | | | | |  __/ | | | (_| \__ \ ")
+  print (" |_|   |_|  \___/ \__, |_|  \__,_|_| |_| |_|  \___|_| |_|\__,_|___/")
+  print ("                   __/ |                                           ")
+  print ("                  |___/                                            ")
+  timestamp('Program terminated at: ')
+  print ("###################################################################")
+
 def ProgramAbort():
+  print ("###################################################################")
   print ("  _____                     _                _           _ ")
   print (" |  __ \                   | |              | |         | |")
   print (" | |__) |   _ _ __     __ _| |__   ___  _ __| |_ ___  __| |")
   print (" |  _  / | | | '_ \   / _` | '_ \ / _ \| '__| __/ _ \/ _` |")
   print (" | | \ \ |_| | | | | | (_| | |_) | (_) | |  | ||  __/ (_| |")
   print (" |_|  \_\__,_|_| |_|  \__,_|_.__/ \___/|_|   \__\___|\__,_|")
+  timestamp('Program aborted at: ')
+  print ("###################################################################")
   sys.exit()
   return
 
-# Check for numpy, exist immediately if not available
+def ProgramWarning():
+  print ("###################################################################")
+  print (" __          __              _             ")
+  print (" \ \        / /             (_)            ")
+  print ("  \ \  /\  / /_ _ _ __ _ __  _ _ __   __ _ ")
+  print ("   \ \/  \/ / _` | '__| '_ \| | '_ \ / _` |")
+  print ("    \  /\  / (_| | |  | | | | | | | | (_| |")
+  print ("     \/  \/ \__,_|_|  |_| |_|_|_| |_|\__, |")
+  print ("                                      __/ |")
+  print ("                                     |___/ ")
+  timestamp('Warning time/date: ')
+  print ("###################################################################")
+  return
+
+def ProgramError():
+  print ("###################################################################")
+  print ("  ______                     ")
+  print (" |  ____|                    ")
+  print (" | |__   _ __ _ __ ___  _ __ ")
+  print (" |  __| | '__| '__/ _ \| '__|")
+  print (" | |____| |  | | | (_) | |   ")
+  print (" |______|_|  |_|  \___/|_|   ")
+  timestamp('Error time/date: ')
+  print ("###################################################################")
+  return
+
+# Check for numpy, exit immediately if not available
 import imp
 try:
     imp.find_module('numpy')
@@ -27,26 +90,6 @@ if not foundnp:
     print("Numpy is required. Exiting")
     ProgramAbort()
 import numpy
-
-def ProgramWarning():
-  print (" __          __              _             ")
-  print (" \ \        / /             (_)            ")
-  print ("  \ \  /\  / /_ _ _ __ _ __  _ _ __   __ _ ")
-  print ("   \ \/  \/ / _` | '__| '_ \| | '_ \ / _` |")
-  print ("    \  /\  / (_| | |  | | | | | | | | (_| |")
-  print ("     \/  \/ \__,_|_|  |_| |_|_|_| |_|\__, |")
-  print ("                                      __/ |")
-  print ("                                     |___/ ")
-  return
-
-def ProgramError():
-  print ("  ______                     ")
-  print (" |  ____|                    ")
-  print (" | |__   _ __ _ __ ___  _ __ ")
-  print (" |  __| | '__| '__/ _ \| '__|")
-  print (" | |____| |  | | | (_) | |   ")
-  print (" |______|_|  |_|  \___/|_|   ")
-  return
 
 def iofiles(argv):
    inputfile = ''
@@ -1155,24 +1198,12 @@ def extractCoordinates(filename, molecule):
 #                                                                             #
 ###############################################################################
 
-# Print GPL v3 statement
-print (" __          __  _ _ ______      _____      ______ ______ ")
-print (" \ \        / / | | |  ____/\   |  __ \    |  ____|  ____|")
-print ("  \ \  /\  / /__| | | |__ /  \  | |__) |___| |__  | |__   ")
-print ("   \ \/  \/ / _ \ | |  __/ /\ \ |  _  // _ \  __| |  __|  ")
-print ("    \  /\  /  __/ | | | / ____ \| | \ \  __/ |    | |     ")
-print ("     \/  \/ \___|_|_|_|/_/    \_\_|  \_\___|_|    |_|     ")
-print ("")
-print ("WellFAReFF Copyright (C) 2015 Matthias Lein")
-print ("This program comes with ABSOLUTELY NO WARRANTY")
-print ("This is free software, and you are welcome to")
-print ("redistribute it under certain conditions.")
-print ("")
+# Print GPL v3 statement and program header
+ProgramHeader()
 
 # Determine the name of the file to be read
 infile = iofiles(sys.argv[1:])
 
-print("Start")
 molecule = Molecule(infile,0)
 extractCoordinates(infile,molecule)
 
@@ -1190,11 +1221,4 @@ for i in molecule.angles:
 for i in molecule.dihedrals:
   print(i)
 
-print ("  _____                                                      _     ")
-print (" |  __ \                                                    | |    ")
-print (" | |__) | __ ___   __ _ _ __ __ _ _ __ ___     ___ _ __   __| |___ ")
-print (" |  ___/ '__/ _ \ / _` | '__/ _` | '_ ` _ \   / _ \ '_ \ / _` / __|")
-print (" | |   | | | (_) | (_| | | | (_| | | | | | | |  __/ | | | (_| \__ \ ")
-print (" |_|   |_|  \___/ \__, |_|  \__,_|_| |_| |_|  \___|_| |_|\__,_|___/")
-print ("                   __/ |                                           ")
-print ("                  |___/                                            ")
+ProgramFooter()
