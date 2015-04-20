@@ -899,12 +899,6 @@ def extractCoordinates(filename, molecule):
             
   # End of routine
 
-"""
-Testing python program edit
-Remove this after one push and pull
-Comment successfully pushed, now to be pulled and deleted
-""" 
-  
 ###############################################################################
 #                                                                             #
 # The main part of the program starts here                                    #
