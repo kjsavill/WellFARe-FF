@@ -898,6 +898,11 @@ def extractCoordinates(filename, molecule):
             molecule.addDihedral(molecule.angles[i][2],molecule.angles[j][2],molecule.angles[j][1],molecule.angles[j][0])
             
   # End of routine
+
+"""
+Testing python program edit
+Remove this after one push and pull
+""" 
   
 ###############################################################################
 #                                                                             #
