@@ -921,10 +921,17 @@ extractCoordinates(infile,molecule)
 #molecule.orient()
 
 print(molecule.gaussString())
+print("Bonds:")
 for i in molecule.bonds:
   print(i)
+
+print("")
+print("Angles:")
 for i in molecule.angles:
   print(i)
+
+print("")
+print("Dihedrals:")
 for i in molecule.dihedrals:
   print(i)
 
