@@ -538,7 +538,60 @@ class Molecule:
     
     return math.sqrt(distance)
 
-  
+  def bondangle(self, i):
+    """ (Molecule) -> number (in radians)
+
+    Report the angle described by three atoms in the bonds list
+    """
+    
+    # Calculate the distance between each pair of atoms
+    angle = self.angles[i]
+    d_bond_1 = self.atmatmdist(angle[0], angle[1])
+    d_bond_2 = self.atmatmdist(angle[1], angle[2])
+    d_non_bond = self.atmatmdist(angle[0], angle[2])
+
+    # Use those distances and the cosine rule to calculate bond angle theta
+    numerator = d_bond_1**2 + d_bond_2**2 - d_non_bond**2
+    denominator = 2*d_bond_1*d_bond_2
+    argument = numerator/denominator
+    theta = numpy.arccos(argument)
+
+    return theta
+
+  def dihedralangle(self, i):
+    """ (Molecule) -> number (in radians)
+
+    Report the dihedral angle descirbed by a set of four atoms in the dihedrals list
+    """
+
+    # Calculate the vectors lying along bonds, and their cross products
+    dihedral = self.dihedrals[i]
+    atom_e1 = self.atoms[dihedral[0]]
+    atom_b1 = self.atoms[dihedral[1]]
+    atom_b2 = self.atoms[dihedral[2]]
+    atom_e2 = self.atoms[dihedral[3]]
+    end_1 = [atom_e1.coord[i] - atom_b1.coord[i] for i in range(3)]
+    bridge = [atom_b1.coord[i] - atom_b2.coord[i] for i in range(3)]
+    end_2 = [atom_b2.coord[i] - atom_e2.coord[i] for i in range(3)]
+    vnormal_1 = numpy.cross(end_1, bridge)
+    vnormal_2 = numpy.cross(bridge, end_2)
+
+    # Construct a set of orthogonal basis vectors to define a frame with vnormal_2 as the x axis
+    vcross = numpy.cross(vnormal_2, bridge)
+    norm_vn2 = numpy.linalg.norm(vnormal_2)
+    norm_b = numpy.linalg.norm(bridge)
+    norm_vc = numpy.linalg.norm(vcross)
+    basis_vn2 = [vnormal_2[i]/norm_vn2 for i in range(3)]
+    basis_b = [bridge[i]/norm_b for i in range(3)]
+    basis_cv = [vcross[i]/norm_vc for i in range(3)]
+
+    # Find the signed angle between vnormal_1 and vnormal_2 in the new frame
+    vn1_coord_n2 = numpy.dot(vnormal_1, basis_vn2)
+    vn1_coord_vc = numpy.dot(vnormal_1, basis_cv)
+    psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
+
+    return psi
+
   def orient(self):
     """ (Molecule) -> NoneType
     
@@ -931,8 +984,18 @@ for i in molecule.angles:
   print(i)
 
 print("")
+print("Angles in radians:")
+for i in range(len(molecule.angles)):
+  print(molecule.bondangle(i))
+
+print("")
 print("Dihedrals:")
 for i in molecule.dihedrals:
   print(i)
+
+print("")
+print("Dihedral angles in radians:")
+for i in range(len(molecule.dihedrals)):
+  print(molecule.dihedralangle(i))
 
 ProgramFooter()
