@@ -153,6 +153,31 @@ def potHarmonic(a, a0, k):
     
     return u
 
+def potGLJ(atom1, atom2):
+    """
+    Generalised Lennard-Jones potential for stretches
+    """
+    delta_EN = EN[atomA[0]] - EN[atomB[0]]
+    bond_exp = (k_a[atom1[0]] * k_a[atom2[0]]) + (k_EN * (delta_EN ** 2))
+# NOTE that a dictionary for electronegativity of atoms, here referred to as EN, needs defining, as do the constants k_a and k_EN
+    r = #Function for distance between atoms 1 and 2 - will using molecule.atmatmdistance muck things up given this potential is defined outside a class? Maybe make r an argument?
+    dist_ratio = r/r0
+    u = k_str_12 * (1 + (dist_ratio)**a - 2*((dist_ratio)**(a/2)))
+# k_str_12 is currently a placeholder - that force constant comes out of the fit to the QM Hessian
+    return u
+
+def potLinearBend():
+    # Need to allow for damping function, covalent radii etc
+    u = k_bnd * f_dmp * (theta_bend ** 2)
+# k_bnd here also comes from fit to Hessian
+    return u
+
+def potNonLinearBend():
+    # Also need to allow for damping function
+    u = k_bnd * f_dmp * ((math.cos(theta_eq) - math.cos(theta)) ** 2)
+# Same note regarding k_bnd applies
+    return u
+
 class FFStretch:
   """ A stretching potential"""
   
@@ -220,7 +245,7 @@ class FFStretch:
       energy = potHarmonic(r, self.r0, self.k)
     elif self.typ == 2:
       energy = potMorse(r, self.r0, D, b)
-    
+    # Third case will go here to use GLJ potential 
     return energy
 
 class FFBend:
@@ -282,7 +307,8 @@ class FFBend:
     energy = 0.0
     if self.typ == 1:
       energy = potHarmonic(a, self.a0, self.k)
-    
+    # elif case will go here to use the bending potential near linearity from Girimme
+    # Followed by another elif case for bends not near linearity (possibly nest these two)  
     return energy
 
 class Atom:
