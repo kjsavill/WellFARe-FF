@@ -105,7 +105,7 @@ def iofiles(argv):
       elif opt in ("-i", "--ifile"):
          inputfile = arg
    if inputfile == '':
-      inputfile="g09-h2o.log"
+      inputfile="g09-ethane.log"
    return (inputfile)
 
 # Conversion of mass in atomic mass units (AMU) to
@@ -790,21 +790,21 @@ def extractCoordinates(filename, molecule):
   program = "N/A"
   # Determine which QM program we're dealing with
   for line in f:
-  	if line.find("Entering Gaussian System, Link 0=g09") != -1:
-  	  program = "g09"
-  	  break
-  	elif line.find("* O   R   C   A *") != -1:
-  	  program = "orca"
-  	  break
+    if line.find("Entering Gaussian System, Link 0=g09") != -1:
+      program = "g09"
+      break
+    elif line.find("* O   R   C   A *") != -1:
+      program = "orca"
+      break
   f.close()
   
   # GEOMETRY READING SECTION
   geom = []
-  # Read through Gaussian file, read *last* "Standard orientation"
+  # Read through Gaussian file, read *last* "Input orientation"
   if program == "g09":
     f = open(filename,'r')
     for line in f:
-      if line.find("Standard orientation:") != -1:
+      if line.find("Input orientation:") != -1:
         del geom[:]
         for i in range(0,4):
           readBuffer = f.__next__()
@@ -949,7 +949,91 @@ def extractCoordinates(filename, molecule):
             molecule.addDihedral(molecule.angles[i][2],molecule.angles[j][0],molecule.angles[j][1],molecule.angles[j][2])
         if molecule.angles[i][1]==molecule.angles[j][2] and molecule.angles[i][0]==molecule.angles[j][1]:
             molecule.addDihedral(molecule.angles[i][2],molecule.angles[j][2],molecule.angles[j][1],molecule.angles[j][0])
-            
+
+  # Now that we know bonds, angles and dihedrals, determine the corresponding force constants
+  # Bonds first:
+  for i in range(0,len(molecule.bonds)):
+    #print(molecule.atoms[molecule.bonds[i][0]].coord[1])
+    a = numpy.array([molecule.atoms[molecule.bonds[i][0]].coord[0],molecule.atoms[molecule.bonds[i][0]].coord[1],molecule.atoms[molecule.bonds[i][0]].coord[2]])
+    b = numpy.array([molecule.atoms[molecule.bonds[i][1]].coord[0],molecule.atoms[molecule.bonds[i][1]].coord[1],molecule.atoms[molecule.bonds[i][1]].coord[2]])
+    c1 = (a-b)
+    c2 = (b-a)
+    c = numpy.zeros(molecule.numatoms()*3)
+    c[3*molecule.bonds[i][0]] = c1[0]
+    c[3*molecule.bonds[i][0]+1] = c1[1]
+    c[3*molecule.bonds[i][0]+2] = c1[2]
+    c[3*molecule.bonds[i][1]] = c2[0]
+    c[3*molecule.bonds[i][1]+1] = c2[1]
+    c[3*molecule.bonds[i][1]+2] = c2[2]
+    c=c/numpy.linalg.norm(c)
+    fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
+    #print(molecule.bonds[i], fc)
+    # Insert statement adding a stretch coordinate with force constant fc
+
+  # Then 1-3 stretches:
+  for i in range(0,len(molecule.angles)):
+    a = numpy.array([molecule.atoms[molecule.angles[i][0]].coord[0],molecule.atoms[molecule.angles[i][0]].coord[1],molecule.atoms[molecule.angles[i][0]].coord[2]])
+    b = numpy.array([molecule.atoms[molecule.angles[i][2]].coord[0],molecule.atoms[molecule.angles[i][2]].coord[1],molecule.atoms[molecule.angles[i][2]].coord[2]])
+    c1 = (a-b)
+    c2 = (b-a)
+    c = numpy.zeros(molecule.numatoms()*3)
+    c[3*molecule.angles[i][0]] = c1[0]
+    c[3*molecule.angles[i][0]+1] = c1[1]
+    c[3*molecule.angles[i][0]+2] = c1[2]
+    c[3*molecule.angles[i][1]] = c2[0]
+    c[3*molecule.angles[i][1]+1] = c2[1]
+    c[3*molecule.angles[i][1]+2] = c2[2]
+    c=c/numpy.linalg.norm(c)
+    fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
+    #print(molecule.angles[i], fc)
+    # Insert statement adding a 1-3 stretch coordinate with force constant fc
+
+  # Then angle bends:
+  for i in range(0,len(molecule.angles)):
+    a = numpy.array([molecule.atoms[molecule.angles[i][0]].coord[0],molecule.atoms[molecule.angles[i][0]].coord[1],molecule.atoms[molecule.angles[i][0]].coord[2]])
+    b = numpy.array([molecule.atoms[molecule.angles[i][1]].coord[0],molecule.atoms[molecule.angles[i][1]].coord[1],molecule.atoms[molecule.angles[i][1]].coord[2]])
+    c = numpy.array([molecule.atoms[molecule.angles[i][2]].coord[0],molecule.atoms[molecule.angles[i][2]].coord[1],molecule.atoms[molecule.angles[i][2]].coord[2]])
+    aprime = a-b
+    bprime = c-b
+    p=numpy.cross(aprime,bprime)
+    adprime=numpy.cross(p,aprime)
+    bdprime=numpy.cross(bprime,p)
+    c = numpy.zeros(molecule.numatoms()*3)
+    c[3*molecule.angles[i][0]] = adprime[0]
+    c[3*molecule.angles[i][0]+1] = adprime[1]
+    c[3*molecule.angles[i][0]+2] = adprime[2]
+    c[3*molecule.angles[i][2]] = bdprime[0]
+    c[3*molecule.angles[i][2]+1] = bdprime[1]
+    c[3*molecule.angles[i][2]+2] = bdprime[2]
+    c=c/numpy.linalg.norm(c)
+    fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
+    #print(molecule.angles[i], fc)
+    # Insert statement adding a bend coordinate with force constant fc
+
+  # Dihedral torsions last::
+  for i in range(0,len(molecule.dihedrals)):
+    a = numpy.array([molecule.atoms[molecule.dihedrals[i][0]].coord[0],molecule.atoms[molecule.dihedrals[i][0]].coord[1],molecule.atoms[molecule.dihedrals[i][0]].coord[2]])
+    b = numpy.array([molecule.atoms[molecule.dihedrals[i][1]].coord[0],molecule.atoms[molecule.dihedrals[i][1]].coord[1],molecule.atoms[molecule.dihedrals[i][1]].coord[2]])
+    c = numpy.array([molecule.atoms[molecule.dihedrals[i][2]].coord[0],molecule.atoms[molecule.dihedrals[i][2]].coord[1],molecule.atoms[molecule.dihedrals[i][2]].coord[2]])
+    d = numpy.array([molecule.atoms[molecule.dihedrals[i][3]].coord[0],molecule.atoms[molecule.dihedrals[i][3]].coord[1],molecule.atoms[molecule.dihedrals[i][3]].coord[2]])
+    aprime = a-b
+    dprime = d-c
+    c1prime = c-b
+    c2prime = b-c
+    p1=numpy.cross(aprime,c1prime)
+    p2=numpy.cross(dprime,c2prime)
+    c = numpy.zeros(molecule.numatoms()*3)
+    c[3*molecule.dihedrals[i][0]] = p1[0]
+    c[3*molecule.dihedrals[i][0]+1] = p1[1]
+    c[3*molecule.dihedrals[i][0]+2] = p1[2]
+    c[3*molecule.dihedrals[i][2]] = p2[0]
+    c[3*molecule.dihedrals[i][2]+1] = p2[1]
+    c[3*molecule.dihedrals[i][2]+2] = p2[2]
+    c=c/numpy.linalg.norm(c)
+    fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
+    #print(molecule.dihedrals[i], fc)
+    # Insert statement adding a torsion coordinate with force constant fc
+
   # End of routine
 
 ###############################################################################
@@ -974,28 +1058,29 @@ extractCoordinates(infile,molecule)
 #molecule.orient()
 
 print(molecule.gaussString())
-print("Bonds:")
-for i in molecule.bonds:
-  print(i)
 
-print("")
-print("Angles:")
-for i in molecule.angles:
-  print(i)
+#print("Bonds:")
+#for i in molecule.bonds:
+#  print(i)
 
-print("")
-print("Angles in radians:")
-for i in range(len(molecule.angles)):
-  print(molecule.bondangle(i))
+#print("")
+#print("Angles:")
+#for i in molecule.angles:
+#  print(i)
 
-print("")
-print("Dihedrals:")
-for i in molecule.dihedrals:
-  print(i)
+#print("")
+#print("Angles in radians:")
+#for i in range(len(molecule.angles)):
+#  print(molecule.bondangle(i))
 
-print("")
-print("Dihedral angles in radians:")
-for i in range(len(molecule.dihedrals)):
-  print(molecule.dihedralangle(i))
+#print("")
+#print("Dihedrals:")
+#for i in molecule.dihedrals:
+#  print(i)
 
-ProgramFooter()
+#print("")
+#print("Dihedral angles in radians:")
+#for i in range(len(molecule.dihedrals)):
+#  print(molecule.dihedralangle(i))
+
+#ProgramFooter()
