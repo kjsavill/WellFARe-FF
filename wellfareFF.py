@@ -108,6 +108,10 @@ def iofiles(argv):
       inputfile="g09-ethane.log"
    return (inputfile)
 
+#############################################################################################################
+# This section is for the definition of *all* constants and conversion factors
+#############################################################################################################
+
 # Conversion of mass in atomic mass units (AMU) to
 # atomic units (electron masses)
 def AMU2au(amu):
@@ -125,6 +129,103 @@ def Ang2Bohr(ang):
 # Same in reverse
 def Bohr2Ang(bohr):
     return bohr/1.889725989
+
+SymbolToNumber = {
+"H" :1, "He" :2, "Li" :3, "Be" :4, "B" :5, "C" :6, "N" :7, "O" :8, "F" :9,
+"Ne" :10, "Na" :11, "Mg" :12, "Al" :13, "Si" :14, "P" :15, "S"  :16, "Cl" :17,
+"Ar" :18, "K"  :19, "Ca" :20, "Sc" :21, "Ti" :22, "V"  :23, "Cr" :24,
+"Mn" :25, "Fe" :26, "Co" :27, "Ni" :28, "Cu" :29, "Zn" :30, "Ga" :31,
+"Ge" :32, "As" :33, "Se" :34, "Br" :35, "Kr" :36, "Rb" :37, "Sr" :38,
+"Y"  :39, "Zr" :40, "Nb" :41, "Mo" :42, "Tc" :43, "Ru" :44, "Rh" :45,
+"Pd" :46, "Ag" :47, "Cd" :48, "In" :49, "Sn" :50, "Sb" :51, "Te" :52,
+"I"  :53, "Xe" :54, "Cs" :55, "Ba" :56, "La" :57, "Ce" :58, "Pr" :59,
+"Nd" :60, "Pm" :61, "Sm" :62, "Eu" :63, "Gd" :64, "Tb" :65, "Dy" :66,
+"Ho" :67, "Er" :68, "Tm" :69, "Yb" :70, "Lu" :71, "Hf" :72, "Ta" :73,
+"W"  :74, "Re" :75, "Os" :76, "Ir" :77, "Pt" :78, "Au" :79, "Hg" :80,
+"Tl" :81, "Pb" :82, "Bi" :83, "Po" :84, "At" :85, "Rn" :86, "Fr" :87,
+"Ra" :88, "Ac" :89, "Th" :90, "Pa" :91, "U"  :92, "Np" :93, "Pu" :94,
+"Am" :95, "Cm" :96, "Bk" :97, "Cf" :98, "Es" :99, "Fm" :100, "Md" :101,
+"No" :102, "Lr" :103, "Rf" :104, "Db" :105, "Sg" :106, "Bh" :107,
+"Hs" :108, "Mt" :109, "Ds" :110, "Rg" :111, "Cn" :112, "Uut":113,
+"Fl" :114, "Uup":115, "Lv" :116, "Uus":117, "Uuo":118}
+
+# Invert the above: atomic numbers to atomic symbols
+NumberToSymbol = {v: k for k, v in SymbolToNumber.items()}
+
+SymbolToMass = {
+"H" : 1.00794, "He": 4.002602, "Li": 6.941, "Be": 9.012182, "B": 10.811,
+"C": 12.0107, "N": 14.0067, "O": 15.9994, "F": 18.9984032, "Ne": 20.1797,
+"Na": 22.98976928, "Mg": 24.3050, "Al": 26.9815386, "Si": 28.0855,
+"P": 30.973762, "S": 32.065, "Cl": 35.453, "Ar": 39.948, "K": 39.0983,
+"Ca": 40.078, "Sc": 44.955912, "Ti": 47.867, "V": 50.9415, "Cr": 51.9961,
+"Mn": 54.938045, "Fe": 55.845, "Co": 58.933195, "Ni": 58.6934, "Cu": 63.546,
+"Zn": 65.38, "Ga": 69.723, "Ge": 72.64, "As": 74.92160, "Se": 78.96,
+"Br": 79.904, "Kr": 83.798, "Rb": 85.4678, "Sr": 87.62, "Y": 88.90585,
+"Zr": 91.224, "Nb": 92.90638, "Mo": 95.96, "Tc": 98.0, "Ru": 101.07,
+"Rh": 102.90550, "Pd": 106.42, "Ag": 107.8682, "Cd": 112.411, "In": 114.818,
+"Sn": 118.710, "Sb": 121.760, "Te": 127.60, "I": 126.90447, "Xe": 131.293,
+"Cs": 132.9054519, "Ba": 137.327, "La": 138.90547, "Ce": 140.116,
+"Pr": 140.90765, "Nd": 144.242, "Pm": 145.0, "Sm": 150.36, "Eu": 151.964,
+"Gd": 157.25, "Tb": 158.92535, "Dy": 162.500, "Ho": 164.93032, "Er": 167.259,
+"Tm": 168.93421, "Yb": 173.054, "Lu": 174.9668, "Hf": 178.49, "Ta": 180.94788,
+"W": 183.84, "Re": 186.207, "Os": 190.23, "Ir": 192.217, "Pt": 195.084,
+"Au": 196.966569, "Hg": 200.59, "Tl": 204.3833, "Pb": 207.2, "Bi": 208.98040,
+"Po": 209.0, "At": 210.0, "Rn": 222.0, "Fr": 223.0, "Ra": 226.0, "Ac": 227.0,
+"Th": 232.03806, "Pa": 231.03588, "U": 238.02891, "Np": 237.0, "Pu": 244.0,
+"Am": 243.0, "Cm": 247.0, "Bk": 247.0, "Cf": 251.0, "Es": 252.0, "Fm": 257.0,
+"Md": 258.0, "No": 259.0, "Lr": 262.0, "Rf": 267.0, "Db": 268.0, "Sg": 271.0,
+"Bh": 272.0, "Hs": 270.0, "Mt": 276.0, "Ds": 281.0, "Rg": 280.0, "Cn": 285.0,
+"Uut": 284.0, "Uuq": 289.0, "Uup": 288.0, "Uuh": 293.0, "Uuo": 294.0}
+
+# Define dictionary to convert atomic symbols to covalent radii (in Angstrom)
+SymbolToRadius = {
+"H"  : 0.37, "He" : 0.32, "Li" : 1.34, "Be" : 0.90, "B"  : 0.82, "C"  : 0.77,
+"N"  : 0.75, "O"  : 0.73, "F"  : 0.71, "Ne" : 0.69, "Na" : 1.54, "Mg" : 1.30,
+"Al" : 1.18, "Si" : 1.11, "P"  : 1.06, "S"  : 1.02, "Cl" : 0.99, "Ar" : 0.97,
+"K"  : 1.96, "Ca" : 1.74, "Sc" : 1.44, "Ti" : 1.36, "V"  : 1.25, "Cr" : 1.27,
+"Mn" : 1.39, "Fe" : 1.25, "Co" : 1.26, "Ni" : 1.21, "Cu" : 1.38, "Zn" : 1.31,
+"Ga" : 1.26, "Ge" : 1.22, "As" : 1.19, "Se" : 1.16, "Br" : 1.14, "Kr" : 1.10,
+"Rb" : 2.11, "Sr" : 1.92, "Y"  : 1.62, "Zr" : 1.48, "Nb" : 1.37, "Mo" : 1.45,
+"Tc" : 1.56, "Ru" : 1.26, "Rh" : 1.35, "Pd" : 1.31, "Ag" : 1.53, "Cd" : 1.48,
+"In" : 1.44, "Sn" : 1.41, "Sb" : 1.38, "Te" : 1.35, "I"  : 1.33, "Xe" : 1.30,
+"Cs" : 2.25, "Ba" : 1.98, "La" : 1.69, "Ce" : 1.70, "Pr" : 1.70, "Nd" : 1.70,
+"Pm" : 1.70, "Sm" : 1.70, "Eu" : 1.70, "Gd" : 1.70, "Tb" : 1.70, "Dy" : 1.70,
+"Ho" : 1.70, "Er" : 1.70, "Tm" : 1.70, "Yb" : 1.70, "Lu" : 1.60, "Hf" : 1.50,
+"Ta" : 1.38, "W"  : 1.46, "Re" : 1.59, "Os" : 1.28, "Ir" : 1.37, "Pt" : 1.28,
+"Au" : 1.44, "Hg" : 1.49, "Tl" : 1.48, "Pb" : 1.47, "Bi" : 1.46, "Po" : 1.50,
+"At" : 1.50, "Rn" : 1.45, "Fr" : 1.50, "Ra" : 1.50, "Ac" : 1.50, "Th" : 1.50,
+"Pa" : 1.50, "U"  : 1.50, "Np" : 1.50, "Pu" : 1.50, "Am" : 1.50, "Cm" : 1.50,
+"Bk" : 1.50, "Cf" : 1.50, "Es" : 1.50, "Fm" : 1.50, "Md" : 1.50, "No" : 1.50,
+"Lr" : 1.50, "Rf" : 1.50, "Db" : 1.50, "Sg" : 1.50, "Bh" : 1.50, "Hs" : 1.50,
+"Mt" : 1.50, "Ds" : 1.50, "Rg" : 1.50, "Cn" : 1.50, "Uut" : 1.50,"Uuq" : 1.50,
+"Uup" : 1.50, "Uuh" : 1.50, "Uus" : 1.50, "Uuo" : 1.50}
+
+# Define dictionary to convert atomic symbols to (Pauling) electronegativity
+SymbolToEN = {
+"H"  : 2.20, "He" : 0.00, "Li" : 0.98, "Be" : 1.57, "B"  : 2.04, "C"  : 2.55,
+"N"  : 3.04, "O"  : 3.44, "F"  : 3.98, "Ne" : 0.00, "Na" : 0.93, "Mg" : 1.31,
+"Al" : 1.61, "Si" : 1.90, "P"  : 2.19, "S"  : 2.58, "Cl" : 3.16, "Ar" : 0.00,
+"K"  : 0.82, "Ca" : 1.00, "Sc" : 1.36, "Ti" : 1.54, "V"  : 1.63, "Cr" : 1.66,
+"Mn" : 1.55, "Fe" : 1.83, "Co" : 1.88, "Ni" : 1.91, "Cu" : 1.90, "Zn" : 1.65,
+"Ga" : 1.81, "Ge" : 2.01, "As" : 2.18, "Se" : 2.55, "Br" : 2.96, "Kr" : 3.00,
+"Rb" : 0.82, "Sr" : 0.95, "Y"  : 1.22, "Zr" : 1.33, "Nb" : 1.60, "Mo" : 2.16,
+"Tc" : 1.90, "Ru" : 2.00, "Rh" : 2.28, "Pd" : 2.20, "Ag" : 1.93, "Cd" : 1.69,
+"In" : 1.78, "Sn" : 1.96, "Sb" : 2.05, "Te" : 2.10, "I"  : 2.66, "Xe" : 2.60,
+"Cs" : 0.79, "Ba" : 0.89, "La" : 1.10, "Ce" : 1.12, "Pr" : 1.13, "Nd" : 1.14,
+"Pm" : 1.13, "Sm" : 1.17, "Eu" : 1.20, "Gd" : 1.20, "Tb" : 1.10, "Dy" : 1.22,
+"Ho" : 1.23, "Er" : 1.24, "Tm" : 1.25, "Yb" : 1.10, "Lu" : 1.27, "Hf" : 1.30,
+"Ta" : 1.50, "W"  : 2.36, "Re" : 1.90, "Os" : 2.20, "Ir" : 2.20, "Pt" : 2.28,
+"Au" : 2.54, "Hg" : 2.00, "Tl" : 1.62, "Pb" : 1.87, "Bi" : 2.02, "Po" : 2.00,
+"At" : 2.20, "Rn" : 2.20, "Fr" : 0.70, "Ra" : 0.90, "Ac" : 1.10, "Th" : 1.30,
+"Pa" : 1.50, "U"  : 1.38, "Np" : 1.36, "Pu" : 1.28, "Am" : 1.13, "Cm" : 1.28,
+"Bk" : 1.30, "Cf" : 1.30, "Es" : 1.30, "Fm" : 1.30, "Md" : 1.30, "No" : 1.30,
+"Lr" : 1.30, "Rf" : 1.30, "Db" : 1.30, "Sg" : 1.30, "Bh" : 1.30, "Hs" : 1.30,
+"Mt" : 1.30, "Ds" : 1.30, "Rg" : 1.30, "Cn" : 1.30, "Uut" : 1.30,"Uuq" : 1.30,
+"Uup" : 1.30, "Uuh" : 1.30, "Uus" : 1.30, "Uuo" : 1.30}
+
+#############################################################################################################
+# Do *not* define constants or conversion factors below here
+#############################################################################################################
 
 # Test if the argument is (can be converted to)
 # an integer number
@@ -150,6 +251,15 @@ def potHarmonic(a, a0, k):
     """
     
     u = 0.5 * k * (a-a0) ** 2
+    
+    return u
+
+def potSimpleCosine(theta, theta0, k):
+    """"
+    Extremely simplified cosine potential for torsions
+    """
+    
+    u = k * math.cos(1+theta-theta0)
     
     return u
 
@@ -276,12 +386,75 @@ class FFBend:
     
     return s+r
   
-  def energy(self, r):
+  def energy(self, a):
     """ Returns the energy of this bending potential at angle a"""
     
     energy = 0.0
     if self.typ == 1:
       energy = potHarmonic(a, self.a0, self.k)
+    
+    return energy
+
+class FFTorsion:
+  """ A torsion potential"""
+  
+  def __init__(self, a, b, c, d, theta0, typ, arg):
+    """ (FFTorsion, int, int, int, int, number, int, [number]) -> NoneType
+    
+    A torsion potential between atoms number a, b, c and d with equilibrium
+    angle theta0, of type typ with arguments [arg]
+    """
+    
+    self.atom1 = a
+    self.atom2 = b
+    self.atom3 = c
+    self.atom4 = d
+    self.theta0 = theta0
+    if typ == 1:
+      self.typ = typ
+      self.k = arg[0]
+    else:
+      self.typ = 1
+      self.k = arg[0]
+  
+  def __str__(self):
+    """ (FFTorsion) -> str
+    
+    Return a string representation of the torsion potential in this format:
+    
+    (atom1, atom2, atom3, atom4, theta0, type, arguments)
+    
+    """
+    
+    s = '({0}, {1}, {2}, {3}, {4}, '.format(self.atom1, self.atom2, self.atom3, self.atom4, self.theta0, self.typ)
+    
+    if self.typ == 1:
+      r = '{0})'.format(self.k)
+    
+    return s+r
+  
+  def __repr__(self):
+    """ (FFTorsion) -> str
+    
+    Return a string representation of the torsion potential in this format:
+    
+    (atom1, atom2, atom3, atom4, theta0, type, arguments)
+    
+    """
+    
+    s = '({0}, {1}, {2}, {3}, {4}, '.format(self.atom1, self.atom2, self.atom3, self.atom4, self.theta0, self.typ)
+    
+    if self.typ == 1:
+      r = '{0})'.format(self.k)
+    
+    return s+r
+  
+  def energy(self, theta):
+    """ Returns the energy of this torsion potential at angle theta"""
+    
+    energy = 0.0
+    if self.typ == 1:
+      energy = potSimpleCosine(theta, self.theta0, self.k)
     
     return energy
 
@@ -342,99 +515,6 @@ class Atom:
     Set z coordinate to z
     """
     self.coord[2]=z
-    
-SymbolToNumber = {
-"H" :1, "He" :2, "Li" :3, "Be" :4, "B" :5, "C" :6, "N" :7, "O" :8, "F" :9,
-"Ne" :10, "Na" :11, "Mg" :12, "Al" :13, "Si" :14, "P" :15, "S"  :16, "Cl" :17,
-"Ar" :18, "K"  :19, "Ca" :20, "Sc" :21, "Ti" :22, "V"  :23, "Cr" :24,
-"Mn" :25, "Fe" :26, "Co" :27, "Ni" :28, "Cu" :29, "Zn" :30, "Ga" :31,
-"Ge" :32, "As" :33, "Se" :34, "Br" :35, "Kr" :36, "Rb" :37, "Sr" :38,
-"Y"  :39, "Zr" :40, "Nb" :41, "Mo" :42, "Tc" :43, "Ru" :44, "Rh" :45,
-"Pd" :46, "Ag" :47, "Cd" :48, "In" :49, "Sn" :50, "Sb" :51, "Te" :52,
-"I"  :53, "Xe" :54, "Cs" :55, "Ba" :56, "La" :57, "Ce" :58, "Pr" :59,
-"Nd" :60, "Pm" :61, "Sm" :62, "Eu" :63, "Gd" :64, "Tb" :65, "Dy" :66,
-"Ho" :67, "Er" :68, "Tm" :69, "Yb" :70, "Lu" :71, "Hf" :72, "Ta" :73,
-"W"  :74, "Re" :75, "Os" :76, "Ir" :77, "Pt" :78, "Au" :79, "Hg" :80,
-"Tl" :81, "Pb" :82, "Bi" :83, "Po" :84, "At" :85, "Rn" :86, "Fr" :87,
-"Ra" :88, "Ac" :89, "Th" :90, "Pa" :91, "U"  :92, "Np" :93, "Pu" :94,
-"Am" :95, "Cm" :96, "Bk" :97, "Cf" :98, "Es" :99, "Fm" :100, "Md" :101,
-"No" :102, "Lr" :103, "Rf" :104, "Db" :105, "Sg" :106, "Bh" :107,
-"Hs" :108, "Mt" :109, "Ds" :110, "Rg" :111, "Cn" :112, "Uut":113,
-"Fl" :114, "Uup":115, "Lv" :116, "Uus":117, "Uuo":118}
-
-# Invert the above: atomic numbers to atomic symbols
-NumberToSymbol = {v: k for k, v in SymbolToNumber.items()}
-
-SymbolToMass = {
-"H" : 1.00794, "He": 4.002602, "Li": 6.941, "Be": 9.012182, "B": 10.811,
-"C": 12.0107, "N": 14.0067, "O": 15.9994, "F": 18.9984032, "Ne": 20.1797,
-"Na": 22.98976928, "Mg": 24.3050, "Al": 26.9815386, "Si": 28.0855,
-"P": 30.973762, "S": 32.065, "Cl": 35.453, "Ar": 39.948, "K": 39.0983,
-"Ca": 40.078, "Sc": 44.955912, "Ti": 47.867, "V": 50.9415, "Cr": 51.9961,
-"Mn": 54.938045, "Fe": 55.845, "Co": 58.933195, "Ni": 58.6934, "Cu": 63.546,
-"Zn": 65.38, "Ga": 69.723, "Ge": 72.64, "As": 74.92160, "Se": 78.96,
-"Br": 79.904, "Kr": 83.798, "Rb": 85.4678, "Sr": 87.62, "Y": 88.90585,
-"Zr": 91.224, "Nb": 92.90638, "Mo": 95.96, "Tc": 98.0, "Ru": 101.07,
-"Rh": 102.90550, "Pd": 106.42, "Ag": 107.8682, "Cd": 112.411, "In": 114.818,
-"Sn": 118.710, "Sb": 121.760, "Te": 127.60, "I": 126.90447, "Xe": 131.293,
-"Cs": 132.9054519, "Ba": 137.327, "La": 138.90547, "Ce": 140.116,
-"Pr": 140.90765, "Nd": 144.242, "Pm": 145.0, "Sm": 150.36, "Eu": 151.964,
-"Gd": 157.25, "Tb": 158.92535, "Dy": 162.500, "Ho": 164.93032, "Er": 167.259,
-"Tm": 168.93421, "Yb": 173.054, "Lu": 174.9668, "Hf": 178.49, "Ta": 180.94788,
-"W": 183.84, "Re": 186.207, "Os": 190.23, "Ir": 192.217, "Pt": 195.084,
-"Au": 196.966569, "Hg": 200.59, "Tl": 204.3833, "Pb": 207.2, "Bi": 208.98040,
-"Po": 209.0, "At": 210.0, "Rn": 222.0, "Fr": 223.0, "Ra": 226.0, "Ac": 227.0,
-"Th": 232.03806, "Pa": 231.03588, "U": 238.02891, "Np": 237.0, "Pu": 244.0,
-"Am": 243.0, "Cm": 247.0, "Bk": 247.0, "Cf": 251.0, "Es": 252.0, "Fm": 257.0,
-"Md": 258.0, "No": 259.0, "Lr": 262.0, "Rf": 267.0, "Db": 268.0, "Sg": 271.0,
-"Bh": 272.0, "Hs": 270.0, "Mt": 276.0, "Ds": 281.0, "Rg": 280.0, "Cn": 285.0,
-"Uut": 284.0, "Uuq": 289.0, "Uup": 288.0, "Uuh": 293.0, "Uuo": 294.0}
-
-# Define dictionary to convert atomic symbols to covalent radii (in Angstrom)
-SymbolToRadius = {
-"H"  : 0.37, "He" : 0.32, "Li" : 1.34, "Be" : 0.90, "B"  : 0.82, "C"  : 0.77,
-"N"  : 0.75, "O"  : 0.73, "F"  : 0.71, "Ne" : 0.69, "Na" : 1.54, "Mg" : 1.30,
-"Al" : 1.18, "Si" : 1.11, "P"  : 1.06, "S"  : 1.02, "Cl" : 0.99, "Ar" : 0.97,
-"K"  : 1.96, "Ca" : 1.74, "Sc" : 1.44, "Ti" : 1.36, "V"  : 1.25, "Cr" : 1.27,
-"Mn" : 1.39, "Fe" : 1.25, "Co" : 1.26, "Ni" : 1.21, "Cu" : 1.38, "Zn" : 1.31,
-"Ga" : 1.26, "Ge" : 1.22, "As" : 1.19, "Se" : 1.16, "Br" : 1.14, "Kr" : 1.10,
-"Rb" : 2.11, "Sr" : 1.92, "Y"  : 1.62, "Zr" : 1.48, "Nb" : 1.37, "Mo" : 1.45,
-"Tc" : 1.56, "Ru" : 1.26, "Rh" : 1.35, "Pd" : 1.31, "Ag" : 1.53, "Cd" : 1.48,
-"In" : 1.44, "Sn" : 1.41, "Sb" : 1.38, "Te" : 1.35, "I"  : 1.33, "Xe" : 1.30,
-"Cs" : 2.25, "Ba" : 1.98, "La" : 1.69, "Ce" : 1.70, "Pr" : 1.70, "Nd" : 1.70,
-"Pm" : 1.70, "Sm" : 1.70, "Eu" : 1.70, "Gd" : 1.70, "Tb" : 1.70, "Dy" : 1.70,
-"Ho" : 1.70, "Er" : 1.70, "Tm" : 1.70, "Yb" : 1.70, "Lu" : 1.60, "Hf" : 1.50,
-"Ta" : 1.38, "W"  : 1.46, "Re" : 1.59, "Os" : 1.28, "Ir" : 1.37, "Pt" : 1.28,
-"Au" : 1.44, "Hg" : 1.49, "Tl" : 1.48, "Pb" : 1.47, "Bi" : 1.46, "Po" : 1.50,
-"At" : 1.50, "Rn" : 1.45, "Fr" : 1.50, "Ra" : 1.50, "Ac" : 1.50, "Th" : 1.50,
-"Pa" : 1.50, "U"  : 1.50, "Np" : 1.50, "Pu" : 1.50, "Am" : 1.50, "Cm" : 1.50,
-"Bk" : 1.50, "Cf" : 1.50, "Es" : 1.50, "Fm" : 1.50, "Md" : 1.50, "No" : 1.50,
-"Lr" : 1.50, "Rf" : 1.50, "Db" : 1.50, "Sg" : 1.50, "Bh" : 1.50, "Hs" : 1.50,
-"Mt" : 1.50, "Ds" : 1.50, "Rg" : 1.50, "Cn" : 1.50, "Uut" : 1.50,"Uuq" : 1.50,
-"Uup" : 1.50, "Uuh" : 1.50, "Uus" : 1.50, "Uuo" : 1.50}
-
-# Define dictionary to convert atomic symbols to (Pauling) electronegativity
-SymbolToEN = {
-"H"  : 2.20, "He" : 0.00, "Li" : 0.98, "Be" : 1.57, "B"  : 2.04, "C"  : 2.55,
-"N"  : 3.04, "O"  : 3.44, "F"  : 3.98, "Ne" : 0.00, "Na" : 0.93, "Mg" : 1.31,
-"Al" : 1.61, "Si" : 1.90, "P"  : 2.19, "S"  : 2.58, "Cl" : 3.16, "Ar" : 0.00,
-"K"  : 0.82, "Ca" : 1.00, "Sc" : 1.36, "Ti" : 1.54, "V"  : 1.63, "Cr" : 1.66,
-"Mn" : 1.55, "Fe" : 1.83, "Co" : 1.88, "Ni" : 1.91, "Cu" : 1.90, "Zn" : 1.65,
-"Ga" : 1.81, "Ge" : 2.01, "As" : 2.18, "Se" : 2.55, "Br" : 2.96, "Kr" : 3.00,
-"Rb" : 0.82, "Sr" : 0.95, "Y"  : 1.22, "Zr" : 1.33, "Nb" : 1.60, "Mo" : 2.16,
-"Tc" : 1.90, "Ru" : 2.00, "Rh" : 2.28, "Pd" : 2.20, "Ag" : 1.93, "Cd" : 1.69,
-"In" : 1.78, "Sn" : 1.96, "Sb" : 2.05, "Te" : 2.10, "I"  : 2.66, "Xe" : 2.60,
-"Cs" : 0.79, "Ba" : 0.89, "La" : 1.10, "Ce" : 1.12, "Pr" : 1.13, "Nd" : 1.14,
-"Pm" : 1.13, "Sm" : 1.17, "Eu" : 1.20, "Gd" : 1.20, "Tb" : 1.10, "Dy" : 1.22,
-"Ho" : 1.23, "Er" : 1.24, "Tm" : 1.25, "Yb" : 1.10, "Lu" : 1.27, "Hf" : 1.30,
-"Ta" : 1.50, "W"  : 2.36, "Re" : 1.90, "Os" : 2.20, "Ir" : 2.20, "Pt" : 2.28,
-"Au" : 2.54, "Hg" : 2.00, "Tl" : 1.62, "Pb" : 1.87, "Bi" : 2.02, "Po" : 2.00,
-"At" : 2.20, "Rn" : 2.20, "Fr" : 0.70, "Ra" : 0.90, "Ac" : 1.10, "Th" : 1.30,
-"Pa" : 1.50, "U"  : 1.38, "Np" : 1.36, "Pu" : 1.28, "Am" : 1.13, "Cm" : 1.28,
-"Bk" : 1.30, "Cf" : 1.30, "Es" : 1.30, "Fm" : 1.30, "Md" : 1.30, "No" : 1.30,
-"Lr" : 1.30, "Rf" : 1.30, "Db" : 1.30, "Sg" : 1.30, "Bh" : 1.30, "Hs" : 1.30,
-"Mt" : 1.30, "Ds" : 1.30, "Rg" : 1.30, "Cn" : 1.30, "Uut" : 1.30,"Uuq" : 1.30,
-"Uup" : 1.30, "Uuh" : 1.30, "Uus" : 1.30, "Uuo" : 1.30}
 
 class Molecule:
   """A molecule with a name, charge and a list of atoms"""
@@ -584,7 +664,7 @@ class Molecule:
   def dihedralangle(self, i):
     """ (Molecule) -> number (in radians)
 
-    Report the dihedral angle descirbed by a set of four atoms in the dihedrals list
+    Report the dihedral angle described by a set of four atoms in the dihedrals list
     """
 
     # Calculate the vectors lying along bonds, and their cross products
@@ -709,7 +789,47 @@ class Molecule:
     # Append bond to list if doesn't exist and is plausible
     if exists == False and a >= 0 and b >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c != d:
       self.bonds.append([c, d])
-  
+
+  def addFFStretch(self, a, b, r0, typ, arg):
+    """ (Molecule) -> NoneType
+
+    Adds a stretching potential between atoms a and b to the list of stretches
+    """
+    # Make sure a < b
+    if a < b:
+      c = a
+      d = b
+    else:
+      c = b
+      d = a
+
+    # Note: There's no check if the stretch already exists. Mainly because there's no reason not to have
+    # two different functions adding energy to the same "stretch"
+
+    # Append stretch to list if doesn't exist and is plausible
+    if a >= 0 and b >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c != d:
+      self.stretch.append(FFStretch(c, d, r0, typ, arg))
+
+  def addFFStr13(self, a, b, r0, typ, arg):
+    """ (Molecule) -> NoneType
+
+    Adds a stretching potential between atoms a and b to the list of stretches
+    """
+    # Make sure a < b
+    if a < b:
+      c = a
+      d = b
+    else:
+      c = b
+      d = a
+
+    # Note: There's no check if the stretch already exists. Mainly because there's no reason not to have
+    # two different functions adding energy to the same "stretch"
+
+    # Append stretch to list if doesn't exist and is plausible
+    if a >= 0 and b >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c != d:
+      self.str13.append(FFStretch(c, d, r0, typ, arg))
+
   def delBond(self, a, b):
     """ (Molecule) -> NoneType
     
@@ -746,11 +866,26 @@ class Molecule:
         exists = True
     
     # Append angle to list if doesn't exist and is plausible
-    # (its a bit unsatisfactory, but I don't think there are
+    # (it's a bit unsatisfactory, but I don't think there are
     # better sanity checks)
     if exists == False and a >= 0 and b >= 0 and c >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and a != b and a != c and b != c:
       self.angles.append([a, b, c])
-  
+
+  def addFFBend(self, a, b, c, a0, typ, arg):
+    """ (Molecule) -> NoneType
+
+    Adds an angle bend potential between atoms a, b and c to the list of angle bends.
+    """
+
+    # Note: There's no check if the bend already exists. Mainly because there's no reason not to have
+    # two different functions adding energy to the same "bend"
+
+    # Append bend to list if doesn't exist and is plausible
+    # (it's a bit unsatisfactory, but I don't think there are
+    # better sanity checks)
+    if a >= 0 and b >= 0 and c >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and a != b and a != c and b != c:
+      self.bend.append(FFBend(a, b, c, a0, typ, arg))
+
   def addDihedral(self, a, b, c, d):
     """ (Molecule) -> NoneType
     
@@ -764,11 +899,38 @@ class Molecule:
         exists = True
     
     # Append dihedral to list if doesn't exist and is plausible
-    # (its a bit unsatisfactory, but I don't think there are
+    # (it's a bit unsatisfactory, but I don't think there are
     # better sanity checks)
     if exists == False and a >= 0 and b >= 0 and c >= 0 and d >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and d <= len(self.atoms) and a != b and a != c and a != d and b != c and b != d and c != d:
       self.dihedrals.append([a, b, c, d])
-      
+
+  def addFFTorsion(self, a, b, c, d, theta0, typ, arg):
+    """ (Molecule) -> NoneType
+
+    Adds a dihedral torsion potential between atoms a, b, c and d to the list of dihedral torsions.
+    """
+
+    # Note: There's no check if the bend already exists. Mainly because there's no reason not to have
+    # two different functions adding energy to the same "torsion"
+
+    # Append torsion to list if doesn't exist and is plausible
+    # (it's a bit unsatisfactory, but I don't think there are
+    # better sanity checks)
+    if a >= 0 and b >= 0 and c >= 0 and d >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and d <= len(self.atoms) and a != b and a != c and a != d and b != c and b != d and c != d:
+      self.tors.append(FFTorsion(a, b, c, d, theta0, typ, arg))
+
+  def cartesianCoordinates(self):
+    """ (Molecule) ->
+
+    Returns a list containing the cartesian coordinates.
+    """
+
+    coord = []
+    for i in self.atoms:
+      coord.append([i.coord[0], i.coord[1], i.coord[2]])
+
+    return coord
+
   def xyzString(self):
     """ (Molecule) -> str
     
@@ -807,7 +969,32 @@ class Molecule:
       s = s + t
     s =s + "\n"
     return s
-  
+
+  def FFEnergy(self, cartCoordinates):
+    """ (Molecule) -> number (Force Field energy)
+
+      Returns a number containing the molecular energy according to the current Force Field definition at structure
+      specified by the provided cartesian coordinates.
+    """
+
+    energy = 0.0
+    for i in self.stretch:
+      energy = 0.0
+
+    for i in self.str13:
+      energy = 0.0
+
+    for i in self.bend:
+      energy = 0.0
+
+    for i in self.tors:
+      energy = 0.0
+
+    for i in self.inv:
+      energy = 0.0
+
+    return energy
+
 def extractCoordinates(filename, molecule):
   f = open(filename,'r')
   program = "N/A"
@@ -973,7 +1160,7 @@ def extractCoordinates(filename, molecule):
         if molecule.angles[i][1]==molecule.angles[j][2] and molecule.angles[i][0]==molecule.angles[j][1]:
             molecule.addDihedral(molecule.angles[i][2],molecule.angles[j][2],molecule.angles[j][1],molecule.angles[j][0])
 
-  # Now that we know bonds, angles and dihedrals, determine the corresponding force constants
+  # Now that we know bonds, angles and dihedrals, we determine the corresponding force constants
   # Bonds first:
   for i in range(0,len(molecule.bonds)):
     #print(molecule.atoms[molecule.bonds[i][0]].coord[1])
@@ -990,8 +1177,7 @@ def extractCoordinates(filename, molecule):
     c[3*molecule.bonds[i][1]+2] = c2[2]
     c=c/numpy.linalg.norm(c)
     fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
-    #print(molecule.bonds[i], fc)
-    # Insert statement adding a stretch coordinate with force constant fc
+    molecule.addFFStretch(molecule.bonds[i][0],molecule.bonds[i][1],1.0,1,[fc])
 
   # Then 1-3 stretches:
   for i in range(0,len(molecule.angles)):
@@ -1008,8 +1194,7 @@ def extractCoordinates(filename, molecule):
     c[3*molecule.angles[i][1]+2] = c2[2]
     c=c/numpy.linalg.norm(c)
     fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
-    #print(molecule.angles[i], fc)
-    # Insert statement adding a 1-3 stretch coordinate with force constant fc
+    molecule.addFFStr13(molecule.angles[i][0],molecule.angles[i][2],1.0,1,[fc])
 
   # Then angle bends:
   for i in range(0,len(molecule.angles)):
@@ -1030,8 +1215,7 @@ def extractCoordinates(filename, molecule):
     c[3*molecule.angles[i][2]+2] = bdprime[2]
     c=c/numpy.linalg.norm(c)
     fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
-    #print(molecule.angles[i], fc)
-    # Insert statement adding a bend coordinate with force constant fc
+    molecule.addFFBend(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],1.0,1,[fc])
 
   # Dihedral torsions last::
   for i in range(0,len(molecule.dihedrals)):
@@ -1054,8 +1238,7 @@ def extractCoordinates(filename, molecule):
     c[3*molecule.dihedrals[i][2]+2] = p2[2]
     c=c/numpy.linalg.norm(c)
     fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
-    #print(molecule.dihedrals[i], fc)
-    # Insert statement adding a torsion coordinate with force constant fc
+    molecule.addFFTorsion(molecule.dihedrals[i][0],molecule.dihedrals[i][1],molecule.dihedrals[i][2],molecule.dihedrals[i][3],1.0,1,[fc])
 
   # End of routine
 
@@ -1082,28 +1265,50 @@ extractCoordinates(infile,molecule)
 
 print(molecule.gaussString())
 
-#print("Bonds:")
-#for i in molecule.bonds:
-#  print(i)
+print(molecule.FFEnergy(molecule.cartesianCoordinates()))
 
-#print("")
-#print("Angles:")
-#for i in molecule.angles:
-#  print(i)
+# print("Bonds:")
+# for i in molecule.bonds:
+#   print(i)
+#
+# print("")
+# print("Angles:")
+# for i in molecule.angles:
+#   print(i)
+#
+# print("")
+# print("Angles in degrees:")
+# for i in range(len(molecule.angles)):
+#   print(math.degrees(molecule.bondangle(i)))
+#
+# print("")
+# print("Dihedrals:")
+# for i in molecule.dihedrals:
+#   print(i)
+#
+# print("")
+# print("Dihedral angles in degrees:")
+# for i in range(len(molecule.dihedrals)):
+#   print(math.degrees(molecule.dihedralangle(i)))
 
-#print("")
-#print("Angles in radians:")
-#for i in range(len(molecule.angles)):
-#  print(molecule.bondangle(i))
+# print("")
+# print("Bond Stretches:")
+# for i in molecule.stretch:
+#   print(i)
+#
+# print("")
+# print("1-3 Bond Stretches:")
+# for i in molecule.str13:
+#   print(i)
+#
+# print("")
+# print("Angle Bends:")
+# for i in molecule.bend:
+#   print(i)
+#
+# print("")
+# print("Dihedral Torsions:")
+# for i in molecule.tors:
+#   print(i)
 
-#print("")
-#print("Dihedrals:")
-#for i in molecule.dihedrals:
-#  print(i)
-
-#print("")
-#print("Dihedral angles in radians:")
-#for i in range(len(molecule.dihedrals)):
-#  print(molecule.dihedralangle(i))
-
-#ProgramFooter()
+# ProgramFooter()
