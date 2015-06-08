@@ -91,6 +91,18 @@ if not foundnp:
     ProgramAbort()
 import numpy
 
+# Check for scipy, exit immediately if not available
+import imp
+try:
+    imp.find_module('scipy')
+    foundnp = True
+except ImportError:
+    foundnp = False
+if not foundnp:
+    print("SciPy is required. Exiting")
+    ProgramAbort()
+import scipy.optimize
+
 def iofiles(argv):
    inputfile = ''
    try:
@@ -236,6 +248,10 @@ def isInt(s):
     except ValueError:
         return False
 
+#############################################################################################################
+# Potential Fuctions are to be defined below here
+#############################################################################################################
+
 def potMorse(r, r0, D, b):
     """
     Morse oscillator potential
@@ -259,9 +275,14 @@ def potSimpleCosine(theta, theta0, k):
     Extremely simplified cosine potential for torsions
     """
     
-    u = k * math.cos(1+theta-theta0)
+    u = k * (1 + numpy.cos(math.radians(180)+theta-theta0))
     
     return u
+
+
+#############################################################################################################
+# Classes for Force Field Terms defined below
+#############################################################################################################
 
 class FFStretch:
   """ A stretching potential"""
@@ -296,7 +317,8 @@ class FFStretch:
     """
     
     s = '({0}, {1}, {2}, {3}, '.format(self.atom1, self.atom2, self.r0, self.typ)
-    
+    r = ''
+
     if self.typ == 1:
       r = '{0})'.format(self.k)
     elif self.typ == 2:
@@ -314,7 +336,8 @@ class FFStretch:
     """
     
     s = '({0}, {1}, {2}, {3}, '.format(self.atom1, self.atom2, self.r0, self.typ)
-    
+    r = ''
+
     if self.typ == 1:
       r = '{0})'.format(self.k)
     elif self.typ == 2:
@@ -458,6 +481,10 @@ class FFTorsion:
     
     return energy
 
+#############################################################################################################
+# Atom class and class methods to be defined below
+#############################################################################################################
+
 class Atom:
   """ An atom with an atomic symbol and cartesian coordinates"""
   
@@ -515,6 +542,10 @@ class Atom:
     Set z coordinate to z
     """
     self.coord[2]=z
+
+#############################################################################################################
+# Molecule class and class methods to be defined below
+#############################################################################################################
 
 class Molecule:
   """A molecule with a name, charge and a list of atoms"""
@@ -661,6 +692,25 @@ class Molecule:
 
     return theta
 
+  def anybondangle(self, i, j, k):
+    """ (Molecule) -> number (in radians)
+
+    Report the angle described by three atoms i, j and k
+    """
+
+    # Calculate the distance between each pair of atoms
+    d_bond_1 = self.atmatmdist(i, j)
+    d_bond_2 = self.atmatmdist(j, k)
+    d_non_bond = self.atmatmdist(i, k)
+
+    # Use those distances and the cosine rule to calculate bond angle theta
+    numerator = d_bond_1**2 + d_bond_2**2 - d_non_bond**2
+    denominator = 2*d_bond_1*d_bond_2
+    argument = numerator/denominator
+    theta = numpy.arccos(argument)
+
+    return theta
+
   def dihedralangle(self, i):
     """ (Molecule) -> number (in radians)
 
@@ -673,6 +723,39 @@ class Molecule:
     atom_b1 = self.atoms[dihedral[1]]
     atom_b2 = self.atoms[dihedral[2]]
     atom_e2 = self.atoms[dihedral[3]]
+    end_1 = [atom_e1.coord[i] - atom_b1.coord[i] for i in range(3)]
+    bridge = [atom_b1.coord[i] - atom_b2.coord[i] for i in range(3)]
+    end_2 = [atom_b2.coord[i] - atom_e2.coord[i] for i in range(3)]
+    vnormal_1 = numpy.cross(end_1, bridge)
+    vnormal_2 = numpy.cross(bridge, end_2)
+
+    # Construct a set of orthogonal basis vectors to define a frame with vnormal_2 as the x axis
+    vcross = numpy.cross(vnormal_2, bridge)
+    norm_vn2 = numpy.linalg.norm(vnormal_2)
+    norm_b = numpy.linalg.norm(bridge)
+    norm_vc = numpy.linalg.norm(vcross)
+    basis_vn2 = [vnormal_2[i]/norm_vn2 for i in range(3)]
+    basis_b = [bridge[i]/norm_b for i in range(3)]
+    basis_cv = [vcross[i]/norm_vc for i in range(3)]
+
+    # Find the signed angle between vnormal_1 and vnormal_2 in the new frame
+    vn1_coord_n2 = numpy.dot(vnormal_1, basis_vn2)
+    vn1_coord_vc = numpy.dot(vnormal_1, basis_cv)
+    psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
+
+    return psi
+
+  def anydihedralangle(self, i, j, k, l):
+    """ (Molecule) -> number (in radians)
+
+    Report the dihedral angle described by a set of four atoms i, j, k and l
+    """
+
+    # Calculate the vectors lying along bonds, and their cross products
+    atom_e1 = self.atoms[i]
+    atom_b1 = self.atoms[j]
+    atom_b2 = self.atoms[k]
+    atom_e2 = self.atoms[l]
     end_1 = [atom_e1.coord[i] - atom_b1.coord[i] for i in range(3)]
     bridge = [atom_b1.coord[i] - atom_b2.coord[i] for i in range(3)]
     end_2 = [atom_b2.coord[i] - atom_e2.coord[i] for i in range(3)]
@@ -927,7 +1010,9 @@ class Molecule:
 
     coord = []
     for i in self.atoms:
-      coord.append([i.coord[0], i.coord[1], i.coord[2]])
+      coord.append(i.coord[0])
+      coord.append(i.coord[1])
+      coord.append(i.coord[2])
 
     return coord
 
@@ -979,21 +1064,80 @@ class Molecule:
 
     energy = 0.0
     for i in self.stretch:
-      energy = 0.0
+      distance=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
+      distance += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
+      distance += (cartCoordinates[3*i.atom1 + 2] - cartCoordinates[3*i.atom2 + 2]) ** 2
+      distance=math.sqrt(distance)
+      energy = energy + i.energy(distance)
 
     for i in self.str13:
-      energy = 0.0
+      distance=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
+      distance += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
+      distance += (cartCoordinates[3*i.atom1 + 2] - cartCoordinates[3*i.atom2 + 2]) ** 2
+      distance=math.sqrt(distance)
+      energy = energy + i.energy(distance)
 
     for i in self.bend:
-      energy = 0.0
+      d_bond_1=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
+      d_bond_1 += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
+      d_bond_1 += (cartCoordinates[3*i.atom1 + 2] - cartCoordinates[3*i.atom2 + 2]) ** 2
+      d_bond_1=math.sqrt(d_bond_1)
+
+      d_bond_2=(cartCoordinates[3*i.atom2]-cartCoordinates[3*i.atom3])**2
+      d_bond_2 += (cartCoordinates[3*i.atom2 + 1] - cartCoordinates[3*i.atom3 + 1]) ** 2
+      d_bond_2 += (cartCoordinates[3*i.atom2 + 2] - cartCoordinates[3*i.atom3 + 2]) ** 2
+      d_bond_2=math.sqrt(d_bond_2)
+
+      d_non_bond=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom3])**2
+      d_non_bond += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom3 + 1]) ** 2
+      d_non_bond += (cartCoordinates[3*i.atom1 + 2] - cartCoordinates[3*i.atom3 + 2]) ** 2
+      d_non_bond=math.sqrt(d_non_bond)
+
+      # Use those distances and the cosine rule to calculate bond angle theta
+      numerator = d_bond_1**2 + d_bond_2**2 - d_non_bond**2
+      denominator = 2*d_bond_1*d_bond_2
+      argument = numerator/denominator
+      theta = numpy.arccos(argument)
+      energy = energy + i.energy(theta)
 
     for i in self.tors:
-      energy = 0.0
+      # Calculate the vectors lying along bonds, and their cross products
+      atom_e1 = [cartCoordinates[3*i.atom1], cartCoordinates[3*i.atom1+1], cartCoordinates[3*i.atom1+2]]
+      atom_b1 = [cartCoordinates[3*i.atom2], cartCoordinates[3*i.atom2+1], cartCoordinates[3*i.atom2+2]]
+      atom_b2 = [cartCoordinates[3*i.atom3], cartCoordinates[3*i.atom3+1], cartCoordinates[3*i.atom3+2]]
+      atom_e2 = [cartCoordinates[3*i.atom4], cartCoordinates[3*i.atom4+1], cartCoordinates[3*i.atom4+2]]
+      end_1 = [atom_e1[i] - atom_b1[i] for i in range(3)]
+      bridge = [atom_b1[i] - atom_b2[i] for i in range(3)]
+      end_2 = [atom_b2[i] - atom_e2[i] for i in range(3)]
+      vnormal_1 = numpy.cross(end_1, bridge)
+      vnormal_2 = numpy.cross(bridge, end_2)
 
-    for i in self.inv:
-      energy = 0.0
+      # Construct a set of orthogonal basis vectors to define a frame with vnormal_2 as the x axis
+      vcross = numpy.cross(vnormal_2, bridge)
+      norm_vn2 = numpy.linalg.norm(vnormal_2)
+      norm_b = numpy.linalg.norm(bridge)
+      norm_vc = numpy.linalg.norm(vcross)
+      basis_vn2 = [vnormal_2[i]/norm_vn2 for i in range(3)]
+      basis_b = [bridge[i]/norm_b for i in range(3)]
+      basis_cv = [vcross[i]/norm_vc for i in range(3)]
+
+      # Find the signed angle between vnormal_1 and vnormal_2 in the new frame
+      vn1_coord_n2 = numpy.dot(vnormal_1, basis_vn2)
+      vn1_coord_vc = numpy.dot(vnormal_1, basis_cv)
+      psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
+      energy = energy + i.energy(psi)
+
+    for i in self.inv: # Inversion terms aren't implemented yet
+      energy += 0.0
+
+    # Don't forget to add non-bonded interactions here
 
     return energy
+
+
+#############################################################################################################
+# Most important function so far: Read Quantum Chemistry output file and construct WellFaRe Molecule from it
+#############################################################################################################
 
 def extractCoordinates(filename, molecule):
   f = open(filename,'r')
@@ -1057,6 +1201,7 @@ def extractCoordinates(filename, molecule):
         while True:
           readBuffer = f.__next__()
           # Check if the whole line is integers only (Header line)
+          columns = []
           if isInt("".join(readBuffer.split())) == True:
             # And use this information to label the columns
             columns = readBuffer.split()
@@ -1177,7 +1322,8 @@ def extractCoordinates(filename, molecule):
     c[3*molecule.bonds[i][1]+2] = c2[2]
     c=c/numpy.linalg.norm(c)
     fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
-    molecule.addFFStretch(molecule.bonds[i][0],molecule.bonds[i][1],1.0,1,[fc])
+    #print(molecule.bonds[i][0],molecule.bonds[i][1],molecule.atmatmdist(molecule.bonds[i][0],molecule.bonds[i][1]),1,[fc])
+    molecule.addFFStretch(molecule.bonds[i][0],molecule.bonds[i][1],molecule.atmatmdist(molecule.bonds[i][0],molecule.bonds[i][1]),1,[fc])
 
   # Then 1-3 stretches:
   for i in range(0,len(molecule.angles)):
@@ -1194,7 +1340,8 @@ def extractCoordinates(filename, molecule):
     c[3*molecule.angles[i][1]+2] = c2[2]
     c=c/numpy.linalg.norm(c)
     fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
-    molecule.addFFStr13(molecule.angles[i][0],molecule.angles[i][2],1.0,1,[fc])
+    #print(molecule.angles[i][0],molecule.angles[i][2],molecule.atmatmdist(molecule.angles[i][0],molecule.angles[i][2]),1,[fc])
+    molecule.addFFStr13(molecule.angles[i][0],molecule.angles[i][2],molecule.atmatmdist(molecule.angles[i][0],molecule.angles[i][2]),1,[fc])
 
   # Then angle bends:
   for i in range(0,len(molecule.angles)):
@@ -1215,7 +1362,8 @@ def extractCoordinates(filename, molecule):
     c[3*molecule.angles[i][2]+2] = bdprime[2]
     c=c/numpy.linalg.norm(c)
     fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
-    molecule.addFFBend(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],1.0,1,[fc])
+    #print(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],math.degrees(molecule.bondangle(i)),1,[fc])
+    molecule.addFFBend(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.bondangle(i),1,[fc])
 
   # Dihedral torsions last::
   for i in range(0,len(molecule.dihedrals)):
@@ -1238,7 +1386,8 @@ def extractCoordinates(filename, molecule):
     c[3*molecule.dihedrals[i][2]+2] = p2[2]
     c=c/numpy.linalg.norm(c)
     fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
-    molecule.addFFTorsion(molecule.dihedrals[i][0],molecule.dihedrals[i][1],molecule.dihedrals[i][2],molecule.dihedrals[i][3],1.0,1,[fc])
+    #print(molecule.dihedrals[i][0],molecule.dihedrals[i][1],molecule.dihedrals[i][2],molecule.dihedrals[i][3],math.degrees(molecule.dihedralangle(i)),1,[fc])
+    molecule.addFFTorsion(molecule.dihedrals[i][0],molecule.dihedrals[i][1],molecule.dihedrals[i][2],molecule.dihedrals[i][3],molecule.dihedralangle(i),1,[fc])
 
   # End of routine
 
@@ -1263,9 +1412,10 @@ extractCoordinates(infile,molecule)
 #print("Molecular mass = ", molecule.mass())
 #molecule.orient()
 
-print(molecule.gaussString())
+#print(molecule.gaussString())
 
-print(molecule.FFEnergy(molecule.cartesianCoordinates()))
+print("\nCartesian Coordinates (as one list):")
+print(molecule.cartesianCoordinates())
 
 # print("Bonds:")
 # for i in molecule.bonds:
@@ -1311,4 +1461,17 @@ print(molecule.FFEnergy(molecule.cartesianCoordinates()))
 # for i in molecule.tors:
 #   print(i)
 
-# ProgramFooter()
+print("\nForce Field Energy:")
+print(molecule.FFEnergy(molecule.cartesianCoordinates()))
+
+print("\nDistort Geometry and print energy again:")
+coordinates2optimise = molecule.cartesianCoordinates()
+coordinates2optimise[0] = -1.0
+print(molecule.FFEnergy(coordinates2optimise))
+
+print("\nGeometry Optimizer:")
+xopt = scipy.optimize.fmin_bfgs(molecule.FFEnergy, coordinates2optimise, gtol=0.00005)
+print("\nOptimized Geometry:")
+print(xopt)
+
+ProgramFooter()
