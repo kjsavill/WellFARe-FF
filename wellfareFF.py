@@ -25,10 +25,10 @@ def ProgramHeader():
   print ("     This is free software, and you are welcome to        ")
   print ("       redistribute it under certain conditions.          ")
   timestamp('Program started at: ')
-  print ("###################################################################")
+  print ("###################################################################\n")
 
 def ProgramFooter():
-  print ("###################################################################")
+  print ("\n###################################################################")
   print ("  _____                                                      _     ")
   print (" |  __ \                                                    | |    ")
   print (" | |__) | __ ___   __ _ _ __ __ _ _ __ ___     ___ _ __   __| |___ ")
@@ -41,7 +41,7 @@ def ProgramFooter():
   print ("###################################################################")
 
 def ProgramAbort():
-  print ("###################################################################")
+  print ("\n###################################################################")
   print ("  _____                     _                _           _ ")
   print (" |  __ \                   | |              | |         | |")
   print (" | |__) |   _ _ __     __ _| |__   ___  _ __| |_ ___  __| |")
@@ -54,7 +54,7 @@ def ProgramAbort():
   return
 
 def ProgramWarning():
-  print ("###################################################################")
+  print ("\n###################################################################")
   print (" __          __              _             ")
   print (" \ \        / /             (_)            ")
   print ("  \ \  /\  / /_ _ _ __ _ __  _ _ __   __ _ ")
@@ -68,7 +68,7 @@ def ProgramWarning():
   return
 
 def ProgramError():
-  print ("###################################################################")
+  print ("\n###################################################################")
   print ("  ______                     ")
   print (" |  ____|                    ")
   print (" | |__   _ __ _ __ ___  _ __ ")
@@ -117,7 +117,7 @@ def iofiles(argv):
       elif opt in ("-i", "--ifile"):
          inputfile = arg
    if inputfile == '':
-      inputfile="g09-ethane.log"
+      inputfile="orca-ethane.log"
    return (inputfile)
 
 #############################################################################################################
@@ -1139,15 +1139,21 @@ class Molecule:
 # Most important function so far: Read Quantum Chemistry output file and construct WellFaRe Molecule from it
 #############################################################################################################
 
-def extractCoordinates(filename, molecule):
+def extractCoordinates(filename, molecule, verbosity = 0):
+  if verbosity >= 1:
+    print("Setting up WellFARe molecule: ", molecule.name)
   f = open(filename,'r')
   program = "N/A"
   # Determine which QM program we're dealing with
   for line in f:
     if line.find("Entering Gaussian System, Link 0=g09") != -1:
+      if verbosity >= 1:
+        print("Reading Gaussian output file: ", filename)
       program = "g09"
       break
     elif line.find("* O   R   C   A *") != -1:
+      if verbosity >= 1:
+        print("Reading Orca output file: ", filename)
       program = "orca"
       break
   f.close()
@@ -1159,6 +1165,8 @@ def extractCoordinates(filename, molecule):
     f = open(filename,'r')
     for line in f:
       if line.find("Input orientation:") != -1:
+        if verbosity >= 2:
+          print("\nInput orientation found, reading coordinates")
         del geom[:]
         for i in range(0,4):
           readBuffer = f.__next__()
@@ -1166,28 +1174,44 @@ def extractCoordinates(filename, molecule):
           readBuffer = f.__next__()
           if readBuffer.find("-----------") == -1:
             geom.append(readBuffer)
+            if verbosity >= 3:
+              readBuffer=readBuffer.split()
+              print(" Found atom: {:<3} {: .8f} {: .8f} {: .8f} in current Input orientation".format(NumberToSymbol[int(readBuffer[1])],float(readBuffer[3]),float(readBuffer[4]),float(readBuffer[5])))
           else:
             break
+    if verbosity >= 1:
+      print("\nReading of geometry finished.\nAdding atoms to WellFARe molecule: ", molecule.name)
     for i in geom:
       readBuffer=i.split()
       molecule.addAtom(Atom(NumberToSymbol[int(readBuffer[1])],float(readBuffer[3]),float(readBuffer[4]),float(readBuffer[5])))
+      if verbosity >= 2:
+        print(" {:<3} {: .8f} {: .8f} {: .8f}".format(NumberToSymbol[int(readBuffer[1])],float(readBuffer[3]),float(readBuffer[4]),float(readBuffer[5])))
     f.close()
   # Read through ORCA file, read *last* set of cartesian coordinates
   elif program == "orca":
     f = open(filename,'r')
     for line in f:
       if line.find("CARTESIAN COORDINATES (ANGSTROEM)") != -1:
+        if verbosity >= 2:
+          print("\nCartesian Coordinates found")
         del geom[:]
         readBuffer = f.__next__()
         while True:
           readBuffer = f.__next__()
           if readBuffer and readBuffer.strip():
             geom.append(readBuffer)
+            if verbosity >= 3:
+              readBuffer=readBuffer.split()
+              print(" Found atom: {:<3} {: .8f} {: .8f} {: .8f} in current Cartesian Coordinates".format(readBuffer[0],float(readBuffer[1]),float(readBuffer[2]),float(readBuffer[3])))
           else:
             break
+    if verbosity >= 1:
+      print("\nReading of geometry finished.\nAdding atoms to WellFARe molecule: ", molecule.name)
     for i in geom:
       readBuffer=i.split()
       molecule.addAtom(Atom(readBuffer[0],float(readBuffer[1]),float(readBuffer[2]),float(readBuffer[3])))
+      if verbosity >= 2:
+        print(" {:<3} {: .8f} {: .8f} {: .8f}".format(readBuffer[0],float(readBuffer[1]),float(readBuffer[2]),float(readBuffer[3])))
     f.close()
     
   # BOND ORDER READING SECTION
@@ -1197,11 +1221,12 @@ def extractCoordinates(filename, molecule):
     f = open(filename,'r')
     for line in f:
       if line.find("Atomic Valencies and Mayer Atomic Bond Orders:") != -1:
+        if verbosity >= 2:
+          print("\nAtomic Valencies and Mayer Atomic Bond Orders found, reading data")
         bo = numpy.zeros((molecule.numatoms(), molecule.numatoms()))
         while True:
           readBuffer = f.__next__()
           # Check if the whole line is integers only (Header line)
-          columns = []
           if isInt("".join(readBuffer.split())) == True:
             # And use this information to label the columns
             columns = readBuffer.split()
@@ -1215,10 +1240,17 @@ def extractCoordinates(filename, molecule):
               j = j + 1
               bo[int(row[0])-1][int(i)-1] = float(row[j])
     f.close()
+    if verbosity >= 3:
+          print("\nBond Orders:")
+          numpy.set_printoptions(suppress=True)
+          numpy.set_printoptions(formatter={'float': '{: 0.3f}'.format})
+          print(bo)
   if program == "orca":
     f = open(filename,'r')
     for line in f:
       if line.find("Mayer bond orders larger than 0.1") != -1:
+        if verbosity >= 2:
+          print("\nMayer bond orders larger than 0.1 found, reading data")
         bo = numpy.zeros((molecule.numatoms(), molecule.numatoms()))
         while True:
           readBuffer = f.__next__()
@@ -1236,6 +1268,11 @@ def extractCoordinates(filename, molecule):
           else:
             break
     f.close()
+    if verbosity >= 3:
+      print("\nBond Orders:")
+      numpy.set_printoptions(suppress=True)
+      numpy.set_printoptions(formatter={'float': '{: 0.3f}'.format})
+      print(bo)
     
   # FORCE CONSTANT READING SECTION
   H = []
@@ -1244,6 +1281,8 @@ def extractCoordinates(filename, molecule):
     f = open(filename,'r')
     for line in f:
       if line.find("Force constants in Cartesian coordinates") != -1:
+        if verbosity >= 2:
+          print("\nForce constants in Cartesian coordinates, reading data")
         H = numpy.zeros((3*molecule.numatoms(), 3*molecule.numatoms()))
         while True:
           readBuffer = f.__next__()
@@ -1252,58 +1291,86 @@ def extractCoordinates(filename, molecule):
             # And use this information to label the columns
             columns = readBuffer.split()
           # Once we find the FormGI statement, we're done reading
-          elif readBuffer.find("FormGI is forming") != -1:
+          elif readBuffer.find("FormGI is forming") or readBuffer.find("Cartesian forces in FCRed") != -1:
             break
           else:
             row = readBuffer.split()
             for i in range(0,len(row)-1):
               H[int(row[0])-1][int(columns[i])-1] =  row[i+1].replace('D','E')
               H[int(columns[i])-1][int(row[0])-1] =  row[i+1].replace('D','E')
-    #print("Here are the Force Constants:")
-    #numpy.set_printoptions(precision=3)
-    #numpy.set_printoptions(suppress=True)
-    #print(H)
+    if verbosity >= 3:
+          print("\nForce constants in Cartesian coordinates (Input orientation):")
+          #numpy.set_printoptions(suppress=True)
+          #numpy.set_printoptions(formatter={'float': '{: 0.3f}'.format})
+          print(H)
     f.close()
   
   # Test if we actually have Mayer Bond orders
   if numpy.count_nonzero(bo) != 0:
+    if verbosity >= 1:
+          print("\n Adding bonds to WellFARe molecule: ", molecule.name)
+          print(" (using bond orders with a cutoff of 0.45):")
     for i in range(0,molecule.numatoms()):
      for j in range(i+1,molecule.numatoms()):
          if bo[i][j] >= 0.45:
             molecule.addBond(i,j)
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Bond order: {: .3f})".format(molecule.atoms[i].symbol, i, molecule.atoms[j].symbol, j, bo[i][j]))
   # Else use 130% of the sum of covalent radii as criterion for a bond
   else:
+    if verbosity >= 1:
+          print("\n Adding bonds to WellFARe molecule:", molecule.name)
+          print("(using scaled covalent radii since we don't have bond orders):")
     for i in range(0,molecule.numatoms()):
      for j in range(i+1,molecule.numatoms()):
          if molecule.atmatmdist(i,j)<=(SymbolToRadius[molecule.atoms[i].symbol]+SymbolToRadius[molecule.atoms[j].symbol])*1.3:
             molecule.addBond(i,j)
-    
-  # Insert sanity checks here: Maybe look for disconnected fragments and find shortest
-  # possible connection or check atoms that are too close.
-  
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Distance: {:.3f} A)".format(molecule.atoms[i].symbol, i, molecule.atoms[j].symbol, j, molecule.atmatmdist(i,j)))
+
   # Now that we know where the bonds are, find angles
+  if verbosity >=2:
+      print("\n Adding angles to WellFARe molecule: ", molecule.name)
   for i in range(0,len(molecule.bonds)):
     for j in range(i+1,len(molecule.bonds)):
       if molecule.bonds[i][0]==molecule.bonds[j][0]:
         molecule.addAngle(molecule.bonds[i][1],molecule.bonds[i][0],molecule.bonds[j][1])
+        if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({:6.2f} deg)".format(molecule.atoms[molecule.bonds[i][1]].symbol, molecule.bonds[i][1], molecule.atoms[molecule.bonds[i][0]].symbol, molecule.bonds[i][0], molecule.atoms[molecule.bonds[j][1]].symbol, molecule.bonds[j][1], math.degrees(molecule.bondangle(len(molecule.angles)-1))))
       if molecule.bonds[i][0]==molecule.bonds[j][1]:
         molecule.addAngle(molecule.bonds[i][1],molecule.bonds[i][0],molecule.bonds[j][0])
+        if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({:6.2f} deg)".format(molecule.atoms[molecule.bonds[i][1]].symbol, molecule.bonds[i][1], molecule.atoms[molecule.bonds[i][0]].symbol, molecule.bonds[i][0], molecule.atoms[molecule.bonds[j][0]].symbol, molecule.bonds[j][0], math.degrees(molecule.bondangle(len(molecule.angles)-1))))
       if molecule.bonds[i][1]==molecule.bonds[j][0]:
         molecule.addAngle(molecule.bonds[i][0],molecule.bonds[i][1],molecule.bonds[j][1])
+        if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({:6.2f} deg)".format(molecule.atoms[molecule.bonds[i][0]].symbol, molecule.bonds[i][0], molecule.atoms[molecule.bonds[i][1]].symbol, molecule.bonds[i][1], molecule.atoms[molecule.bonds[j][1]].symbol, molecule.bonds[j][1], math.degrees(molecule.bondangle(len(molecule.angles)-1))))
       if molecule.bonds[i][1]==molecule.bonds[j][1]:
         molecule.addAngle(molecule.bonds[i][0],molecule.bonds[i][1],molecule.bonds[j][0])
-  
+        if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({:6.2f} deg)".format(molecule.atoms[molecule.bonds[i][0]].symbol, molecule.bonds[i][0], molecule.atoms[molecule.bonds[i][1]].symbol, molecule.bonds[i][1], molecule.atoms[molecule.bonds[j][0]].symbol, molecule.bonds[j][0], math.degrees(molecule.bondangle(len(molecule.angles)-1))))
+
   # Same for dihedrals: Use angles to determine where they are
+  if verbosity >= 2:
+      print("\n Adding dihedrals to WellFARe molecule: ", molecule.name)
   for i in range(0,len(molecule.angles)):
     for j in range(i+1,len(molecule.angles)):
         if molecule.angles[i][1]==molecule.angles[j][0] and molecule.angles[i][2]==molecule.angles[j][1]:
-            molecule.addDihedral(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.angles[j][2])
+          molecule.addDihedral(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.angles[j][2])
+          if verbosity >= 2:
+            print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2], math.degrees(molecule.dihedralangle(len(molecule.dihedrals)-1))))
         if molecule.angles[i][1]==molecule.angles[j][2] and molecule.angles[i][2]==molecule.angles[j][1]:
-            molecule.addDihedral(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.angles[j][0])
+          molecule.addDihedral(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.angles[j][0])
+          if verbosity >= 2:
+            print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], math.degrees(molecule.dihedralangle(len(molecule.dihedrals)-1))))
         if molecule.angles[i][1]==molecule.angles[j][0] and molecule.angles[i][0]==molecule.angles[j][1]:
-            molecule.addDihedral(molecule.angles[i][2],molecule.angles[j][0],molecule.angles[j][1],molecule.angles[j][2])
+          molecule.addDihedral(molecule.angles[i][2],molecule.angles[j][0],molecule.angles[j][1],molecule.angles[j][2])
+          if verbosity >= 2:
+            print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], molecule.atoms[molecule.angles[j][1]].symbol, molecule.angles[j][1], molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2], math.degrees(molecule.dihedralangle(len(molecule.dihedrals)-1))))
         if molecule.angles[i][1]==molecule.angles[j][2] and molecule.angles[i][0]==molecule.angles[j][1]:
-            molecule.addDihedral(molecule.angles[i][2],molecule.angles[j][2],molecule.angles[j][1],molecule.angles[j][0])
+          molecule.addDihedral(molecule.angles[i][2],molecule.angles[j][2],molecule.angles[j][1],molecule.angles[j][0])
+          if verbosity >= 2:
+            print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2], molecule.atoms[molecule.angles[j][1]].symbol, molecule.angles[j][1], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], math.degrees(molecule.dihedralangle(len(molecule.dihedrals)-1))))
 
   # Now that we know bonds, angles and dihedrals, we determine the corresponding force constants
   # Bonds first:
@@ -1403,8 +1470,11 @@ ProgramHeader()
 # Determine the name of the file to be read
 infile = iofiles(sys.argv[1:])
 
-molecule = Molecule(infile,0)
-extractCoordinates(infile,molecule)
+reactant_mol = Molecule("Reactant",0)
+extractCoordinates(infile, reactant_mol, verbosity = 2)
+
+product_mol = Molecule("Product",0)
+extractCoordinates(infile, product_mol, verbosity = 2)
 
 #print("Number of Atoms: ", molecule.numatoms(), "Multiplicity: ", molecule.mult)
 
@@ -1415,7 +1485,7 @@ extractCoordinates(infile,molecule)
 #print(molecule.gaussString())
 
 print("\nCartesian Coordinates (as one list):")
-print(molecule.cartesianCoordinates())
+print(product_mol.cartesianCoordinates())
 
 # print("Bonds:")
 # for i in molecule.bonds:
@@ -1462,15 +1532,15 @@ print(molecule.cartesianCoordinates())
 #   print(i)
 
 print("\nForce Field Energy:")
-print(molecule.FFEnergy(molecule.cartesianCoordinates()))
+print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates()))
 
 print("\nDistort Geometry and print energy again:")
-coordinates2optimise = molecule.cartesianCoordinates()
+coordinates2optimise = reactant_mol.cartesianCoordinates()
 coordinates2optimise[0] = -1.0
-print(molecule.FFEnergy(coordinates2optimise))
+print(reactant_mol.FFEnergy(coordinates2optimise))
 
 print("\nGeometry Optimizer:")
-xopt = scipy.optimize.fmin_bfgs(molecule.FFEnergy, coordinates2optimise, gtol=0.00005)
+xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimise, gtol=0.00005)
 print("\nOptimized Geometry:")
 print(xopt)
 
