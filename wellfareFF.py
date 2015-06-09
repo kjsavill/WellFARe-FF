@@ -1139,9 +1139,9 @@ class Molecule:
 # Most important function so far: Read Quantum Chemistry output file and construct WellFaRe Molecule from it
 #############################################################################################################
 
-def extractCoordinates(filename, molecule, verbosity = 0):
+def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bondcutoff = 0.45):
   if verbosity >= 1:
-    print("Setting up WellFARe molecule: ", molecule.name)
+    print("\nSetting up WellFARe molecule: ", molecule.name)
   f = open(filename,'r')
   program = "N/A"
   # Determine which QM program we're dealing with
@@ -1291,7 +1291,7 @@ def extractCoordinates(filename, molecule, verbosity = 0):
             # And use this information to label the columns
             columns = readBuffer.split()
           # Once we find the FormGI statement, we're done reading
-          elif readBuffer.find("FormGI is forming") or readBuffer.find("Cartesian forces in FCRed") != -1:
+          elif readBuffer.find("FormGI is forming") != -1 or readBuffer.find("Cartesian forces in FCRed") != -1:
             break
           else:
             row = readBuffer.split()
@@ -1308,29 +1308,29 @@ def extractCoordinates(filename, molecule, verbosity = 0):
   # Test if we actually have Mayer Bond orders
   if numpy.count_nonzero(bo) != 0:
     if verbosity >= 1:
-          print("\n Adding bonds to WellFARe molecule: ", molecule.name)
-          print(" (using bond orders with a cutoff of 0.45):")
+          print("\nAdding bonds to WellFARe molecule: ", molecule.name)
+          print("(using bond orders with a cutoff of {: .2f}):".format(bondcutoff))
     for i in range(0,molecule.numatoms()):
      for j in range(i+1,molecule.numatoms()):
-         if bo[i][j] >= 0.45:
+         if bo[i][j] >= bondcutoff:
             molecule.addBond(i,j)
             if verbosity >= 2:
               print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Bond order: {: .3f})".format(molecule.atoms[i].symbol, i, molecule.atoms[j].symbol, j, bo[i][j]))
-  # Else use 130% of the sum of covalent radii as criterion for a bond
+  # Else use 130% of the sum of covalent radii as criterion for a bond (user defined: distfactor)
   else:
     if verbosity >= 1:
-          print("\n Adding bonds to WellFARe molecule:", molecule.name)
-          print("(using scaled covalent radii since we don't have bond orders):")
+          print("\nAdding bonds to WellFARe molecule:", molecule.name)
+          print("(using covalent radii scaled by {: .2f}):".format(distfactor))
     for i in range(0,molecule.numatoms()):
      for j in range(i+1,molecule.numatoms()):
-         if molecule.atmatmdist(i,j)<=(SymbolToRadius[molecule.atoms[i].symbol]+SymbolToRadius[molecule.atoms[j].symbol])*1.3:
+         if molecule.atmatmdist(i,j)<=(SymbolToRadius[molecule.atoms[i].symbol]+SymbolToRadius[molecule.atoms[j].symbol])*distfactor:
             molecule.addBond(i,j)
             if verbosity >= 2:
               print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Distance: {:.3f} A)".format(molecule.atoms[i].symbol, i, molecule.atoms[j].symbol, j, molecule.atmatmdist(i,j)))
 
   # Now that we know where the bonds are, find angles
   if verbosity >=2:
-      print("\n Adding angles to WellFARe molecule: ", molecule.name)
+      print("\nAdding angles to WellFARe molecule: ", molecule.name)
   for i in range(0,len(molecule.bonds)):
     for j in range(i+1,len(molecule.bonds)):
       if molecule.bonds[i][0]==molecule.bonds[j][0]:
@@ -1352,7 +1352,7 @@ def extractCoordinates(filename, molecule, verbosity = 0):
 
   # Same for dihedrals: Use angles to determine where they are
   if verbosity >= 2:
-      print("\n Adding dihedrals to WellFARe molecule: ", molecule.name)
+      print("\nAdding dihedrals to WellFARe molecule: ", molecule.name)
   for i in range(0,len(molecule.angles)):
     for j in range(i+1,len(molecule.angles)):
         if molecule.angles[i][1]==molecule.angles[j][0] and molecule.angles[i][2]==molecule.angles[j][1]:
@@ -1374,6 +1374,8 @@ def extractCoordinates(filename, molecule, verbosity = 0):
 
   # Now that we know bonds, angles and dihedrals, we determine the corresponding force constants
   # Bonds first:
+  if verbosity >= 2:
+    print("\nAdding Force Field bond stretching terms to WellFARe molecule: ", molecule.name)
   for i in range(0,len(molecule.bonds)):
     #print(molecule.atoms[molecule.bonds[i][0]].coord[1])
     a = numpy.array([molecule.atoms[molecule.bonds[i][0]].coord[0],molecule.atoms[molecule.bonds[i][0]].coord[1],molecule.atoms[molecule.bonds[i][0]].coord[2]])
@@ -1389,10 +1391,16 @@ def extractCoordinates(filename, molecule, verbosity = 0):
     c[3*molecule.bonds[i][1]+2] = c2[2]
     c=c/numpy.linalg.norm(c)
     fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
-    #print(molecule.bonds[i][0],molecule.bonds[i][1],molecule.atmatmdist(molecule.bonds[i][0],molecule.bonds[i][1]),1,[fc])
+    if fc < 0.002:
+      ProgramWarning()
+      print(" This force constant is smaller than 0.002")
+    if verbosity >= 2:
+      print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.bonds[i][0]].symbol, molecule.bonds[i][0], molecule.atoms[molecule.bonds[i][1]].symbol, molecule.bonds[i][1], fc))
     molecule.addFFStretch(molecule.bonds[i][0],molecule.bonds[i][1],molecule.atmatmdist(molecule.bonds[i][0],molecule.bonds[i][1]),1,[fc])
 
-  # Then 1-3 stretches:
+  # Then 1,3-stretches:
+  if verbosity >= 2:
+    print("\nAdding Force Field 1,3-bond stretching terms to WellFARe molecule: ", molecule.name)
   for i in range(0,len(molecule.angles)):
     a = numpy.array([molecule.atoms[molecule.angles[i][0]].coord[0],molecule.atoms[molecule.angles[i][0]].coord[1],molecule.atoms[molecule.angles[i][0]].coord[2]])
     b = numpy.array([molecule.atoms[molecule.angles[i][2]].coord[0],molecule.atoms[molecule.angles[i][2]].coord[1],molecule.atoms[molecule.angles[i][2]].coord[2]])
@@ -1407,10 +1415,16 @@ def extractCoordinates(filename, molecule, verbosity = 0):
     c[3*molecule.angles[i][1]+2] = c2[2]
     c=c/numpy.linalg.norm(c)
     fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
-    #print(molecule.angles[i][0],molecule.angles[i][2],molecule.atmatmdist(molecule.angles[i][0],molecule.angles[i][2]),1,[fc])
+    if fc < 0.002:
+      ProgramWarning()
+      print(" This force constant is smaller than 0.002")
+    if verbosity >= 2:
+      print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], fc))
     molecule.addFFStr13(molecule.angles[i][0],molecule.angles[i][2],molecule.atmatmdist(molecule.angles[i][0],molecule.angles[i][2]),1,[fc])
 
   # Then angle bends:
+  if verbosity >= 2:
+    print("\nAdding Force Field angle bending terms to WellFARe molecule: ", molecule.name)
   for i in range(0,len(molecule.angles)):
     a = numpy.array([molecule.atoms[molecule.angles[i][0]].coord[0],molecule.atoms[molecule.angles[i][0]].coord[1],molecule.atoms[molecule.angles[i][0]].coord[2]])
     b = numpy.array([molecule.atoms[molecule.angles[i][1]].coord[0],molecule.atoms[molecule.angles[i][1]].coord[1],molecule.atoms[molecule.angles[i][1]].coord[2]])
@@ -1429,10 +1443,16 @@ def extractCoordinates(filename, molecule, verbosity = 0):
     c[3*molecule.angles[i][2]+2] = bdprime[2]
     c=c/numpy.linalg.norm(c)
     fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
-    #print(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],math.degrees(molecule.bondangle(i)),1,[fc])
+    if fc < 0.002:
+      ProgramWarning()
+      print(" This force constant is smaller than 0.002")
+    if verbosity >= 2:
+      print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[j][1]].symbol, molecule.angles[j][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], fc))
     molecule.addFFBend(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.bondangle(i),1,[fc])
 
-  # Dihedral torsions last::
+  # Dihedral torsions last:
+  if verbosity >= 2:
+    print("\nAdding Force Field torsion terms to WellFARe molecule: ", molecule.name)
   for i in range(0,len(molecule.dihedrals)):
     a = numpy.array([molecule.atoms[molecule.dihedrals[i][0]].coord[0],molecule.atoms[molecule.dihedrals[i][0]].coord[1],molecule.atoms[molecule.dihedrals[i][0]].coord[2]])
     b = numpy.array([molecule.atoms[molecule.dihedrals[i][1]].coord[0],molecule.atoms[molecule.dihedrals[i][1]].coord[1],molecule.atoms[molecule.dihedrals[i][1]].coord[2]])
@@ -1453,7 +1473,11 @@ def extractCoordinates(filename, molecule, verbosity = 0):
     c[3*molecule.dihedrals[i][2]+2] = p2[2]
     c=c/numpy.linalg.norm(c)
     fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
-    #print(molecule.dihedrals[i][0],molecule.dihedrals[i][1],molecule.dihedrals[i][2],molecule.dihedrals[i][3],math.degrees(molecule.dihedralangle(i)),1,[fc])
+    if fc < 0.002:
+      ProgramWarning()
+      print(" This force constant is smaller than 0.002")
+    if verbosity >= 2:
+      print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.dihedrals[i][0]].symbol, molecule.dihedrals[i][0], molecule.atoms[molecule.dihedrals[i][1]].symbol, molecule.dihedrals[i][1], molecule.atoms[molecule.dihedrals[i][2]].symbol, molecule.dihedrals[i][2], molecule.atoms[molecule.dihedrals[i][3]].symbol, molecule.dihedrals[i][3], fc))
     molecule.addFFTorsion(molecule.dihedrals[i][0],molecule.dihedrals[i][1],molecule.dihedrals[i][2],molecule.dihedrals[i][3],molecule.dihedralangle(i),1,[fc])
 
   # End of routine
@@ -1470,77 +1494,80 @@ ProgramHeader()
 # Determine the name of the file to be read
 infile = iofiles(sys.argv[1:])
 
-reactant_mol = Molecule("Reactant",0)
-extractCoordinates(infile, reactant_mol, verbosity = 2)
+# print("Number of Atoms: ", reactant_mol.numatoms(), "Multiplicity: ", reactant_mol.mult)
 
-product_mol = Molecule("Product",0)
-extractCoordinates(infile, product_mol, verbosity = 2)
+# print(molecule)
+# print("Molecular mass = ", reactant_mol.mass())
+# reactant_mol.orient()
 
-#print("Number of Atoms: ", molecule.numatoms(), "Multiplicity: ", molecule.mult)
-
-#print(molecule)
-#print("Molecular mass = ", molecule.mass())
-#molecule.orient()
-
-#print(molecule.gaussString())
-
-print("\nCartesian Coordinates (as one list):")
-print(product_mol.cartesianCoordinates())
+# print(reactant_mol.gaussString())
 
 # print("Bonds:")
-# for i in molecule.bonds:
+# for i in reactant_mol.bonds:
 #   print(i)
 #
 # print("")
 # print("Angles:")
-# for i in molecule.angles:
+# for i in reactant_mol.angles:
 #   print(i)
 #
 # print("")
 # print("Angles in degrees:")
-# for i in range(len(molecule.angles)):
-#   print(math.degrees(molecule.bondangle(i)))
+# for i in range(len(reactant_mol.angles)):
+#   print(math.degrees(reactant_mol.bondangle(i)))
 #
 # print("")
 # print("Dihedrals:")
-# for i in molecule.dihedrals:
+# for i in reactant_mol.dihedrals:
 #   print(i)
 #
 # print("")
 # print("Dihedral angles in degrees:")
-# for i in range(len(molecule.dihedrals)):
-#   print(math.degrees(molecule.dihedralangle(i)))
+# for i in range(len(reactant_mol.dihedrals)):
+#   print(math.degrees(reactant_mol.dihedralangle(i)))
 
 # print("")
 # print("Bond Stretches:")
-# for i in molecule.stretch:
+# for i in reactant_mol.stretch:
 #   print(i)
 #
 # print("")
 # print("1-3 Bond Stretches:")
-# for i in molecule.str13:
+# for i in reactant_mol.str13:
 #   print(i)
 #
 # print("")
 # print("Angle Bends:")
-# for i in molecule.bend:
+# for i in reactant_mol.bend:
 #   print(i)
 #
 # print("")
 # print("Dihedral Torsions:")
-# for i in molecule.tors:
+# for i in reactant_mol.tors:
 #   print(i)
+
+reactant_mol = Molecule("Reactant",0)
+extractCoordinates("g09-dielsalder-r.log", reactant_mol, verbosity = 2)
+
+product_mol = Molecule("Product",0)
+extractCoordinates("g09-dielsalder-p.log", product_mol, verbosity = 2)
+
+# print("\nCartesian Coordinates (as one list):")
+# print(reactant_mol.cartesianCoordinates())
 
 print("\nForce Field Energy:")
 print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates()))
 
 print("\nDistort Geometry and print energy again:")
-coordinates2optimise = reactant_mol.cartesianCoordinates()
-coordinates2optimise[0] = -1.0
-print(reactant_mol.FFEnergy(coordinates2optimise))
+coordinates2optimiseR = reactant_mol.cartesianCoordinates()
+coordinates2optimiseP = product_mol.cartesianCoordinates()
+
+coordinates2optimiseR = (numpy.array(coordinates2optimiseR)+(numpy.array(coordinates2optimiseP))/2.0)
+
+print(reactant_mol.FFEnergy(coordinates2optimiseR))
 
 print("\nGeometry Optimizer:")
-xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimise, gtol=0.00005)
+xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
 print("\nOptimized Geometry:")
 print(xopt)
 
