@@ -361,6 +361,14 @@ def potSimpleCosine(theta, theta0, k):
     
     return u
 
+def potGLJ(r, r0, k_str, a):
+    """"
+    Generalised Lennard-Jones potential (for bond and 1,3 stretches)
+    """
+    # Figure out how best to work in the calculation of exponent a for bonds, and for 1,3 stretches
+    # Set k_str = force constant for /that/ bond as read from Hessian as an initial guess, can worry about fitting later
+    u = k_str * (1 + ((r0/r) ** a) - 2 * ((r0/r) ** (a/2)))
+
 
 #############################################################################################################
 # Classes for Force Field Terms defined below
@@ -388,6 +396,14 @@ class FFStretch:
     else:
       self.typ = 1
       self.k = arg[0]
+    # Use type to define exponent (3, 4 both to GLJ with 3 for bond, 4 for 1,3?)
+    self.k_str = #Take readout force constant and put here (distinguish bond from 1,3?)
+    if typ == 3:
+        self.exp_a = # put in calculation here
+    elif typ == 4:
+        self.exp_a = #put in calculation for 1,3 here
+    else:
+        pass
   
   def __str__(self):
     """ (FFStretch) -> str
@@ -435,6 +451,8 @@ class FFStretch:
       energy = potHarmonic(r, self.r0, self.k)
     elif self.typ == 2:
       energy = potMorse(r, self.r0, D, b)
+    elif self.typ == 3 or self.typ == 4:
+        energy = potGLJ(r, self.r0, self.k_str, self.exp_a)
     
     return energy
 
