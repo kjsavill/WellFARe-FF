@@ -236,12 +236,86 @@ SymbolToEN = {
 "Uup" : 1.30, "Uuh" : 1.30, "Uus" : 1.30, "Uuo" : 1.30}
 
 
-# --------------------------------------------------
+# ---------------------------------------------------
 # Define global empirical parameters for force field
-#---------------------------------------------------
+# ---------------------------------------------------
+""" Note that several of the definitions copied in below refer to rows and/or groups, so will need to:
+a) include a way to convert from symbol to position on the periodic table, or
+b) expand dictionaries to cover each element individually (probably cleaner) """
 
 # Define a dictionary for the element specific parameter k_A
+k_a = {"H": 1.755,
+       "He": 1.755,
+       "B": 2.287,
+       "C": 2.463,
+       "N": 2.559,
+       "O": 2.579,
+       "F": 2.465,
+       "Ne": 2.465,
+       "Al": 2.508,
+       "Si": 2.684,
+       "P": 2.780,
+       "S": 2.800,
+       "Cl": 2.686,
+       "group_I": 2.2,
+       "group_II": 2.8,
+       "row_3": 2.75,
+       "row_4": 2.95,
+       "row_5": 3.15,
+       "row_6": 3.80}
+# Row and group references need tidying as noted above
 
+# Define dictionary for the element specific parameter k_z
+k_z = {"row_1": 2.35,
+       "row_2": 0.95,
+       "row_3": 0.75,
+       "row_4": 0.65,
+       "row_6": 0.6,
+       "row_7": 0.6,
+       "Li": 1.7,
+       "Be": 5.5,
+       "Na": 2.5,
+       "group_I": 3.0,
+       "group_2": 3.0}
+# Again, row and group need tidying
+
+# Define individual global parameters
+k_EN = -0.164
+k_a2 = 0.221
+k_a13 = 2.81
+k_b13 = 0.53
+k_13r = 0.7
+k_damping = 0.11
+k_overlap = 0.5
+a1 = 0.45
+a2 = 4.0
+s8 = 2.7
+E_ES_14 = 0.85
+E_disp_rep = 0.5
+beta_rep = 16.5
+k_q = 1.15
+
+# Define dictionary for the element specific hydrogen bonding parameter
+k_hbnd = {"N": 0.8,
+           "O": 0.3,
+           "F": 0.1,
+           "P": 2.0,
+           "S": 2.0,
+           "Cl": 2.0,
+           "Se": 2.0,
+           "Br": 2.0}
+
+# Define dictionary for the element specific parameter k_X
+k_X = {"Cl": 0.3,
+       "Br": 0.6,
+       "I": 0.8,
+       "At": 1.0}
+
+# Define dictionaries for the hydrogen and halogen bonding parameters k_q1 and k_q2
+k_q1 = {"hbond": 10,
+        "xbond": -6.5}
+k_q2 = {"hbond": 5,
+        "xbond": 1}
 
 #############################################################################################################
 # Do *not* define constants or conversion factors below here
