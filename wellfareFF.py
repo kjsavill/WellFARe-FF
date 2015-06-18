@@ -361,13 +361,89 @@ def potSimpleCosine(theta, theta0, k):
     
     return u
 
+def bond_exp(a, b):
+    """
+    Exponent a used in the Generalised Lennard-Jones potential for bond stretches
+    """
+    # Currently assuming that a and b are instances of the class Atom. If not, will need to modify slightly here or in the FFstretch class
+    delta_EN = SymbolToEN[a.symbol] - SymbolToEN[b.symbol]
+    bond_exp = (k_a[a.symbol] * k_a[b.symbol]) + (k_EN * (delta_EN ** 2))
+
+    return bond_exp
+
+def exp_1_3(a, b):
+    """
+    Exponent a used in the Generalised Lennard-Jones potential for 1,3-stretches
+    """
+    # Currently assuming a and b are instances of the class Atom
+    exp_1_3 = k_a13 + (k_b13 * k_a[a.symbol] * k_a[b.symbol])
+    # Special case: if both atoms are in a ring, then k_13r is added to exp_1_3. Detection of rings to be implemented later
+
+    return exp_1_3
+
 def potGLJ(r, r0, k_str, a):
     """"
     Generalised Lennard-Jones potential (for bond and 1,3 stretches)
     """
-    # Figure out how best to work in the calculation of exponent a for bonds, and for 1,3 stretches
-    # Set k_str = force constant for /that/ bond as read from Hessian as an initial guess, can worry about fitting later
+    # k_str to be set equal to force constant for /that/ bond as read from Hessian as an initial guess, fitting implemented later
     u = k_str * (1 + ((r0/r) ** a) - 2 * ((r0/r) ** (a/2)))
+
+    return u
+
+def DampingFunction(a, b):
+    """
+    Distance dependent damping function for atoms a and b
+    """
+    r = # distance between atoms a and b (can this be pulled from somewhere or must it be calculated straight?)
+    r_cov = SymbolToRadius[a.symbol] + SymbolToRadius[b.symbol]
+    # Covalent distance defined as sum of covalent radii for the two atoms - will need to check this is correct
+
+    f_dmp = 1 / (1 + k_damping * ((r/r_cov) ** 4))
+
+    return f_dmp
+
+def potBendNearLinear(a, a0, k_bnd, f_dmp):
+    """
+    Bending potential for equilibrium angles close to linearity
+    """
+
+    u = k_bnd * f_dmp * ((a0 - a) ** 2)
+
+    return u
+
+def potAnyBend(a, a0, k_bnd, f_dmp):
+    """
+    Double minimum bending potential
+    """
+
+    u = k_bnd * f_dmp * ((math.cos(a0) - math.cos(a)) ** 2)
+
+    return u
+
+def ChiralityFunction(theta):
+    """
+    Function used in torsion potential to give correct mirror symmetry
+    """
+
+    f_chiral = 0.5 * (1 - math.erf(theta - math.pi))
+
+    return f_chiral
+
+def potTorsion(theta, theta0, f_dmp, k_tors):
+    """
+    Torsion potential
+    """
+
+    f_chiral = ChiralityFunction(theta)
+
+    u = 0.0
+    # Sort out where n comes from in the following sum, check if k_tors ** n or k_tors_n
+    for n in # Range to be determined:
+        inner_sum = (f_chiral * (1 + math.cos(n * (theta - theta0) + math.pi))) + ((1 - f_chiral) * (1 + math.cos(n * (theta + theta0 - (2 * math.pi)) + math.pi)))
+        u = u + ((k_tors ** n) * inner_sum)
+    u = u * f_dmp
+
+    return u
 
 
 #############################################################################################################
@@ -387,23 +463,25 @@ class FFStretch:
     self.atom1 = a
     self.atom2 = b
     self.r0 = r0
+    self.k_str = # Force constant for stretch between atoms 1 and 2 (check if 1,3-stretches have separate force constants, use cases by type if so)
     if typ == 1:
       self.typ = typ
       self.k = arg[0]
     elif typ == 2:
       self.D = arg[0]
       self.b = arg[1]
+    elif typ == 3:
+        self.exp_a = bond_exp(self.atom1, self.atom2)
+    # will need to check whether a and b refer to atoms (as instances of the class Atom) or the index of atoms in the molecule atoms list
+        self.k_str == arg[0] #Should set equal to force constant for this bond - check if arg[0] is correct here
+    elif typ == 4:
+        self.exp_a = exp_1_3(self.atom1, self.atom2)
+        self.k_str = arg[0]
+    # checks as for typ=3 case
     else:
       self.typ = 1
       self.k = arg[0]
-    # Use type to define exponent (3, 4 both to GLJ with 3 for bond, 4 for 1,3?)
-    self.k_str = #Take readout force constant and put here (distinguish bond from 1,3?)
-    if typ == 3:
-        self.exp_a = # put in calculation here
-    elif typ == 4:
-        self.exp_a = #put in calculation for 1,3 here
-    else:
-        pass
+
   
   def __str__(self):
     """ (FFStretch) -> str
@@ -473,6 +551,10 @@ class FFBend:
     if typ == 1:
       self.typ = typ
       self.k = arg[0]
+    elif typ == 2:
+        self.typ = 2
+        self.k_bnd = arg[0] # As with stretch, check this does take force constant for bend direct from Hessian (refinement to follow)
+        self.f_dmp = DampingFunction(self.atom1, self.atom2) * DampingFunction(self.atom2, self.atom3)
     else:
       self.typ = 1
       self.k = arg[0]
@@ -515,6 +597,12 @@ class FFBend:
     energy = 0.0
     if self.typ == 1:
       energy = potHarmonic(a, self.a0, self.k)
+    elif self.typ == 2:
+        if (math.pi - 0.01) <= self.a0 <= (math.pi + 0.01):
+        # Tolerance used here is essentially a placeholder, may need changing in either direction
+            energy = potBendNearLinear(a, self.a0, self.k_bnd, self.f_dmp)
+        else:
+            energy = potAnyBend(a, self.a0, self.k_bnd, self.f_dmp)
     
     return energy
 
@@ -536,6 +624,10 @@ class FFTorsion:
     if typ == 1:
       self.typ = typ
       self.k = arg[0]
+    elif typ == 2:
+        self.typ = typ
+        self.f_dmp = DampingFunction(self.atom1, self.atom2) * DampingFunction(self.atom2, self.atom3) * DampingFunction(self.atom3, self.atom4)
+        self.k = arg[0] # Should assign force constant for this dihedral from Hessian
     else:
       self.typ = 1
       self.k = arg[0]
@@ -578,7 +670,8 @@ class FFTorsion:
     energy = 0.0
     if self.typ == 1:
       energy = potSimpleCosine(theta, self.theta0, self.k)
-    
+    elif typ == 2:
+        energy = potTorsion(theta, self.theta0, self.f_dmp, self.k)
     return energy
 
 #############################################################################################################
