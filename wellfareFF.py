@@ -239,45 +239,45 @@ SymbolToEN = {
 # ---------------------------------------------------
 # Define global empirical parameters for force field
 # ---------------------------------------------------
-""" Note that several of the definitions copied in below refer to rows and/or groups, so will need to:
-a) include a way to convert from symbol to position on the periodic table, or
-b) expand dictionaries to cover each element individually (probably cleaner) """
 
-# Define a dictionary for the element specific parameter k_A
-k_a = {"H": 1.755,
-       "He": 1.755,
-       "B": 2.287,
-       "C": 2.463,
-       "N": 2.559,
-       "O": 2.579,
-       "F": 2.465,
-       "Ne": 2.465,
-       "Al": 2.508,
-       "Si": 2.684,
-       "P": 2.780,
-       "S": 2.800,
-       "Cl": 2.686,
-       "group_I": 2.2,
-       "group_II": 2.8,
-       "row_3": 2.75,
-       "row_4": 2.95,
-       "row_5": 3.15,
-       "row_6": 3.80}
-# Row and group references need tidying as noted above
+# Define a dictionary for the element specific parameter k_a
+k_a = {
+ "H"  : 1.755, "He" : 1.755, "B"  : 2.287, "C"  : 2.463, "N"  : 2.559, "O"  : 2.579,
+ "F"  : 2.465, "Ne" : 2.465, "Al" : 2.508, "Si" : 2.684, "P"  : 2.780, "S"  : 2.800,
+ "Cl" : 2.686, "Li" : 2.20, "Na" : 2.20, "K"  : 2.20, "Rb" : 2.20, "Cs" : 2.20,
+ "Fr" : 2.20, "Be" : 2.80, "Mg" : 2.80, "Ca" : 2.80, "Sr" : 2.80, "Ba" : 2.80,
+ "Ra" : 2.80, "Ar" : 2.75, "Sc" : 2.95, "Ti" : 2.95, "V"  : 2.95, "Cr" : 2.95,
+ "Mn" : 2.95, "Fe" : 2.95, "Co" : 2.95, "Ni" : 2.95, "Cu" : 2.95, "Zn" : 2.95,
+ "Ga" : 2.95, "Ge" : 2.95, "As" : 2.95, "Se" : 2.95, "Br" : 2.95, "Kr" : 2.95,
+ "Y"  : 3.15, "Zr" : 3.15, "Nb" : 3.15, "Mo" : 3.15, "Tc" : 3.15, "Ru" : 3.15,
+ "Rh" : 3.15, "Pd" : 3.15, "Ag" : 3.15, "Cd" : 3.15, "In" : 3.15, "Sn" : 3.15,
+ "Sb" : 3.15, "Te" : 3.15, "I"  : 3.15, "Xe" : 3.15, "La" : 3.80, "Ce" : 3.80,
+ "Pr" : 3.80, "Nd" : 3.80, "Pm" : 3.80, "Sm" : 3.80, "Eu" : 3.80, "Gd" : 3.80,
+ "Tb" : 3.80, "Dy" : 3.80, "Ho" : 3.80, "Er" : 3.80, "Tm" : 3.80, "Yb" : 3.80,
+ "Lu" : 3.80, "Hf" : 3.80, "Ta" : 3.80, "W"  : 3.80, "Re" : 3.80, "Os" : 3.80,
+ "Ir" : 3.80, "Pt" : 3.80, "Au" : 3.80, "Hg" : 3.80, "Tl" : 3.80, "Pb" : 3.80,
+ "Bi" : 3.80, "Po" : 3.80, "At" : 3.80, "Rn" : 3.80}
 
 # Define dictionary for the element specific parameter k_z
-k_z = {"row_1": 2.35,
-       "row_2": 0.95,
-       "row_3": 0.75,
-       "row_4": 0.65,
-       "row_6": 0.6,
-       "row_7": 0.6,
-       "Li": 1.7,
-       "Be": 5.5,
-       "Na": 2.5,
-       "group_I": 3.0,
-       "group_2": 3.0}
-# Again, row and group need tidying
+k_z = {
+ "H"  : 3.00, "He" : 2.35, "Li" : 1.70, "Be" : 5.50, "B"  : 0.95, "C"  : 0.95,
+ "N"  : 0.95, "O"  : 0.95, "F"  : 0.95, "Ne" : 0.95, "Na" : 2.50, "Mg" : 3.00,
+ "Al" : 0.75, "Si" : 0.75, "P"  : 0.75, "S"  : 0.75, "Cl" : 0.75, "Ar" : 0.75,
+ "K"  : 3.00, "Ca" : 3.00, "Sc" : 0.65, "Ti" : 0.65, "V"  : 0.65, "Cr" : 0.65,
+ "Mn" : 0.65, "Fe" : 0.65, "Co" : 0.65, "Ni" : 0.65, "Cu" : 0.65, "Zn" : 0.65,
+ "Ga" : 0.65, "Ge" : 0.65, "As" : 0.65, "Se" : 0.65, "Br" : 0.65, "Kr" : 0.65,
+ "Rb" : 3.00, "Sr" : 3.00, "Cs" : 0.60, "Ba" : 0.60, "La" : 0.60, "Ce" : 0.60,
+ "Pr" : 0.60, "Nd" : 0.60, "Pm" : 0.60, "Sm" : 0.60, "Eu" : 0.60, "Gd" : 0.60,
+ "Tb" : 0.60, "Dy" : 0.60, "Ho" : 0.60, "Er" : 0.60, "Tm" : 0.60, "Yb" : 0.60,
+ "Lu" : 0.60, "Hf" : 0.60, "Ta" : 0.60, "W"  : 0.60, "Re" : 0.60, "Os" : 0.60,
+ "Ir" : 0.60, "Pt" : 0.60, "Au" : 0.60, "Hg" : 0.60, "Tl" : 0.60, "Pb" : 0.60,
+ "Bi" : 0.60, "Po" : 0.60, "At" : 0.60, "Rn" : 0.60, "Fr" : 0.60, "Ra" : 0.60,
+ "Ac" : 0.60, "Th" : 0.60, "Pa" : 0.60, "U"  : 0.60, "Np" : 0.60, "Pu" : 0.60,
+ "Am" : 0.60, "Cm" : 0.60, "Bk" : 0.60, "Cf" : 0.60, "Es" : 0.60, "Fm" : 0.60,
+ "Md" : 0.60, "No" : 0.60, "Lr" : 0.60, "Rf" : 0.60, "Db" : 0.60, "Sg" : 0.60,
+ "Bh" : 0.60, "Hs" : 0.60, "Mt" : 0.60, "Ds" : 0.60, "Rg" : 0.60, "Cn" : 0.60,
+ "Uut" : 0.60,"Uuq" : 0.60, "Uup": 0.60, "Uuh" : 0.60, "Uus" : 0.60, "Uuo" : 0.60}
+# Note no values specified for row 5 elements outside s block - Grimme gives rows 1, 2, 3 and 4, then Z>54
 
 # Define individual global parameters
 k_EN = -0.164
