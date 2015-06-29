@@ -390,12 +390,11 @@ def potGLJ(r, r0, k_str, a):
 
     return u
 
-def DampingFunction(a, b):
+def DampingFunction(a, b, r):
     """
-    Distance dependent damping function for atoms a and b
+    Distance dependent damping function for atoms with symbols a and b, and separation r
     """
-    r = # distance between atoms a and b (can this be pulled from somewhere or must it be calculated straight?)
-    r_cov = SymbolToRadius[a.symbol] + SymbolToRadius[b.symbol]
+    r_cov = SymbolToRadius[a] + SymbolToRadius[b]
     # Covalent distance defined as sum of covalent radii for the two atoms - will need to check this is correct
 
     f_dmp = 1 / (1 + k_damping * ((r/r_cov) ** 4))
@@ -445,6 +444,45 @@ def potTorsion(theta, theta0, f_dmp, k_tors):
 
     return u
 
+def AngleDamping(theta):
+    """
+    Angle dependent damping function for hydrogen bonding interactions
+    """
+
+    f_dmp_a = (0.5 * (math.cos(theta)+1)) ** 6
+
+    return f_dmp_a
+
+def HBondDamping(a, b, r):
+    """
+    Distance dependent damping function for hydrogen bonding with donor/acceptor atoms having symbols a and b, separation r
+    """
+    r_cov = SymbolToRadius[a] + SymbolToRadius[b]
+    # Covalent distance defined as sum of covalent radii for the two atoms - will need to check this is correct
+
+    f_dmp_hbnd = 1 / (1 + k_damping * ((r/r_cov) ** 12))
+
+    return f_dmp_hbnd
+
+def AtomicHBondFactor(sym, chg):
+    """
+    Atomic factor c_hbnd for an atom with symbol sym and atomic charge chg, used in hydrogen bond interaction strength
+    """
+
+    c_hbnd = k_hbnd[sym] * (math.exp(-k_q1 * chg) / (math.exp(-k_q1 * chg) + k_q2))
+
+    return c_hbnd
+
+def HBondStrengthFactor(sym_a, chg_a, r_ah, sym_b, chg_b, r_bh):
+    """
+    Modifier for the strength of a hydrogen bonding interaction where donor/acceptor atoms a and b are at distances r_ah and r_bh from hydrogen
+    """
+
+    c_hbnd_a = AtomicHBondFactor(sym_a, chg_a)
+    c_hbnd_b = AtomicHBondFactor(sym_b, chg_b)
+    c_hbnd = (c_hbnd_a * (r_ah ** 2) + c_hbnd_b * (r_bh ** 2)) / (r_ah ** 2 + r_bh ** 2)
+
+    return c_hbnd
 
 #############################################################################################################
 # Classes for Force Field Terms defined below
@@ -553,8 +591,12 @@ class FFBend:
       self.k = arg[0]
     elif typ == 2:
         self.typ = 2
-        self.k_bnd = arg[0] # As with stretch, check this does take force constant for bend direct from Hessian (refinement to follow)
-        self.f_dmp = DampingFunction(self.atom1, self.atom2) * DampingFunction(self.atom2, self.atom3)
+        self.k_bnd = arg[0]
+        r_12 = molecule.atmatmdist(self.atom1, self.atom2)
+        r_23 = molecule.atmatmdist(self.atom2, self.atom3)
+        f_dmp_12 = DampingFunction(molecule.atoms[self.atom1].symbol, molecule.atoms[self.atom2].symbol, r_12)
+        f_dmp_23 = DampingFunction(molecule.atoms[self.atom2].symbol, molecule.atoms[self.atom3].symbol, r_23)
+        self.f_dmp = f_dmp_12 * f_dmp_23
     else:
       self.typ = 1
       self.k = arg[0]
@@ -626,8 +668,15 @@ class FFTorsion:
       self.k = arg[0]
     elif typ == 2:
         self.typ = typ
-        self.f_dmp = DampingFunction(self.atom1, self.atom2) * DampingFunction(self.atom2, self.atom3) * DampingFunction(self.atom3, self.atom4)
-        self.k = arg[0] # Should assign force constant for this dihedral from Hessian
+        r_12 = molecule.atmatmdist(self.atom1, self.atom2)
+        r_23 = molecule.atmatmdist(self.atom2, self.atom3)
+        r_34 = molecule.atmatmdist(self.atom3, self.atom4)
+    # Calculation of damping functions needs atom symbols and distance - check that molecule.atoms[a].symbol does return the symbol of the atom at index a in the atoms list
+        f_dmp_12 = DampingFunction(molecule.atoms[self.atom1].symbol, molecule.atoms[self.atom2].symbol, r_12)
+        f_dmp_23 = DampingFunction(molecule.atoms[self.atom2].symbol, molecule.atoms[self.atom3].symbol, r_23)
+        f_dmp_34 = DampingFunction(molecule.atoms[self.atom3].symbol, molecule.atoms[self.atom4].symbol, r_34)
+        self.f_dmp = f_dmp_12 * f_dmp_23 * f_dmp_34
+        self.k = arg[0]
     else:
       self.typ = 1
       self.k = arg[0]
@@ -672,6 +721,8 @@ class FFTorsion:
       energy = potSimpleCosine(theta, self.theta0, self.k)
     elif typ == 2:
         energy = potTorsion(theta, self.theta0, self.f_dmp, self.k)
+    # Will need two cases, one for non-rotatable bonds, the other for rotatable bonds.
+    # Probably best to implement via types
     return energy
 
 #############################################################################################################
