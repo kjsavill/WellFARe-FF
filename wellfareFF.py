@@ -437,10 +437,10 @@ def potTorsion(theta, theta0, f_dmp, k_tors):
 
     u = 0.0
     # Sort out where n comes from in the following sum, check if k_tors ** n or k_tors_n
-    for n in # Range to be determined:
-        inner_sum = (f_chiral * (1 + math.cos(n * (theta - theta0) + math.pi))) + ((1 - f_chiral) * (1 + math.cos(n * (theta + theta0 - (2 * math.pi)) + math.pi)))
-        u = u + ((k_tors ** n) * inner_sum)
-    u = u * f_dmp
+    #for n in # Range to be determined:
+    #    inner_sum = (f_chiral * (1 + math.cos(n * (theta - theta0) + math.pi))) + ((1 - f_chiral) * (1 + math.cos(n * (theta + theta0 - (2 * math.pi)) + math.pi)))
+    #    u = u + ((k_tors ** n) * inner_sum)
+    #u = u * f_dmp
 
     return u
 
@@ -498,10 +498,9 @@ class FFStretch:
     distance r0, of type typ with arguments [arg]
     """
     
-    self.atom1 = a
-    self.atom2 = b
+    self.atom1 = molecule.atoms[a]
+    self.atom2 = molecule.atoms[b]
     self.r0 = r0
-    self.k_str = # Force constant for stretch between atoms 1 and 2 (check if 1,3-stretches have separate force constants, use cases by type if so)
     if typ == 1:
       self.typ = typ
       self.k = arg[0]
@@ -509,13 +508,12 @@ class FFStretch:
       self.D = arg[0]
       self.b = arg[1]
     elif typ == 3:
-        self.exp_a = bond_exp(self.atom1, self.atom2)
-    # will need to check whether a and b refer to atoms (as instances of the class Atom) or the index of atoms in the molecule atoms list
-        self.k_str == arg[0] #Should set equal to force constant for this bond - check if arg[0] is correct here
+        self.exp_a = bond_exp(self.atom1,self.atom2)
+    #check whether an Atom can be passed to a function this way
+        self.k_str == arg[0]
     elif typ == 4:
-        self.exp_a = exp_1_3(self.atom1, self.atom2)
+        self.exp_a = exp_1_3(self.atom1,self.atom2)
         self.k_str = arg[0]
-    # checks as for typ=3 case
     else:
       self.typ = 1
       self.k = arg[0]
@@ -1299,7 +1297,7 @@ class Molecule:
     s =s + "\n"
     return s
 
-  def FFEnergy(self, cartCoordinates):
+  def FFEnergy(self, cartCoordinates, verbosity = 0):
     """ (Molecule) -> number (Force Field energy)
 
       Returns a number containing the molecular energy according to the current Force Field definition at structure
@@ -1307,12 +1305,16 @@ class Molecule:
     """
 
     energy = 0.0
+    if verbosity >= 1:
+      print("Initial energy for calculation = " + str(energy))
     for i in self.stretch:
       distance=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
       distance += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
       distance += (cartCoordinates[3*i.atom1 + 2] - cartCoordinates[3*i.atom2 + 2]) ** 2
       distance=math.sqrt(distance)
       energy = energy + i.energy(distance)
+    if verbosity >= 1:
+      print("With bond stretches, energy = " + str(energy))
 
     for i in self.str13:
       distance=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
@@ -1320,6 +1322,8 @@ class Molecule:
       distance += (cartCoordinates[3*i.atom1 + 2] - cartCoordinates[3*i.atom2 + 2]) ** 2
       distance=math.sqrt(distance)
       energy = energy + i.energy(distance)
+    if verbosity >= 1:
+      print("With 1,3-stretches, energy = " + str(energy))
 
     for i in self.bend:
       d_bond_1=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
@@ -1343,6 +1347,8 @@ class Molecule:
       argument = numerator/denominator
       theta = numpy.arccos(argument)
       energy = energy + i.energy(theta)
+    if verbosity >=1:
+      print("With bends, energy = " + str(energy))
 
     for i in self.tors:
       # Calculate the vectors lying along bonds, and their cross products
@@ -1370,12 +1376,17 @@ class Molecule:
       vn1_coord_vc = numpy.dot(vnormal_1, basis_cv)
       psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
       energy = energy + i.energy(psi)
+    if verbosity >= 1:
+      print("With torsion, energy = " + str(energy))
 
     for i in self.inv: # Inversion terms aren't implemented yet
       energy += 0.0
-
+    if verbosity >= 1:
+      print("With inversion, energy = " + str(energy))
     # Don't forget to add non-bonded interactions here
 
+    if verbosity >=1:
+      print("Total energy:")
     return energy
 
 
@@ -1692,7 +1703,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
       print(" This force constant is smaller than 0.002")
     if verbosity >= 2:
       print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[j][1]].symbol, molecule.angles[j][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], fc))
-    molecule.addFFBend(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.bondangle(i),1,[fc])
+    molecule.addFFBend(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.bondangle(i),2,[fc])
 
   # Dihedral torsions last:
   if verbosity >= 2:
@@ -1800,7 +1811,7 @@ extractCoordinates("g09-dielsalder-p.log", product_mol, verbosity = 2)
 # print(reactant_mol.cartesianCoordinates())
 
 print("\nForce Field Energy:")
-print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates()))
+print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity = 1))
 
 print("\nDistort Geometry and print energy again:")
 coordinates2optimiseR = reactant_mol.cartesianCoordinates()
@@ -1808,7 +1819,7 @@ coordinates2optimiseP = product_mol.cartesianCoordinates()
 
 coordinates2optimiseR = (numpy.array(coordinates2optimiseR)+(numpy.array(coordinates2optimiseP))/2.0)
 
-print(reactant_mol.FFEnergy(coordinates2optimiseR))
+print(reactant_mol.FFEnergy(coordinates2optimiseR, verbosity = 1))
 
 print("\nGeometry Optimizer:")
 xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
