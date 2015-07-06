@@ -365,7 +365,7 @@ def bond_exp(a, b):
     """
     Exponent a used in the Generalised Lennard-Jones potential for bond stretches
     """
-    #Taking as input the symbols a and b for the two atoms in a bond 
+    # Now taking as input the symbols a and b for the two atoms in a bond 
     delta_EN = SymbolToEN[a] - SymbolToEN[b]
     bond_exp = (k_a[a] * k_a[b]) + (k_EN * (delta_EN ** 2))
 
@@ -375,8 +375,8 @@ def exp_1_3(a, b):
     """
     Exponent a used in the Generalised Lennard-Jones potential for 1,3-stretches
     """
-    # Currently assuming a and b are instances of the class Atom
-    exp_1_3 = k_a13 + (k_b13 * k_a[a.symbol] * k_a[b.symbol])
+    # Now taking atomic symbols as input 
+    exp_1_3 = k_a13 + (k_b13 * k_a[a] * k_a[b])
     # Special case: if both atoms are in a ring, then k_13r is added to exp_1_3. Detection of rings to be implemented later
 
     return exp_1_3
@@ -499,9 +499,11 @@ class FFStretch:
     are the atomic symbols of atoms number a and b respectively
     """
     
-    self.atom1 = arg[2]
-    self.atom2 = arg[3]
+    self.atom1 = a
+    self.atom2 = b
     self.r0 = r0
+    self.typ = typ
+    
     if typ == 1:
       self.typ = typ
       self.k = arg[0]
@@ -509,11 +511,11 @@ class FFStretch:
       self.D = arg[0]
       self.b = arg[1]
     elif typ == 3:
-        self.exp_a = bond_exp(self.atom1,self.atom2)
+        self.exp_a = bond_exp(arg[2], arg[3])
     #check whether an Atom can be passed to a function this way
-        self.k_str == arg[0]
+        self.k_str = arg[0]
     elif typ == 4:
-        self.exp_a = exp_1_3(self.atom1,self.atom2)
+        self.exp_a = exp_1_3(arg[2], arg[3])
         self.k_str = arg[0]
     else:
       self.typ = 1
@@ -568,7 +570,7 @@ class FFStretch:
       energy = potMorse(r, self.r0, D, b)
     elif self.typ == 3 or self.typ == 4:
         energy = potGLJ(r, self.r0, self.k_str, self.exp_a)
-    
+   
     return energy
 
 class FFBend:
@@ -1656,7 +1658,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
       print(" This force constant is smaller than 0.002")
     if verbosity >= 2:
       print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.bonds[i][0]].symbol, molecule.bonds[i][0], molecule.atoms[molecule.bonds[i][1]].symbol, molecule.bonds[i][1], fc))
-    molecule.addFFStretch(molecule.bonds[i][0],molecule.bonds[i][1],molecule.atmatmdist(molecule.bonds[i][0],molecule.bonds[i][1]),1,[fc,"b", molecule.atoms[molecule.bonds[i][0]].symbol, molecule.atoms[molecule.bonds[i][1]].symbol])
+    molecule.addFFStretch(molecule.bonds[i][0],molecule.bonds[i][1],molecule.atmatmdist(molecule.bonds[i][0],molecule.bonds[i][1]),3,[fc,"b", molecule.atoms[molecule.bonds[i][0]].symbol, molecule.atoms[molecule.bonds[i][1]].symbol])
 # Note "b" as an argument in the previouw line is a placeholder so that indices are consistent in the FFstretch class
 # it  would need replacing with the appropriate value to make using the  Morse potential an option
 
@@ -1682,7 +1684,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
       print(" This force constant is smaller than 0.002")
     if verbosity >= 2:
       print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], fc))
-    molecule.addFFStr13(molecule.angles[i][0],molecule.angles[i][2],molecule.atmatmdist(molecule.angles[i][0],molecule.angles[i][2]),1,[fc, "b", molecule.atoms[molecule.angles[i][0]].symbol, molecule.atoms[molecule.angles[i][2]].symbol])
+    molecule.addFFStr13(molecule.angles[i][0],molecule.angles[i][2],molecule.atmatmdist(molecule.angles[i][0],molecule.angles[i][2]),4,[fc, "b", molecule.atoms[molecule.angles[i][0]].symbol, molecule.atoms[molecule.angles[i][2]].symbol])
 
   # Then angle bends:
   if verbosity >= 2:
