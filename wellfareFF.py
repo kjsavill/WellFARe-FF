@@ -600,12 +600,11 @@ class FFBend:
         f_dmp_12 = DampingFunction(arg[1], arg[2], r_12)
         f_dmp_23 = DampingFunction(arg[2], arg[3], r_23)
         self.f_dmp = f_dmp_12 * f_dmp_23
-    else:
       self.typ = 1
       self.k = arg[0]
   
   def __str__(self):
-    """ (FFStretch) -> str
+    """ (FFBend) -> str
     
     Return a string representation of the bending potential in this format:
     
@@ -621,7 +620,7 @@ class FFBend:
     return s+r
   
   def __repr__(self):
-    """ (FFStretch) -> str
+    """ (FFBend) -> str
     
     Return a string representation of the bending potential in this format:
     
@@ -676,7 +675,6 @@ class FFTorsion:
         r_12 = arg[5]
         r_23 = arg[6]
         r_34 = arg[7]
-    # Calculation of damping functions needs atom symbols and distance - check that molecule.atoms[a].symbol does return the symbol of the atom at index a in the atoms list
         f_dmp_12 = DampingFunction(arg[1], arg[2], r_12)
         f_dmp_23 = DampingFunction(arg[2], arg[3], r_23)
         f_dmp_34 = DampingFunction(arg[3], arg[4], r_34)
@@ -729,6 +727,89 @@ class FFTorsion:
     # Will need two cases, one for non-rotatable bonds, the other for rotatable bonds.
     # Probably best to implement via types
     return energy
+
+class FFInversion:
+  """ An inversion potential for 3-fold coordinate atoms"""
+
+  def __init__(self, a, b, c, d, phi0, typ, arg):
+    """ (FFInversion, int, int, int, int, number, int, [number]) -> NoneType
+
+    An inversion potential between atoms number a, b, c and d (where a is the
+    central atom bonded to the other three) with equilibrium out of plane
+    angle phi0, of type typ with arguments [arg]
+    """
+
+      self.atom1 = a
+      self.atom2 = b
+      self.atom3 = c
+      self.atom4 = d
+      self.phi0 = phi0
+      if typ == 1:
+          self.typ = 1
+          self.k = arg[0]
+      elif typ == 2:
+          self.typ = 2
+          self.k_inv = arg[0] # Will need to check there is an appropriate force constant locatable for use here, eventually will require fitting to Hessian
+          # Damping constant needs to be checked - set up below on the assumption that a product of distance dependent damping functions for the three bonds will do
+          r_12 = arg[5]
+          r_13 = arg[6]
+          r_14 = arg[7]
+          f_dmp_12 = DampingFunction(arg[1], arg[2], r_12)
+          f_dmp_13 = DampingFunction(arg[1], arg[3], r_13)
+          f_dmp_14 = DampingFunction(arg[1], arg[4], r_14)
+          self.f_dmp = f_dmp_12 * f_dmp_13 * f_dmp_14
+      else:
+          self.typ = 1
+          self.k = arg[0]
+
+  def __str__(self):
+    """ (FFInversion) -> str
+
+    Return a string representation of the bending potential in this format:
+
+    (atom1, atom2, atom3, atom4, phi0, type, arguments)
+
+    """
+
+    s = '({0}, {1}, {2}, {3}, {4}, '.format(self.atom1, self.atom2, self.atom3, self.atom4, self.phi0, self.typ)
+
+    if self.typ == 1:
+      r = '{0})'.format(self.k)
+
+    return s+r
+
+  def __repr__(self):
+    """ (FFInversion) -> str
+
+    Return a string representation of the bending potential in this format:
+
+    (atom1, atom2, atom3, atom4, phi0, type, arguments)
+
+    """
+
+    s = '({0}, {1}, {2}, {3}, {4}, '.format(self.atom1, self.atom2, self.atom3, self.atom4, self.phi0, self.typ)
+
+    if self.typ == 1:
+      r = '{0})'.format(self.k)
+
+    return s+r
+
+  def energy(self, phi):
+    """ Returns the energy of this inversion potential at out of plane angle phi"""
+
+    energy = 0.0
+    if self.typ == 1:
+        #energy = # pick a suitable simple potential to use here
+    elif self.typ == 2:
+      if (math.pi - 0.01) <= self.phi0 <= (math.pi + 0.01):
+        # Tolerance used here is essentially a placeholder, may need changing in either direction
+        energy = potBendNearLinear(phi, self.phi0, self.k_inv, self.f_dmp)
+      else:
+        energy = potAnyBend(phi, self.phi0, self.k_inv, self.f_dmp)
+
+    return energy
+
+
 
 #############################################################################################################
 # Atom class and class methods to be defined below
@@ -815,6 +896,7 @@ class Molecule:
     self.bonds = []
     self.angles = []
     self.dihedrals = []
+    self.threefolds = []
     self.stretch = []
     self.str13 = []
     self.bend = []
@@ -1026,6 +1108,18 @@ class Molecule:
     psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
 
     return psi
+
+  def outofplaneangle(self, i):
+    """ (Molecule) -> number (in radians)
+
+    Report the out of plane angle described by a set of four atoms in the inv list
+    """
+    inv = self.inv[i]
+    atom_c = self.atoms[inv[0]]
+    atom_e1 = self.atoms[inv[1]]
+    atom_e2 = self.atoms[inv[2]]
+    atom_e3 = self.atoms[inv[3]]
+
 
   def orient(self):
     """ (Molecule) -> NoneType
@@ -1250,6 +1344,36 @@ class Molecule:
     # better sanity checks)
     if a >= 0 and b >= 0 and c >= 0 and d >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and d <= len(self.atoms) and a != b and a != c and a != d and b != c and b != d and c != d:
       self.tors.append(FFTorsion(a, b, c, d, theta0, typ, arg))
+
+  def addThreefold(self, a, b, c, d):
+    """ (Molecule) -> NoneType
+
+    Adds the atom a and its bonding partners b, c and d to the list of 3-fold coordinated atom groups
+    """
+
+    # Check if these atoms are already in the list inv
+    exists = False
+    for i in self.threefolds:
+        if i == [a, b, c, d]:
+            exists = True
+
+    # Append this three-fold coordinated group to list if it doesn't exist and is plausible
+    # Check currently based upon those for angles and dihedrals, for lack of a better alternative
+    if exists == False and a >= 0 and b >= 0 and c >= 0 and d >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and d <= len(self.atoms) and a != b and a != c and a != d and b != c and b != d and c != d:
+      self.threefolds.append([a, b, c, d])
+
+  def addFFInversion(self, a, b, c, d, phi0, typ, arg):
+    """ (Molecule) -> NoneType
+
+    Adds an out-of-plane inversion type potential between atoms a, b, c and d to the list of inversion
+    """
+
+    # Note: As for other potentials, no check to see if this inversion exists already since there's no
+    # reason not to allow two different functions to contribute energy to the same 'inversion'
+
+    # Append inversion to list if it doesn't exist and is plausible
+    if a >= 0 and b >= 0 and c >= 0 and d >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and d <= len(self.atoms) and a != b and a != c and a != d and b != c and b != d and c != d:
+      self.inv.append(FFInversion(a, b, c, d, phi0, typ, arg))
 
   def cartesianCoordinates(self):
     """ (Molecule) ->
@@ -1634,7 +1758,47 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
           if verbosity >= 2:
             print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2], molecule.atoms[molecule.angles[j][1]].symbol, molecule.angles[j][1], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], math.degrees(molecule.dihedralangle(len(molecule.dihedrals)-1))))
 
-  # Now that we know bonds, angles and dihedrals, we determine the corresponding force constants
+  # Same for threefolds: Use angles to determine where they are
+  if verbosity >= 2:
+      print("\nAdding threefolds to WellFARe molecule: ", molecule.name)
+  for i in range(0, len(molecule.angles)):
+    for j in range(i+1, len(molecule.angles)):
+      for k in range(j+1, len(molecule.angles)):
+        if molecule.angles[i][1] == molecule.angles[j][1] == molecule.angles[k][1]:
+          if molecule.angles[i][0] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][2] and molecule.angles[i][2] == molecule.angles[k][0]:
+            molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][2], molecule.angles[i][2])
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
+          if molecule.angles[i][0] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][0] and molecule.angles[i][2] == molecule.angles[k][2]:
+            molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][2], molecule.angles[i][2])
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
+          if molecule.angles[i][0] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][0] and molecule.angles[i][2] == molecule.angles[k][2]:
+            molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][0], molecule.angles[i][2])
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
+          if molecule.angles[i][0] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][2] and molecule.angles[i][2] == molecule.angles[k][0]:
+             molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][0], molecule.angles[i][2])
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
+          if molecule.angles[i][2] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][0] and molecule.angles[i][0] == molecule.angles[k][2]:
+            molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][2], molecule.angles[j][2], molecule.angles[i][0])
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
+          if molecule.angles[i][2] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][2] and molecule.angles[i][0] == molecule.angles[k][0]:
+            molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][2], molecule.angles[j][2], molecule.angles[i][0])
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
+          if molecule.angles[i][2] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][0] and molecule.angles[i][0] == molecule.angles[k][2]:
+            molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][2], molecule.angles[j][0], molecule.angles[i][0])
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
+          if molecule.angles[i][2] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][2] and molecule.angles[i][0] == molecule.angles[k][0]:
+            molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][2], molecule.angles[j][0], molecule.angles[i][0])
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
+
+  # Now that we know bonds, angles, dihedrals and threefolds we determine the corresponding force constants
   # Bonds first:
   if verbosity >= 2:
     print("\nAdding Force Field bond stretching terms to WellFARe molecule: ", molecule.name)
@@ -1713,7 +1877,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
     if verbosity >= 2:
       print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[j][1]].symbol, molecule.angles[j][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], fc))
     molecule.addFFBend(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.bondangle(i),2,[fc, molecule.atoms[molecule.angles[i][0]].symbol, molecule.atoms[molecule.angles[i][1]].symbol, molecule.atoms[molecule.angles[i][2]].symbol, molecule.atmatmdist(molecule.angles[i][0], molecule.angles[i][1]), molecule.atmatmdist(molecule.angles[i][1], molecule.angles[i][2])])
-# currently initiating bends with extra information in arguments list to avoid caling molecule or atom class methods inside FFBend.
+# currently initiating bends with extra information in arguments list to avoid calling molecule or atom class methods inside FFBend.
 #  These quantities might ultimately be better included explicitly. 
 
   # Dihedral torsions last:
@@ -1746,6 +1910,9 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
       print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.dihedrals[i][0]].symbol, molecule.dihedrals[i][0], molecule.atoms[molecule.dihedrals[i][1]].symbol, molecule.dihedrals[i][1], molecule.atoms[molecule.dihedrals[i][2]].symbol, molecule.dihedrals[i][2], molecule.atoms[molecule.dihedrals[i][3]].symbol, molecule.dihedrals[i][3], fc))
     molecule.addFFTorsion(molecule.dihedrals[i][0],molecule.dihedrals[i][1],molecule.dihedrals[i][2],molecule.dihedrals[i][3],molecule.dihedralangle(i),1,[fc, molecule.atoms[molecule.dihedrals[i][0]].symbol, molecule.atoms[molecule.dihedrals[i][1]].symbol, molecule.atoms[molecule.dihedrals[i][2]].symbol, molecule.atoms[molecule.dihedrals[i][3]].symbol, molecule.atmatmdist(molecule.dihedrals[i][0], molecule.dihedrals[i][1]), molecule.atmatmdist(molecule.dihedrals[i][1], molecule.dihedrals[i][2]), molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3])])
 # As for bends, arg list now includes atom symbols and bond lengths, which could be separated out later
+
+  # Threefold inversions here
+  # (Extracting force constants to be implemented later)
 
   # End of routine
 
