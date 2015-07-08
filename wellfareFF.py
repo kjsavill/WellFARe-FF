@@ -593,13 +593,13 @@ class FFBend:
       self.typ = typ
       self.k = arg[0]
     elif typ == 2:
-        self.typ = 2
-        self.k_bnd = arg[0]
-        r_12 = arg[4]
-        r_23 = arg[5]
-        f_dmp_12 = DampingFunction(arg[1], arg[2], r_12)
-        f_dmp_23 = DampingFunction(arg[2], arg[3], r_23)
-        self.f_dmp = f_dmp_12 * f_dmp_23
+      self.typ = 2
+      self.k_bnd = arg[0]
+      r_12 = arg[4]
+      r_23 = arg[5]
+      f_dmp_12 = DampingFunction(arg[1], arg[2], r_12)
+      f_dmp_23 = DampingFunction(arg[2], arg[3], r_23)
+      self.f_dmp = f_dmp_12 * f_dmp_23
       self.typ = 1
       self.k = arg[0]
   
@@ -739,28 +739,28 @@ class FFInversion:
     angle phi0, of type typ with arguments [arg]
     """
 
-      self.atom1 = a
-      self.atom2 = b
-      self.atom3 = c
-      self.atom4 = d
-      self.phi0 = phi0
-      if typ == 1:
-          self.typ = 1
-          self.k = arg[0]
-      elif typ == 2:
-          self.typ = 2
-          self.k_inv = arg[0] # Will need to check there is an appropriate force constant locatable for use here, eventually will require fitting to Hessian
+    self.atom1 = a
+    self.atom2 = b
+    self.atom3 = c
+    self.atom4 = d
+    self.phi0 = phi0
+    if typ == 1:
+        self.typ = 1
+        self.k = arg[0]
+    elif typ == 2:
+        self.typ = 2
+        self.k_inv = arg[0] # Will need to check there is an appropriate force constant locatable for use here, eventually will require fitting to Hessian
           # Damping constant needs to be checked - set up below on the assumption that a product of distance dependent damping functions for the three bonds will do
-          r_12 = arg[5]
-          r_13 = arg[6]
-          r_14 = arg[7]
-          f_dmp_12 = DampingFunction(arg[1], arg[2], r_12)
-          f_dmp_13 = DampingFunction(arg[1], arg[3], r_13)
-          f_dmp_14 = DampingFunction(arg[1], arg[4], r_14)
-          self.f_dmp = f_dmp_12 * f_dmp_13 * f_dmp_14
-      else:
-          self.typ = 1
-          self.k = arg[0]
+        r_12 = arg[5]
+        r_13 = arg[6]
+        r_14 = arg[7]
+        f_dmp_12 = DampingFunction(arg[1], arg[2], r_12)
+        f_dmp_13 = DampingFunction(arg[1], arg[3], r_13)
+        f_dmp_14 = DampingFunction(arg[1], arg[4], r_14)
+        self.f_dmp = f_dmp_12 * f_dmp_13 * f_dmp_14
+    else:
+        self.typ = 1
+        self.k = arg[0]
 
   def __str__(self):
     """ (FFInversion) -> str
@@ -799,10 +799,10 @@ class FFInversion:
 
     energy = 0.0
     if self.typ == 1:
-        #energy = # pick a suitable simple potential to use here
+        energy = potHarmonic(phi, phi0, self.k_inv) # or use another sutiable simple potential here
     elif self.typ == 2:
       if (math.pi - 0.01) <= self.phi0 <= (math.pi + 0.01):
-        # Tolerance used here is essentially a placeholder, may need changing in either direction
+      # Tolerance used here is essentially a placeholder, may need changing in either direction
         energy = potBendNearLinear(phi, self.phi0, self.k_inv, self.f_dmp)
       else:
         energy = potAnyBend(phi, self.phi0, self.k_inv, self.f_dmp)
@@ -1114,11 +1114,41 @@ class Molecule:
 
     Report the out of plane angle described by a set of four atoms in the inv list
     """
-    inv = self.inv[i]
-    atom_c = self.atoms[inv[0]]
-    atom_e1 = self.atoms[inv[1]]
-    atom_e2 = self.atoms[inv[2]]
-    atom_e3 = self.atoms[inv[3]]
+    
+    # Calculate the vectors along bonds, and construct a vector plane_norm orthogonal to the plane of end atoms
+    threefold  = self.threefolds[i]
+    atom_c = self.atoms[threefold[0]]
+    atom_e1 = self.atoms[threefold[1]]
+    atom_e2 = self.atoms[threefold[2]]
+    atom_e3 = self.atoms[threefold[3]]
+    bond_1 = [atom_e1.coord[i] - atom_c.coord[i] for i in range(3)]
+    bond_2 = [atom_e2.coord[i] - atom_c.coord[i] for i in range(3)]
+    bond_3 = [atom_e3.coord[i] - atom_c.coord[i] for i in range(3)]
+    inplane_12 = [atom_e2.coord[i] - atom_e1.coord[i] for i in range(3)]
+    inplane_13 = [atom_e3.coord[i] - atom_e1.coord[i] for i in range(3)]
+    plane_norm = numpy.cross(inplane_12, inplane_13)
+    
+    # Construct vectors between end atoms and the projection of the central atom on the end-atom plane
+    cross_1 = numpy.cross(bond_1, plane_norm)
+    cross_2 = numpy.cross(bond_2, plane_norm)
+    cross_3 = numpy.cross(bond_2, plane_norm)
+    inplane_1 = numpy.cross(plane_norm, cross_1)/numpy.dot(plane_norm, plane_norm)
+    inplane_2 = numpy.cross(plane_norm, cross_2)/numpy.dot(plane_norm, plane_norm)
+    inplane_3 = numpy.cross(plane_norm, cross_3)/numpy.dot(plane_norm, plane_norm)
+    
+    # Caclulate the out of plane angle for each of the three bonds
+    cos_phi1 = numpy.dot(bond_1, inplane_1)/(numpy.linalg.norm(bond_1)*numpy.linalg.norm(inplane_1))
+    cos_phi2 = numpy.dot(bond_2, inplane_2)/(numpy.linalg.norm(bond_2)*numpy.linalg.norm(inplane_2))
+    cos_phi3 = numpy.dot(bond_3, inplane_3)/(numpy.linalg.norm(bond_3)*numpy.linalg.norm(inplane_3))
+    phi1 = numpy.arccos(cos_phi1)
+    phi2 = numpy.arccos(cos_phi2)
+    phi3 = numpy.arccos(cos_phi3)
+
+    # Take the numerical average of the three out of plane angles
+    # Note - other schemes for obtaining a single out of plane angle could be investigated
+    phi = (phi1 + phi2 + phi3)/3
+    
+    return phi
 
 
   def orient(self):
@@ -1510,8 +1540,41 @@ class Molecule:
     if verbosity >= 1:
       print("With torsion, energy = " + str(energy))
 
-    for i in self.inv: # Inversion terms aren't implemented yet
-      energy += 0.0
+    for i in self.inv: 
+      # Calculate the vectors along bonds, and construct a vector plane_norm orthogonal to the plane of end ato
+      atom_c = [cartCoordinates[3*i.atom1], cartCoordinates[3*i.atom1+1], cartCoordinates[3*i.atom1+2]]
+      atom_e1 = [cartCoordinates[3*i.atom2], cartCoordinates[3*i.atom2+1], cartCoordinates[3*i.atom2+2]]
+      atom_e2 = [cartCoordinates[3*i.atom3], cartCoordinates[3*i.atom3+1], cartCoordinates[3*i.atom3+2]]
+      atom_e3 = [cartCoordinates[3*i.atom4], cartCoordinates[3*i.atom4+1], cartCoordinates[3*i.atom4+2]]
+      bond_1 = [atom_e1[i] - atom_c[i] for i in range(3)]
+      bond_2 = [atom_e2[i] - atom_c[i] for i in range(3)]
+      bond_3 = [atom_e3[i] - atom_c[i] for i in range(3)]
+      inplane_12 = [atom_e2[i] - atom_e1[i] for i in range(3)]
+      inplane_13 = [atom_e3[i] - atom_e1[i] for i in range(3)]
+      plane_norm = numpy.cross(inplane_12, inplane_13)
+
+      # Construct vectors between end atoms and the projection of the central atom on the end-atom pla
+      cross_1 = numpy.cross(bond_1, plane_norm)
+      cross_2 = numpy.cross(bond_2, plane_norm)
+      cross_3 = numpy.cross(bond_2, plane_norm)
+      inplane_1 = numpy.cross(plane_norm, cross_1)/numpy.dot(plane_norm, plane_norm)
+      inplane_2 = numpy.cross(plane_norm, cross_2)/numpy.dot(plane_norm, plane_norm)
+      inplane_3 = numpy.cross(plane_norm, cross_3)/numpy.dot(plane_norm, plane_norm)
+
+      # Caclulate the out of plane angle for each of the three bonds
+      cos_phi1 = numpy.dot(bond_1, inplane_1)/(numpy.linalg.norm(bond_1)*numpy.linalg.norm(inplane_1))
+      cos_phi2 = numpy.dot(bond_2, inplane_2)/(numpy.linalg.norm(bond_2)*numpy.linalg.norm(inplane_2))
+      cos_phi3 = numpy.dot(bond_3, inplane_3)/(numpy.linalg.norm(bond_3)*numpy.linalg.norm(inplane_3))
+
+      phi1 = numpy.arccos(cos_phi1)
+      phi2 = numpy.arccos(cos_phi2)
+      phi3 = numpy.arccos(cos_phi3)
+                                                                                 
+      # Take the numerical average of the three out of plane angles
+      # Note - other schemes for obtaining a single out of plane angle could be investigated
+      phi = (phi1 + phi2 + phi3)/3
+      
+      energy = energy + i.energy(phi)
     if verbosity >= 1:
       print("With inversion, energy = " + str(energy))
     # Don't forget to add non-bonded interactions here
@@ -1778,7 +1841,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
             if verbosity >= 2:
               print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
           if molecule.angles[i][0] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][2] and molecule.angles[i][2] == molecule.angles[k][0]:
-             molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][0], molecule.angles[i][2])
+            molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][0], molecule.angles[i][2])
             if verbosity >= 2:
               print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
           if molecule.angles[i][2] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][0] and molecule.angles[i][0] == molecule.angles[k][2]:
@@ -1880,7 +1943,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
 # currently initiating bends with extra information in arguments list to avoid calling molecule or atom class methods inside FFBend.
 #  These quantities might ultimately be better included explicitly. 
 
-  # Dihedral torsions last:
+  # Then dihedral torsions:
   if verbosity >= 2:
     print("\nAdding Force Field torsion terms to WellFARe molecule: ", molecule.name)
   for i in range(0,len(molecule.dihedrals)):
@@ -1911,10 +1974,46 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
     molecule.addFFTorsion(molecule.dihedrals[i][0],molecule.dihedrals[i][1],molecule.dihedrals[i][2],molecule.dihedrals[i][3],molecule.dihedralangle(i),1,[fc, molecule.atoms[molecule.dihedrals[i][0]].symbol, molecule.atoms[molecule.dihedrals[i][1]].symbol, molecule.atoms[molecule.dihedrals[i][2]].symbol, molecule.atoms[molecule.dihedrals[i][3]].symbol, molecule.atmatmdist(molecule.dihedrals[i][0], molecule.dihedrals[i][1]), molecule.atmatmdist(molecule.dihedrals[i][1], molecule.dihedrals[i][2]), molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3])])
 # As for bends, arg list now includes atom symbols and bond lengths, which could be separated out later
 
-  # Threefold inversions here
+  # Threefold inversions last
+  if verbosity >= 2:
+    print("\nAdding Force Field inversion terms ro WellFARe molecule: ", molecule.name)
   # (Extracting force constants to be implemented later)
+  for i in range(0, len(molecule.threefolds)):
+    a = numpy.array([molecule.atoms[molecule.threefolds[i][0]].coord[0], molecule.atoms[molecule.threefolds[i][0]].coord[1], molecule.atoms[molecule.threefolds[i][0]].coord[2]])
+    b = numpy.array([molecule.atoms[molecule.threefolds[i][1]].coord[0], molecule.atoms[molecule.threefolds[i][1]].coord[1], molecule.atoms[molecule.threefolds[i][1]].coord[2]])
+    c = numpy.array([molecule.atoms[molecule.threefolds[i][2]].coord[0], molecule.atoms[molecule.threefolds[i][2]].coord[1], molecule.atoms[molecule.threefolds[i][2]].coord[2]])
+    d = numpy.array([molecule.atoms[molecule.threefolds[i][3]].coord[0], molecule.atoms[molecule.threefolds[i][3]].coord[1], molecule.atoms[molecule.threefolds[i][3]].coord[2]])
+    ba = a-b
+    cb = b-c
+    db = b-d
+    dc = c-d
+    bprime = numpy.cross(-cb, -db)
+    cprime = numpy.cross(-dc, cb)
+    dprime = numpy.cross(db, dc)
+    aprime = numpy.cross(bprime, numpy.cross(-ba, bprime))/numpy.dot(bprime, bprime)
+    c = numpy.zeros(molecule.numatoms()*3)
+    c[3*molecule.threefolds[i][0]] = aprime[0]
+    c[3*molecule.threefolds[i][0]+1] = aprime[1]
+    c[3*molecule.threefolds[i][0]+2] = aprime[2]
+    c[3*molecule.threefolds[i][1]] = bprime[0]
+    c[3*molecule.threefolds[i][1]+1] = bprime[1]
+    c[3*molecule.threefolds[i][1]+2] = bprime[2]
+    c[3*molecule.threefolds[i][2]] = cprime[0]
+    c[3*molecule.threefolds[i][2]+1] = cprime[1]
+    c[3*molecule.threefolds[i][2]+2] = cprime[2]
+    c[3*molecule.threefolds[i][3]] = dprime[0]
+    c[3*molecule.threefolds[i][3]+1] = dprime[1]
+    c[3*molecule.threefolds[i][3]+2] = dprime[2]
+    c = c/numpy.linalg.norm(c)
+    fc = numpy.dot(numpy.dot(c,H), numpy.transpose(c))
+    if fc < 0.002:
+      ProgramWarning()
+      print(" This force constant is smaller than 0.002")
+    if verbosity >= 2:
+      print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.threefolds[i][0]].symbol, molecule.threefolds[i][0], molecule.atoms[molecule.threefolds[i][1]].symbol, molecule.threefolds[i][1], molecule.atoms[molecule.threefolds[i][2]].symbol, molecule.threefolds[i][2], molecule.atoms[molecule.threefolds[i][3]].symbol, molecule.threefolds[i][3], fc))
+    molecule.addFFInversion(molecule.threefolds[i][0], molecule.threefolds[i][1], molecule.threefolds[i][2], molecule.threefolds[i][3],molecule.outofplaneangle(i) , 2, [fc, molecule.atoms[molecule.threefolds[i][0]].symbol, molecule.atoms[molecule.threefolds[i][1]].symbol, molecule.atoms[molecule.threefolds[i][2]].symbol, molecule.atoms[molecule.threefolds[i][3]].symbol, molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][1]), molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][2]), molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][3])])
 
-  # End of routine
+# End of routine
 
 ###############################################################################
 #                                                                             #
