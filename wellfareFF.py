@@ -453,14 +453,14 @@ def AngleDamping(theta):
 
     return f_dmp_a
 
-def HBondDamping(a, b, r):
+def HBondDamping(a, b, r_ab):
     """
-    Distance dependent damping function for hydrogen bonding with donor/acceptor atoms having symbols a and b, separation r
+    Distance dependent damping function for hydrogen bonding with donor/acceptor atoms having symbols a and b, separation r_ab
     """
     r_cov = SymbolToRadius[a] + SymbolToRadius[b]
     # Covalent distance defined as sum of covalent radii for the two atoms - will need to check this is correct
 
-    f_dmp_hbnd = 1 / (1 + k_damping * ((r/r_cov) ** 12))
+    f_dmp_hbnd = 1 / (1 + k_damping * ((r_ab/r_cov) ** 12))
 
     return f_dmp_hbnd
 
@@ -480,9 +480,19 @@ def HBondStrengthFactor(sym_a, chg_a, r_ah, sym_b, chg_b, r_bh):
 
     c_hbnd_a = AtomicHBondFactor(sym_a, chg_a)
     c_hbnd_b = AtomicHBondFactor(sym_b, chg_b)
-    c_hbnd = (c_hbnd_a * (r_ah ** 2) + c_hbnd_b * (r_bh ** 2)) / (r_ah ** 2 + r_bh ** 2)
+    c_hbnd_ab = (c_hbnd_a * (r_ah ** 2) + c_hbnd_b * (r_bh ** 2)) / (r_ah ** 2 + r_bh ** 2)
 
-    return c_hbnd
+    return c_hbnd_ab
+
+def potHBond(f_dmp_a, f_dmp_hbnd, c_hbnd_ab, r_ab):
+    """
+    Function for the hydrogen bonding potential over a given atom triple with donor/acceptor atoms a and b at distance r_ab apart, and calculate damping and strength factors
+    """
+
+    u = f_dmp_a * f_dmp_hbnd * (c_hbnd_a/(r_ab ** 3))
+
+    return u
+
 
 #############################################################################################################
 # Classes for Force Field Terms defined below
@@ -809,7 +819,84 @@ class FFInversion:
 
     return energy
 
+class FFHBond:
+  """ A hydrogen bonding potential for an atom triple """
 
+  def __init__(self, a, b, c, theta, typ, arg):
+    """ (FFHBond, int, int, int, number, int, [number]) -> NoneType
+
+    A hydrogen bonding potential between atoms number a, b and c, where b is
+    hydrogen and the abc angle is theta, of type typ with arguments [arg]
+    comprising the atomic symbols and charges of atoms a, b and c, and distances
+    r_ab, r_bc, r_ab
+    """
+
+# Including type may not be necessary, has been done here just for consistency
+
+    self.atomA = a
+    self.atomH = b
+    self.atomB = c
+    self.theta = theta
+    if typ == 1:
+      self.typ = typ
+      self.symA = arg[0]
+      self.chgA = arg[1]
+      self.symH = arg[2]
+      self.chgH = arg[3]
+      self.symB = arg[4]
+      self.chgB = arg[5]
+      self.r_AH = arg[6]
+      self.r_BH = arg[7]
+      self.r_AB = arg[8]
+
+  def __str__(self):
+    """ (FFHbond) -> str
+
+    Return a string representation of the hydrogen bonding potential in this format:
+
+    (atomA, atomH, atomB, theta, type, arguments)
+
+    """
+
+    s = '({0}, {1}, {2}, {3), '.format(self.atomA, self.atomH, self.atomB, self.theta, self.typ)
+
+    if self.typ == 1
+      r = ')'
+# Written now to just close the list, should ultimately expand to allow printing of all arguments in line with other classes
+   
+    return s+r
+
+  def __repr__(self):
+    """ (FFHbond) -> str
+
+    Return a string representation of the hydrogen bonding potential in this format:
+
+    (atomA, atomH, atomB, theta, type, arguments)
+
+    """
+
+    s = '({0}, {1}, {2}, {3), '.format(self.atomA, self.atomH, self.atomB, self.theta, self.typ)
+
+    if self.typ == 1
+      r = ')'
+
+    return s+r
+
+  def energy(self):
+    """ Returns the energy for this hydrogen bonding potential """
+
+    c_hbnd_AB = HBondStrengthFactor(self.symA, self.chgA, self.r_AH, self.symB, self.chgB, self.r_BH)
+
+    f_dmp_theta = AngleDamping(self.theta)
+
+    f_dmp_hbnd = HBondDamping(self.symA, self.symB, self.r_AB)
+
+    energy = potHBond(f_dmp_theta, f_dmp_hbnd, c_hbnd_AB, self.r_AB) 
+
+    return energy
+    
+# Note - will need to check in adding hbond triples that the indices used above for arguments come out correct 
+    
 
 #############################################################################################################
 # Atom class and class methods to be defined below
@@ -902,7 +989,8 @@ class Molecule:
     self.bend = []
     self.tors = []
     self.inv = []
-    
+    self.hbonds = []
+ 
   
   def addAtom(self, a):
     """ (Molecule, Atom) -> NoneType
@@ -1405,6 +1493,20 @@ class Molecule:
     if a >= 0 and b >= 0 and c >= 0 and d >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and d <= len(self.atoms) and a != b and a != c and a != d and b != c and b != d and c != d:
       self.inv.append(FFInversion(a, b, c, d, phi0, typ, arg))
 
+  def addFFHBond(self, a, b, c, theta, typ, arg):
+    """ (Molecule) -> NoneType
+
+    Adds a hydrogen bonding interaction potential between donor/acceptor atoms a and c and hydrogen atom b to the list of hbonds
+    """
+
+   # Note: No check to see if this interaction exists already, consistent with the treatment of other potentials
+
+   # Append new hydrogen bonding interaction to the list if it's plausible
+   # Where plausibility is checked by distinct atoms only
+   # (Checks for distance over which hydrogen bonds could exist and the electronegativity of atoms involved could be added, but will be used to identify interactions to add in any case)
+   if a >= 0 and b >= 0 and c >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and a != b and a != c and b != c:
+     self.hbonds.append(FFHBond(a, b, c, theta, typ, arg))    
+
   def cartesianCoordinates(self):
     """ (Molecule) ->
 
@@ -1578,6 +1680,15 @@ class Molecule:
     if verbosity >= 1:
       print("With inversion, energy = " + str(energy))
     # Don't forget to add non-bonded interactions here
+
+    e_hbnd = 0.0
+    for i in self.hbonds:
+# Need to look at how changes in geometry are accounted for here, since class not defined with equilibrium angles
+      e_hbnd = e_hbnd + i.energy
+    e_hbnd = -1 * e_hbnd
+    energy = energy + e_hbnd
+    if verbosty >= 1:
+      print("With hydrogen bonding, energy = " + str(energy))
 
     if verbosity >=1:
       print("Total energy:")
