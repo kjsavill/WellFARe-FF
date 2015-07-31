@@ -212,6 +212,29 @@ SymbolToRadius = {
 "Mt" : 1.50, "Ds" : 1.50, "Rg" : 1.50, "Cn" : 1.50, "Uut" : 1.50,"Uuq" : 1.50,
 "Uup" : 1.50, "Uuh" : 1.50, "Uus" : 1.50, "Uuo" : 1.50}
 
+# Define dictionary to convert atomic symbols to van der Waals radii (in Angstrom)
+SymbolToVdWRadius = {
+"H"  : 1.10, "He" : 1.40, "Li" : 1.82, "Be" : 1.53, "B"  : 1.92, "C"  : 1.70,
+"N"  : 1.55, "O"  : 1.52, "F"  : 1.47, "Ne" : 1.54, "Na" : 2.27, "Mg" : 1.73,
+"Al" : 1.84, "Si" : 2.10, "P"  : 1.80, "S"  : 1.80, "Cl" : 1.75, "Ar" : 1.88,
+"K"  : 2.75, "Ca" : 2.31, "Sc" : 2.15, "Ti" : 2.11, "V"  : 2.07, "Cr" : 2.06,
+"Mn" : 2.05, "Fe" : 2.04, "Co" : 2.00, "Ni" : 1.97, "Cu" : 1.96, "Zn" : 2.01,
+"Ga" : 1.87, "Ge" : 2.11, "As" : 1.85, "Se" : 1.90, "Br" : 1.85, "Kr" : 2.02,
+"Rb" : 3.03, "Sr" : 2.49, "Y"  : 2.32, "Zr" : 2.23, "Nb" : 2.18, "Mo" : 2.17,
+"Tc" : 2.16, "Ru" : 2.13, "Rh" : 2.10, "Pd" : 2.10, "Ag" : 2.11, "Cd" : 2.18,
+"In" : 1.93, "Sn" : 2.17, "Sb" : 2.06, "Te" : 2.06, "I"  : 1.98, "Xe" : 2.16,
+"Cs" : 3.43, "Ba" : 2.68, "La" : 2.43, "Ce" : 2.42, "Pr" : 2.40, "Nd" : 2.39,
+"Pm" : 2.38, "Sm" : 2.36, "Eu" : 2.35, "Gd" : 2.34, "Tb" : 2.33, "Dy" : 2.31,
+"Ho" : 2.30, "Er" : 2.29, "Tm" : 2.27, "Yb" : 2.26, "Lu" : 2.24, "Hf" : 2.23,
+"Ta" : 2.22, "W"  : 2.18, "Re" : 2.16, "Os" : 2.16, "Ir" : 2.13, "Pt" : 2.13,
+"Au" : 2.14, "Hg" : 2.23, "Tl" : 1.96, "Pb" : 2.02, "Bi" : 2.07, "Po" : 1.97,
+"At" : 2.02, "Rn" : 2.20, "Fr" : 3.48, "Ra" : 2.83, "Ac" : 2.47, "Th" : 2.45,
+"Pa" : 2.43, "U"  : 2.41, "Np" : 2.39, "Pu" : 2.43, "Am" : 2.44, "Cm" : 2.45,
+"Bk" : 2.44, "Cf" : 2.45, "Es" : 2.45, "Fm" : 2.45, "Md" : 2.46, "No" : 2.46,
+"Lr" : 2.46, "Rf" : "?", "Db" : "?", "Sg" : "?", "Bh" : "?", "Hs" : "?",
+"Mt" : "?", "Ds" : "?", "Rg" : "?", "Cn" : "?", "Uut" : "?", "Uuq" : "?",
+"Uup" : "?", "Uuh" : "?", "Uus" : "?", "Uuo" : "?" }
+
 # Define dictionary to convert atomic symbols to (Pauling) electronegativity
 SymbolToEN = {
 "H"  : 2.20, "He" : 0.00, "Li" : 0.98, "Be" : 1.57, "B"  : 2.04, "C"  : 2.55,
@@ -860,7 +883,7 @@ class FFHBond:
 
     s = '({0}, {1}, {2}, {3), '.format(self.atomA, self.atomH, self.atomB, self.theta, self.typ)
 
-    if self.typ == 1
+    if self.typ == 1:
       r = ')'
 # Written now to just close the list, should ultimately expand to allow printing of all arguments in line with other classes
    
@@ -877,7 +900,7 @@ class FFHBond:
 
     s = '({0}, {1}, {2}, {3), '.format(self.atomA, self.atomH, self.atomB, self.theta, self.typ)
 
-    if self.typ == 1
+    if self.typ == 1:
       r = ')'
 
     return s+r
@@ -990,6 +1013,8 @@ class Molecule:
     self.tors = []
     self.inv = []
     self.hbonds = []
+    self.hatoms = []
+    self.highENatoms = []
  
   
   def addAtom(self, a):
@@ -1504,8 +1529,30 @@ class Molecule:
    # Append new hydrogen bonding interaction to the list if it's plausible
    # Where plausibility is checked by distinct atoms only
    # (Checks for distance over which hydrogen bonds could exist and the electronegativity of atoms involved could be added, but will be used to identify interactions to add in any case)
-   if a >= 0 and b >= 0 and c >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and a != b and a != c and b != c:
-     self.hbonds.append(FFHBond(a, b, c, theta, typ, arg))    
+    if a >= 0 and b >= 0 and c >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and a != b and a != c and b != c:
+      self.hbonds.append(FFHBond(a, b, c, theta, typ, arg))    
+
+  def addHAtom(self, a):
+    """ (Molecule) -> NoneType
+
+    Adds the atom a to the list of hydrogen atoms present in the molecule
+    """
+
+    # Note currently no check for whether this atom is already in the list
+    # May be worth implementing such a check. Could also check atomic symbol, though that will be done before calling this method
+    if a >= 0 and a <= len(self.atoms):
+      self.hatoms.append(a)
+
+  def addhighENatom(self, a):
+    """ (Molecule) -> NoneType
+
+    Adds the atom a to the list of atoms sufficiently electronegative to be involved in hydrogen bonding
+    """
+
+    # Note currently no check for whether the atom is already in the list
+    # As with list of hydrogens, could implement atomic symbol check for extra care
+    if a >= 0 and a <= len(self.atoms):
+      self.highENatoms.append(a)
 
   def cartesianCoordinates(self):
     """ (Molecule) ->
@@ -1682,12 +1729,51 @@ class Molecule:
     # Don't forget to add non-bonded interactions here
 
     e_hbnd = 0.0
-    for i in self.hbonds:
-# Need to look at how changes in geometry are accounted for here, since class not defined with equilibrium angles
-      e_hbnd = e_hbnd + i.energy
+    for i in self.hatoms:
+      atH = [cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
+      for j in self.highENatoms:
+         atA = [cartCoordinates[3*j], cartCoordinates[3*j + 1], cartCoordinates[3*j + 2]]
+         # Calculate distance between hydrogen i and electronegative atom j
+         # Determine whether they are (likely) joined by a covalent bond
+         dist_HA = (atH[0] - atA[0])**2
+         dist_HA += (atH[1] - atA[1])**2
+         dist_HA += (atH[2] - atA[2])**2
+         dist_HA = math.sqrt(dist_HA)
+         bond_dist_HA = SymbolToRadius[i.symbol] + SymbolToRadius[j.symbol]
+         if dist_HA <= bond_dist_HA:
+           for k in self.highENatoms:
+             atB = [cartCoordinates[3*j], cartCoordinates[3*j + 1], cartCoordinates[3*j + 2]]             
+             # Calculate distance between hydrogen i and electronegative atom k
+             # Determine whether they are close enough for a hydrogen bonding interaction
+             dist_HB = (atH[0] - atB[0])**2
+             dist_HB += (atH[1] - atB[1])**2
+             dist_HB += (atH[2] - atB[2])**2
+             dist_HB = math.sqrt(dist_HB)
+             Hbond_dist_HB = SymbolToVdWRadius[i.symbol] + SymbolToRadius[k.symbol]
+             # If so, and if A and B are distinct, take the triple AHB to be involved in hydrogen bonding and use to calculate energy
+             if dist_HB <= Hbond_dist_HB and atA != atB:
+                dist_AB = (atA[0] - atB[0])**2
+                dist_AB += (atA[1] - atB[1])**2
+                dist_AB += (atA[2] - atB[2])**2
+                dist_AB = math.sqrt(dist_AB)
+                
+                # Use the calculated distances and the cosine rule to calculate AHB andgle theta
+                numerator = dist_HA**2 + dist_HB**2 - dist_AB**2
+                denominator = 2*dist_HA*dist_HB
+                argument = numerator/denominator
+                theta = numpy.arccos(argument)
+
+                # Calculate the relevant constants for a hydrogen bonding potential
+                c_hbnd_AB = HBondStrengthFactor(j.symbol, j.charge, dist_HA, k.symbol, k.charge, dist_HB)
+                f_dmp_theta = AngleDamping(theta)
+                f_dmp_hbnd = HBondDamping(j.symbol, k.symbol, dist_AB)
+                
+                # Calculate the energy of this interaction, and add to the total hydrogen bonding contribution
+                e_hbnd = e_hbnd + potHBond(f_dmp_theta, f_dmp_hbnd, c_hbnd_AB, dist_AB)
+    # Calculate total hydrogen bonding contribution from the sum over AHB triples, and add to energy
     e_hbnd = -1 * e_hbnd
     energy = energy + e_hbnd
-    if verbosty >= 1:
+    if verbosity >= 1:
       print("With hydrogen bonding, energy = " + str(energy))
 
     if verbosity >=1:
@@ -2123,6 +2209,40 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
     if verbosity >= 2:
       print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.threefolds[i][0]].symbol, molecule.threefolds[i][0], molecule.atoms[molecule.threefolds[i][1]].symbol, molecule.threefolds[i][1], molecule.atoms[molecule.threefolds[i][2]].symbol, molecule.threefolds[i][2], molecule.atoms[molecule.threefolds[i][3]].symbol, molecule.threefolds[i][3], fc))
     molecule.addFFInversion(molecule.threefolds[i][0], molecule.threefolds[i][1], molecule.threefolds[i][2], molecule.threefolds[i][3],molecule.outofplaneangle(i) , 2, [fc, molecule.atoms[molecule.threefolds[i][0]].symbol, molecule.atoms[molecule.threefolds[i][1]].symbol, molecule.atoms[molecule.threefolds[i][2]].symbol, molecule.atoms[molecule.threefolds[i][3]].symbol, molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][1]), molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][2]), molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][3])])
+
+  # Moving to noncovalent interactions
+  # Locate hydrogen bonding triples AHB and create instances of FFHBond
+  if verbosity >= 2:
+    print("\nAdding hydrogen bonds to WellFARe molecule: ", molecule.name)
+  for i in range(0, len(molecule.bonds)):
+    sym1 = molecule.atoms[molecule.bonds[i][0]].symbol
+    sym2 = molecule.atoms[molecule.bonds[i][1]].symbol
+    if sym1 == "H":
+      atH = molecule.bonds[i][0]
+      if sym2 == "N" or sym2 == "O" or sym2 == "F" or sym2 == "S" or sym2 == "Cl":
+        atA = molecule.bonds[i][1]
+        for j in range(0, len(molecule.atoms)):
+          sym3 = molecule.atoms[j].symbol
+          if sym3 == "N" or sym3 == "O" or sym3 == "F" or sym3 == "S" or sym3 == "Cl":
+            r = molecule.atmatmdist(atH, j)
+            r_check = SymbolToVdWRadius[atH] + SymbolToVdWRadius[j] # Using sum of van der Waals radii
+            if r <= r_check and j != atA:
+              theta = molecule.anybondangle(atA, atH, j)
+              molecule.addFFHBond(atA, atH, j, theta, 1, [])
+              # Insert print here for verbose cases
+    elif sym2 == "H":
+      atH = molecule.bonds[i][1]  
+      if sym1 == "N" or sym1 == "O" or sym1 == "F" or sym1 == "S" or sym1 == "Cl":
+        atA = molecule.bonds[i][2]
+        for j in range(0, len(molecule.atoms)):
+          sym3 = molecule.atoms[j].symbol
+          if sym3 == "N" or sym3 == "O" or sym3 == "F" or sym3 == "S" or sym3 == "Cl":
+            r = molecule.atmatmdist(atH, j)
+            r_check = SymbolToVdWRadius[atH] + symbolToVdWRadius[j] # Sum of van der Waals radii again used as check
+          if r <= r_check and j != atA:
+            theta = molecule.anybondangle(atA, atH, j)
+            molecule.addFFHBond(atA, atH, j, theta, 1, [])
+              # Insert print here for verbose cases
 
 # End of routine
 
