@@ -492,7 +492,7 @@ def AtomicHBondFactor(sym, chg):
     Atomic factor c_hbnd for an atom with symbol sym and atomic charge chg, used in hydrogen bond interaction strength
     """
 
-    c_hbnd = k_hbnd[sym] * (math.exp(-k_q1 * chg) / (math.exp(-k_q1 * chg) + k_q2))
+    c_hbnd = k_hbnd[sym] * (math.exp(-1*k_q1["hbond"] * chg) / (math.exp(-1*k_q1["hbond"] * chg) + k_q2["hbond"]))
 
     return c_hbnd
 
@@ -509,13 +509,62 @@ def HBondStrengthFactor(sym_a, chg_a, r_ah, sym_b, chg_b, r_bh):
 
 def potHBond(f_dmp_a, f_dmp_hbnd, c_hbnd_ab, r_ab):
     """
-    Function for the hydrogen bonding potential over a given atom triple with donor/acceptor atoms a and b at distance r_ab apart, and calculate damping and strength factors
+    Function for the hydrogen bonding potential over a given atom triple with donor/acceptor atoms a and b at distance r_ab apart, and calculated damping and strength factors
     """
 
     u = f_dmp_a * f_dmp_hbnd * (c_hbnd_a/(r_ab ** 3))
 
     return u
 
+def AtomicXBondFactor(sym, chg):
+    """
+    Atomic factor c_xbnd_x for a halogen acceptor atom with symbol sym and charge chg, used in halogen bonding potential
+    """
+
+    c_xbnd_x = k_x[sym] * (math.exp(-1*k_q1["xbond"])/(math.exp(-1*k_q1["xbond"]) + k_q2["xbond"]))
+
+    return c_xbnd_x
+
+def potXBond(f_dmp_theta, f_dmp_xbnd, c_xbnd_x, r_dx):
+    """
+    Function for the halogen bonding potential over a given atom triple with donor atom d and halogen x at a distance r_dx from one another, and calculated damping and strength factors
+    """
+
+    u = f_dmp_theta * f_dmp_xbnd * (c_xbnd_x/(r_dx**2))
+
+    return u
+
+def potPauliRep(rep_disp_AB, valA, valB, symA, symB, r_AB):
+    """
+    Pairwise formula for the Pauli repulsion between two atoms
+    """
+    # Calculation of topological screening parameter rep_disp_AB, and valence electron numbers, to be worked out still
+    z_eff_A = valA * k_z[symA]
+    z_eff_B = valB * k_z[symB]
+    # R_0D3 = Standard D3 pair cutoff radii, still to be worked out
+    u = rep_disp_AB * (z_eff_A*z_eff_B/r_AB) * math.exp(-1*beta_rep*r_AB/(R_0D3**(3/2)))
+
+    return u
+
+def potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB):
+    """
+    Function for the London dispersion energy under the D3 scheme employing Becke-Johnson rational damping via BJdamp_AB
+    """
+    # Calculation of rep_disp_AB, and correct values for the other arguments in this function, to be worked out
+    6term = C6_AB/(r_AB**6 + BJdamp_AB**6)
+    8term = C8_AB/(r_AB**8 + BJdamp_AB**8)
+    u = rep_disp_AB*(6term + s8*8term)
+
+    return u
+
+def potElectrostatic(elstat_AB, chg_A, chg_B, r_AB):
+    """
+    Function for the electrostatic potential between atoms A and B
+    """
+    # Determination of the screening parameter elstat_AB still to be implemented
+    u = elstat_AB*(chg_A*chg_B/r_AB)
+
+    return u
 
 #############################################################################################################
 # Classes for Force Field Terms defined below
@@ -1015,8 +1064,9 @@ class Molecule:
     self.hbonds = []
     self.hatoms = []
     self.highENatoms = []
- 
+    self.halogens = [] 
   
+
   def addAtom(self, a):
     """ (Molecule, Atom) -> NoneType
     
@@ -1554,6 +1604,17 @@ class Molecule:
     if a >= 0 and a <= len(self.atoms):
       self.highENatoms.append(a)
 
+  def addXatom(self, a):
+    """ (Molecule) -> NoneType
+
+    Adds the atom a to the list of halogens present in the molecule
+    """
+
+    # Currently no check to see if this atom already belongs to the list
+    # Also no check on atomic symbol at present, but one could be implemented
+    if a >= 0 and a <= len(self.atoms):
+      self.halogens.append(a)
+
   def cartesianCoordinates(self):
     """ (Molecule) ->
 
@@ -1749,7 +1810,7 @@ class Molecule:
              dist_HB += (atH[1] - atB[1])**2
              dist_HB += (atH[2] - atB[2])**2
              dist_HB = math.sqrt(dist_HB)
-             Hbond_dist_HB = SymbolToVdWRadius[i.symbol] + SymbolToRadius[k.symbol]
+             Hbond_dist_HB = SymbolToVdWRadius[i.symbol] + SymbolToVdWRadius[k.symbol]
              # If so, and if A and B are distinct, take the triple AHB to be involved in hydrogen bonding and use to calculate energy
              if dist_HB <= Hbond_dist_HB and atA != atB:
                 dist_AB = (atA[0] - atB[0])**2
@@ -1775,6 +1836,80 @@ class Molecule:
     energy = energy + e_hbnd
     if verbosity >= 1:
       print("With hydrogen bonding, energy = " + str(energy))
+
+    e_xbnd = 0.0
+    for i in self.halogens:
+      atX = [cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
+      # Locate bonding partner(s), Y, for X by searching through the list of bonds in the molecule
+      bondsX = []
+      for j in range(len(self.bonds)):
+        if bonds[j][0] == i:
+          bondsX.append([bonds[j][1], bonds[j][0]])
+        elif bonds[j][1] == i:
+          bondsX.append(bonds[j])
+      # Locate donor atoms D that could participate in halogen bonding (check for not being bonded to X implemented later)
+      # Sum of van der Waals radii currently employed as a check for this
+      donors = []
+      for k in self.atoms:
+        sym = k.symbol
+        donorsyms = ["N", "O", "F", "P", "S", "Cl", "As", "Se", "Br", "Sb", "Te", "I", "Bi", "Bi", "Po", "At", "Uup", "Lv", "Uus"]
+        if sym in donorsyms:
+          atD = [cartCoordinates[3*k], cartCoordinates[3*k + 1], cartCoordinates[3*k + 2]]
+          dist_XD = (atX[0] - atD[0])**2
+          dist_XD += (atX[1] - atD[1])**2
+          dist_XD += (atX[2] - atD[2])**2
+          dist_XD = math.sqrt(dist_XD)
+          Xbond_dist_XD = SymbolToVdWRadius[k.symbol] + SymbolToVdWRadius[i.symbol]
+          if dist_XD <= Xbond_dist_XD:
+            donors.append([k, dist_XD])
+      # For each triple formed by a bond YX and donor D, calculate halogen bonding potential
+      for bond in bondsX:
+        for donor in donors:
+          if donor[0] != bond[0] and donor[0] != bond[1]:
+            symY = bond[0].symbol 
+            coordY = [cartCoordinates[3*bond[0]], cartCoordinates[3*bond[0] + 1], cartCoordinates[3*bond[0] + 2]]
+            symX = i.symbol
+            coordX = atX
+            symD = donor[0].symbol
+            coordD = [cartCoordinates[3*donor[0]], cartCoordinates[3*donor[0] + 1], cartCoordinates[3*donor[0] + 2]]
+            r_XD = donor[1]
+
+            # Calculate the DXY angle
+            r_XY = (coordY[0] - coordX[0])**2
+            r_XY += (coordY[1] - coordX[1])**2
+            r_XY += (coordY[2] - coordX[2])**2
+            r_XY = math.sqrt(r_XY)
+
+            r_DY = (coordY[0] - coordD[0])**2
+            r_DY += (coordY[1] - coordD[1])**2
+            r_DY += (coordY[2] - coordD[2])**2
+            r_DY = math.sqrt(r_DY)
+ 
+            numerator = r_XD**2 + r_XY**2 - r_DY**2
+            denominator = 2*r_XD*r_XY
+            argument = numerator/denominator
+            theta = numpy.arccos(argument)
+
+            # Calculate the relevant constants for a halogen bonding potential
+            f_dmp_theta = AngleDamping(theta)
+            f_dmp_xbnd = HBondDamping(symX, symD, r_XD)
+            c_xbnd = AtomicXBondFactor(symX, i.charge)
+  
+            # Calculate the energy of this halogen bonding interaction and add to the total
+            e_xbnd = e_xbnd + potXBond(f_dmp_theta, f_dmp_xbnd, c_xbnd_x, r_XD) 
+    # Calculate total halogen bonding contribution from the sum over DXY triples, and add to energy of the molecule
+    e_xbnd = -1 * e_xbnd
+    energy = energy + e_xbnd
+    if verbosity >= 1:
+      print("With halogen bonding, energy = " + str(energy))
+
+    # Calculation of energy from Pauli-repulsion to go here
+
+    # Calculation of electrostatic energy contribution to go here
+
+    # Calculation of London dispersion energy to go here
+
+    # Calculation of polarisation energy (for solute-solvent) to go here
 
     if verbosity >=1:
       print("Total energy:")
@@ -2211,6 +2346,36 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
     molecule.addFFInversion(molecule.threefolds[i][0], molecule.threefolds[i][1], molecule.threefolds[i][2], molecule.threefolds[i][3],molecule.outofplaneangle(i) , 2, [fc, molecule.atoms[molecule.threefolds[i][0]].symbol, molecule.atoms[molecule.threefolds[i][1]].symbol, molecule.atoms[molecule.threefolds[i][2]].symbol, molecule.atoms[molecule.threefolds[i][3]].symbol, molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][1]), molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][2]), molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][3])])
 
   # Moving to noncovalent interactions
+  # Locate hydrogen atoms and add them to the list hatoms
+  if verbosity >= 2:
+    print("\nListing hydrogen atoms in WellFARe molecule: ", molecule.name)
+  for i in range(0, len(molecule.atoms)):
+    if molecule.atoms[i].symbol == "H":
+      molecule.addHAtom(i)
+      if verbosity >= 2:
+        print(molecule.atoms[i].symbol, molecule.atoms[i].coord)
+
+  # Locate high electronegatvity atoms and add them to the list highENatoms
+  if verbosity >= 2:
+    print("Listing highly electronegative atoms in WellFARe molecule: ", molecule.name)
+  for i in range(0, len(molecule.atoms)):
+    sym = molecule.atoms[i].symbol
+    if sym == "N" or sym == "O" or sym == "F" or sym == "S" or sym == "Cl":
+      molecule.addhighENatom(i)
+      if verbosity >= 2:
+        print(sym, molecule.atoms[i].coord)
+
+  # Locate halogen atoms and add them to the list halogens
+  if verbosity >= 2:
+    print("Listing halogen atoms in WellFARe molecule: ", molecule.name)
+  for i in range(0, len(molecule.atoms)):
+    sym = molecule.atoms[i].symbol
+    if sym == "F" or sym == "Cl" or sym == "Br" or sym == "I" or sym == "At":
+      molecule.addXatom(i)
+      if verbosity >= 2:
+        print(sym, molecule.atoms[i].coord)
+
+
   # Locate hydrogen bonding triples AHB and create instances of FFHBond
   if verbosity >= 2:
     print("\nAdding hydrogen bonds to WellFARe molecule: ", molecule.name)
