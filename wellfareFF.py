@@ -258,6 +258,14 @@ SymbolToEN = {
 "Mt" : 1.30, "Ds" : 1.30, "Rg" : 1.30, "Cn" : 1.30, "Uut" : 1.30,"Uuq" : 1.30,
 "Uup" : 1.30, "Uuh" : 1.30, "Uus" : 1.30, "Uuo" : 1.30}
 
+# Define dictionary to convert atomic symbods to valence electron number
+SymbolToValenceE = {
+"H"  : 1, "He" : 2, "Li" : 1, "Be" : 2, "B"  : 3, "C"  : 4,
+"N"  : 5, "O"  : 6, "F"  : 7, "Ne" : 8, "Na" : 1, "Mg" : 2,
+"Al" : 3, "Si" : 4, "P"  : 5, "S"  : 6, "Cl" : 7, "Ar" : 8,
+"K"  : 1, "Ca" : 2, "Sc" : 3, "Ti" : 4, "V"  : 5, "Cr" : 6,
+"Mn" : 7, "Fe" : 8, "Co" : 9, "Ni" : 10, "Cu" : 11, "Zn" : 12}
+# Note that this will need to be completed later
 
 # ---------------------------------------------------
 # Define global empirical parameters for force field
@@ -534,26 +542,35 @@ def potXBond(f_dmp_theta, f_dmp_xbnd, c_xbnd_x, r_dx):
 
     return u
 
-def potPauliRep(rep_disp_AB, valA, valB, symA, symB, r_AB):
+def potPauliRep(rep_disp_AB, symA, symB, r_AB):
     """
     Pairwise formula for the Pauli repulsion between two atoms
     """
     # Calculation of topological screening parameter rep_disp_AB, and valence electron numbers, to be worked out still
-    z_eff_A = valA * k_z[symA]
-    z_eff_B = valB * k_z[symB]
-    # R_0D3 = Standard D3 pair cutoff radii, still to be worked out
+    z_eff_A = SymbolToValenceE[symA] * k_z[symA]
+    z_eff_B = SymbolToValenceE[symB] * k_z[symB]
+    R_0D3 # Standard D3 pair cutoff radii, yet to be included. Some placeholder value might be needed to test in the interim
     u = rep_disp_AB * (z_eff_A*z_eff_B/r_AB) * math.exp(-1*beta_rep*r_AB/(R_0D3**(3/2)))
 
     return u
 
-def potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB):
+def BJdamping(a, b):
+    """
+    Function for the Becke-Johnson rational damping for atoms a and b
+    """
+    R_0AB # To be implemented later
+    damp = a1*R_0AB + a2
+
+    return damp
+
+def potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB, r_AB):
     """
     Function for the London dispersion energy under the D3 scheme employing Becke-Johnson rational damping via BJdamp_AB
     """
     # Calculation of rep_disp_AB, and correct values for the other arguments in this function, to be worked out
-    6term = C6_AB/(r_AB**6 + BJdamp_AB**6)
-    8term = C8_AB/(r_AB**8 + BJdamp_AB**8)
-    u = rep_disp_AB*(6term + s8*8term)
+    sixterm = C6_AB/(r_AB**6 + BJdamp_AB**6)
+    eightterm = C8_AB/(r_AB**8 + BJdamp_AB**8)
+    u = rep_disp_AB*(sixterm + s8*eightterm)
 
     return u
 
@@ -977,7 +994,7 @@ class FFHBond:
 class Atom:
   """ An atom with an atomic symbol and cartesian coordinates"""
   
-  def __init__(self, sym, x, y, z):
+  def __init__(self, sym, x, y, z, q):
     """ (Atom, int, str, number, number, number) -> NoneType
     
     Create an Atom with (string) symbol sym,
@@ -990,6 +1007,7 @@ class Atom:
     self.charge = SymbolToNumber[sym]
     self.mass = SymbolToMass[sym]
     self.coord = [x, y, z]
+    self.QMcharge = q # Extracting q from input file yet to be implemented
   
   def __str__(self):
     """ (Atom) -> str
@@ -1615,6 +1633,161 @@ class Molecule:
     if a >= 0 and a <= len(self.atoms):
       self.halogens.append(a)
 
+  def screen_ES(self, a, b):
+    """ (Molecule) -> Number
+    
+    Calculates the number of bonds between atoms a and b, and returns the appropriate value of the topological screening parameter elstat_AB
+    """
+    # Determine the number of bonds separating atoms a and b
+    n_bonds = 4
+    if a == b:
+      n_bonds = 0
+    elif [a, b] in self.bonds or [b, a] in self.bonds:
+      n_bonds = 1
+    else:
+      bonds_a = []
+      bonds_b = []
+      # Find bonds from atom a to any other atom, and from atom b to any other atom
+      for bond in self.bonds:
+        if bond[0] == a:
+          bonds_a.append(bond)
+        elif bond[1] == a:
+          bonds_a.append([bond[1], bond[0]])
+        elif bond[0] == b:
+          bonds_b.append([bond[1], bond[0]])
+        elif bond[1] == b:
+          bonds_b.append(bond)
+      # Check whether there is a common third atom bonded to both a and b, stopping if one such atom is found 
+      for bd_a in bonds_a:
+        for bd_b in bonds_b:
+           if bd_a[1] == bd_b[0]:
+              n_bonds = 2
+              break
+        if n_bonds == 2:
+          break
+      # If not, find all bonds 1 bond away from each of atom a and atom b
+      if n_bonds > 2:
+        bonds_a1 = []
+        bonds_b1 = []
+        for bond in self.bonds:
+          for bd_a in bonds_a:
+            if bd_a[1] == bond[0]:
+              bonds_a1.append(bond)
+            elif bd_a[1] == bond[1]:
+              bonds_a1.append([bond[1], bond[0]])
+          for bd_b in bonds_b:
+            if bd_b[0] == bond[0]:
+              bonds_b1.append([bond[1], bond[0]])
+            elif bd_b[0] == bond[1]:
+              bonds_b1.append(bond)
+        # Then check whether there is one of those bonds in common to both a and b, ending the loop if so
+        for bd_a1 in bonds_a1:
+          for bd_b1 in bonds_b1:
+            if bd_a1 == bd_b1:
+              n_bonds = 3
+              break
+          if n_bonds == 3:
+              break
+      # All cases with more than three bonds between atoms a and b are treated identically, so do not check for 4 bonds or more explicitly  
+    # Determine the value of the screening parameter for the number of covalent bonds separating a and b
+    if n_bonds <= 2:
+      elstat_AB = 0
+    elif n_bonds == 3:
+      elstat_AB = E_ES_14
+    elif n_bonds >= 4:
+      elstat_AB = 1
+
+    return elstat_AB
+
+  def screen_RepDisp(self, a, b):
+    """ (Molecule) -> Number
+    
+    Calculates the number of bonds between atoms a and b, and returns the appropriate value of the topological screening parameter rep_disp_AB 
+    """
+    # Determine the number of bonds separating atoms a and b
+    n_bonds = 5
+    if a == b:
+      n_bonds = 0
+    elif [a, b] in self.bonds or [b, a] in self.bonds:
+      n_bonds = 1
+    else:
+      bonds_a = []
+      bonds_b = []
+      # Find bonds from atom a to any other atom, and from atom b to any other atom
+      for bond in self.bonds:
+        if bond[0] == a:
+          bonds_a.append(bond)
+        elif bond[1] == a:
+          bonds_a.append([bond[1], bond[0]])
+        elif bond[0] == b:
+          bonds_b.append([bond[1], bond[0]])
+        elif bond[1] == b:
+          bonds_b.append(bond)
+      # Check whether there is a common third atom bonded to both a and b, stopping if one such atom is found 
+      for bd_a in bonds_a:
+        for bd_b in bonds_b:
+           if bd_a[1] == bd_b[0]:
+              n_bonds = 2
+              break
+        if n_bonds == 2:
+          break
+      # If not, find all bonds 1 bond away from each of atom a and atom b
+      if n_bonds > 2:
+        bonds_a1 = []
+        bonds_b1 = []
+        for bond in self.bonds:
+          for bd_a in bonds_a:
+            if bd_a[1] == bond[0]:
+              bonds_a1.append(bond)
+            elif bd_a[1] == bond[1]:
+              bonds_a1.append([bond[1], bond[0]])
+          for bd_b in bonds_b:
+            if bd_b[0] == bond[0]:
+              bonds_b1.append([bond[1], bond[0]])
+            elif bd_b[0] == bond[1]:
+              bonds_b1.append(bond)
+        # Then check whether there is one of those bonds in common to both a and b, ending the loop if so
+        for bd_a1 in bonds_a1:
+          for bd_b1 in bonds_b1:
+            if bd_a1 == bd_b1:
+              n_bonds = 3
+              break
+          if n_bonds == 3:
+            break
+      # If not, find all bonds 2 bonds away from each of atom a and atom b
+      if n_bonds > 3:
+        bonds_a2 = []
+        bonds_b2 = []
+        for bond in self.bonds:
+          for bd_a1 in bonds_a1:
+            if bd_a1[1] == bond[0]:
+              bonds_a2.append(bond)
+            elif bd_a1[1] == bond[1]:
+              bonds_a2.append([bond[1], bond[0]])
+          for bd_b1 in bonds_b1:
+            if bd_b1[0] == bond[0]:
+              bonds_b2.append([bond[1], bond[0]])
+            elif bd_b1[0] == bond[1]:
+              bonds_b2.append(bond)
+        # Then check whether one of these bonds is common to both a and b, ending the loop if so
+        for bd_a2 in bonds_a2:
+          for bd_b2 in bonds_b2:
+            if bd_a2 == bd_b2:
+              n_bonds = 4
+              break
+          if n_bonds == 4:
+            break 
+      # All cases with more than four bonds between atoms a and b are treated identically, so do not check for 1,6- and higher cases explicitly
+    # Determine the value of the screening parameter for the number of covalent bonds separating a and b
+    if n_bonds <= 2:
+      rep_disp_AB = 0
+    elif n_bonds == 3 or n_bonds == 4:
+      rep_disp_AB = E_disp_rep
+    elif n_bonds >= 5:
+      rep_disp_AB = 1
+  
+    return rep_disp_AB
+
   def cartesianCoordinates(self):
     """ (Molecule) ->
 
@@ -1903,11 +2076,74 @@ class Molecule:
     if verbosity >= 1:
       print("With halogen bonding, energy = " + str(energy))
 
-    # Calculation of energy from Pauli-repulsion to go here
+    e_Pauli = 0.0
+    for i in range(len(self.atoms)):
+      for j in range(i+1, len(self.atoms)):
+        symA = self.atoms[i].symbol
+        symB = self.atoms[j].symbol
+        # Calculate the distance between atoms i and j
+        coordA = [cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
+        coordB = [cartCoordinates[3*j], cartCoordinates[3*j + 1], cartCoordinates[3*j + 2]]
+        distance = (coordA[0] - coordB[0])**2
+        distance += (coordA[1] - coordB[1])**2
+        distance += (coordA[2] - coordB[2])**2
+        distance = math.sqrt(distance)
+        # Calculate the required screening parameter, then the energy for this pair, and add to the total
+        # Note that proper calculation will require the D3 cutoff radii R_0D3 which are yet to be worked in
+        rep_disp_AB = self.screen_RepDisp(i, j)
+        energy_AB = potPauliRep(rep_disp_AB, symA, symB, distance)
+        e_Pauli = e_Pauli + energy_AB
+    energy = energy + e_Pauli
+    if verbosity >= 1:
+      print("With Pauli repulsion, energy = " + str(energy))
 
-    # Calculation of electrostatic energy contribution to go here
+    e_ES = 0.0
+    for i in range(len(self.atoms)):
+      for j in range(i+1, len(self.atoms)):
+        # Note QM computed atomic charges at equilibrium structure should be used as per QMDFF
+        # Currently the charge in class atom is used, which comes from atomic number
+        chgA = self.atoms[i].charge # Use i.QMcharge once this has meaningful value attached
+        chgB = self.atoms[j].charge # Use j.QMcharge once this has meaningful value attached
 
-    # Calculation of London dispersion energy to go here
+        # Calculate the distance between atoms i and j
+        coordA =[cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
+        coordB = [cartCoordinates[3*j], cartCoordinates[3*j + 1], cartCoordinates[3*j + 2]]
+        distance = (coordA[0] - coordB[0])**2
+        distance += (coordA[1] - coordB[1])**2
+        distance += (coordA[2] - coordB[2])**2
+        distance = math.sqrt(distance)
+        
+        # Calculate the required screening parameter, and the energy for this paiwise interaction, then add to the total
+        elstat_AB = self.screen_ES(i, j)
+        energy_AB = potElectrostatic(elstat_AB, chgA, chgB, distance)
+        e_ES = e_ES + energy_AB
+    energy = energy + e_ES
+    if verbosity >= 1:
+      print("With electrostatic interactions, energy = " + str(energy))
+
+    e_disp = 0.0
+    for i in range(len(molecule.atoms)):
+      for j in range(len(molecule.atoms)):
+        symA = molecule.atoms[i].symbol
+        symB = molecule.atoms[j].symbol
+        # Calculate the distance between atoms i and j
+        coordA =[cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
+        coordB = [cartCoordinates[3*j], cartCoordinates[3*j + 1], cartCoordinates[3*j + 2]]
+        distance = (coordA[0] - coordB[0])**2
+        distance += (coordA[1] - coordB[1])**2
+        distance += (coordA[2] - coordB[2])**2
+        distance = math.sqrt(distance)
+        # Calculate the required paramenters and thence the energy for this pairwise interaction, then add to the total
+        # Note that this is incomplete until the D3 cutoff radii R_0D3, as well as the coefficients C6_AB and C8_AB, are incorporated properly
+        rep_disp_AB = self.screen_RepDisp(i, j)
+        BJdamp_AB = BJdamping(i, j) 
+        C6_AB # To be completed 
+        C8_AB # To be completed
+        energy_AB = potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB, distance)
+        e_disp = e_disp + energy_AB
+    energy = energy + e_disp
+    if verbosity >= 1:
+      print("With London dispersion, energy = " + str(energy))
 
     # Calculation of polarisation energy (for solute-solvent) to go here
 
@@ -1964,7 +2200,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
       print("\nReading of geometry finished.\nAdding atoms to WellFARe molecule: ", molecule.name)
     for i in geom:
       readBuffer=i.split()
-      molecule.addAtom(Atom(NumberToSymbol[int(readBuffer[1])],float(readBuffer[3]),float(readBuffer[4]),float(readBuffer[5])))
+      molecule.addAtom(Atom(NumberToSymbol[int(readBuffer[1])],float(readBuffer[3]),float(readBuffer[4]),float(readBuffer[5]),"q")) # "q" a placeholder for QM calculated charge on the atom
       if verbosity >= 2:
         print(" {:<3} {: .8f} {: .8f} {: .8f}".format(NumberToSymbol[int(readBuffer[1])],float(readBuffer[3]),float(readBuffer[4]),float(readBuffer[5])))
     f.close()
