@@ -348,6 +348,32 @@ k_q1 = {"hbond": 10,
 k_q2 = {"hbond": 5,
         "xbond": 1}
 
+# Define a dictionary for the DFT-D3 C6 coefficients
+# (Values taken from www.thch.uni-bonn.de/tc/downloads/DFT-D3/data/refmol.txt
+C6 = {
+ "H"  : 7.5916, "He" : 1.5583, "Li" : 1163.4454, "Be" : 257.4863, "B"  : 107.1777,
+ "C"  : 49.1130, "N"  : 25.2685, "O"  : 15.5059, "F"  : 9.6916, "Ne" : 6.2896,
+ "Na" : 1608.0286, "Mg" : 683.3758, "Al" : 540.5406, "Si" : 317.8574, "P"  : 191.6887,
+ "S"  : 134.0066, "Cl" : 92.3460, "Ar" : 64.6462, "K"  : 4983.5009, "Ca" : 2352.6862,
+ "Sc" : 1702.6213, "Ti" : 1361.9185, "V"  : 1116.0984, "Cr" : 690.7425, "Mn" : 802.7484,
+ "Fe" : 109.5041, "Co" : 532.7794, "Ni" : 574.7436, "Cu" : 337.1808, "Zn" : 340.5213,
+ "Ga" : 483.7516, "Ge" : 363.5474, "As" : 262.9498, "Se" : 213.6738, "Br" : 167.1297,
+ "Kr" : 130.4017, "Rb" : 6138.7755, "Sr" : 3381.3672, "Y"  : 2365.8925, "Zr" : 1822.7181,
+ "Nb" : 1475.2500, "Mo" : 845.8972, "Tc" : 1067.0169, "Ru" : 239.0071, "Pd" : 608.5041,
+ "Ag" : 426.7450, "Cd" : 468.1900, "In" : 757.7397, "Sn" : 627.5677, "Sb" : 492.9379,
+ "Te" : 425.5355, "I"  : 351.9667, "Xe" : 290.2223, "Cs" : 9330.7294, "Ba" : 5726.9887,
+ "La" : 3990.6172, "Ce" : 688.0353, "Pr" : 4342.2386, "Nd" : 3924.4211, "Pm" : 3710.9375,
+ "Sm" : 3522.0508, "Eu" : 3358.3122, "Gd" : 1891.6719, "Tb" : 2851.6677, "Dy" : 2617.3310,
+ "Ho" : 2664.1668, "Er" : 2545.1713, "Tm" : 2437.4539, "Yb" : 2390.1227, "Lu" : 1597.4796,
+ "Hf" : 1441.2394, "Ta" : 1163.8241, "W"  : 814.3622, "Re" : 836.3310, "Os" : 297.8338,
+ "Ir" : 566.0660, "Pt" : 391.1448, "Au" : 342.3526, "Hg" : 362.0755, "Tl" : 792.2378,
+ "Pb" : 738.8156, "Bi" : 617.5296, "Po" : 562.6011, "At" : 483.6536, "Rn" : 412.8275,
+ "Fr" : 7314.7398, "Ra" : 5305.4399, "Ac" : 3799.6565, "Th" : 2847.2704, "Pa" : 2908.9206,
+ "U"  : 2721.5209, "Np" : 3032.9760, "Pu" : 2815.2366}
+# Note: Several elements have two different C6 values listed, for different numbers of unpaired electrons. At present, the value with fewest unpaired electrons is used
+# This affects Fe (4 unpaired, 491.3349; 0 unpaired 109.5041), Ru (4 unpaired, 598.1988; 0 unpaired, 239.0071), Os (4 unpaired, 678.5278; 0 unpaired, 297.8338)
+# Note also that values are for the element alone, except Ce with data available only for CeH3
+
 #############################################################################################################
 # Do *not* define constants or conversion factors below here
 #############################################################################################################
@@ -542,23 +568,33 @@ def potXBond(f_dmp_theta, f_dmp_xbnd, c_xbnd_x, r_dx):
 
     return u
 
-def potPauliRep(rep_disp_AB, symA, symB, r_AB):
+def RadiusFromCn(C6_AB, C8_AB):
+    """
+    Function for the internuclear distance R0_AB used in London dispersion energy calculations
+    """
+    R0_AB = C6_AB/C8_AB
+    R0_AB = math.sqrt(R0_AB)
+
+    return R0_AB
+
+def potPauliRep(rep_disp_AB, symA, symB, r_AB, C6_AB, C8_AB):
     """
     Pairwise formula for the Pauli repulsion between two atoms
     """
-    # Calculation of topological screening parameter rep_disp_AB, and valence electron numbers, to be worked out still
+    # Calculation of valence electron numbers, and where to implement determination of Cn_AB, still to be worked out
     z_eff_A = SymbolToValenceE[symA] * k_z[symA]
     z_eff_B = SymbolToValenceE[symB] * k_z[symB]
-    R_0D3 # Standard D3 pair cutoff radii, yet to be included. Some placeholder value might be needed to test in the interim
+    R_0D3 # Probably = RadiusFromCn(C6_AB, C8_AB)
     u = rep_disp_AB * (z_eff_A*z_eff_B/r_AB) * math.exp(-1*beta_rep*r_AB/(R_0D3**(3/2)))
 
     return u
 
-def BJdamping(a, b):
+def BJdamping(a, b, C6_AB, C8_AB):
     """
     Function for the Becke-Johnson rational damping for atoms a and b
     """
-    R_0AB # To be implemented later
+    # Choice between taking C6_AB, C8_AB as arguments and including calculation from given atom symbols
+    R_0AB = RadiusFromCn(C6_AB, C8_AB)
     damp = a1*R_0AB + a2
 
     return damp
@@ -1024,10 +1060,10 @@ class Atom:
     
     Return a string representation of this Atom in this format:"
     
-      Atom("SYMBOL", charge, mass, X, Y, Z)
+      Atom("SYMBOL", charge, QM charge, mass, X, Y, Z)
     """
     
-    return '("{0}", {1}, {2}, {3}, {4}, {5})'.format(self.symbol, self.charge, self.mass, self.coord[0], self.coord[1], self.coord[2])
+    return '("{0}", {1}, {2}, {3}, {4}, {5} {6})'.format(self.symbol, self.charge, self.QMcharge, self.mass, self.coord[0], self.coord[1], self.coord[2])
   
   def x(self, x):
     """ (Atom) -> NoneType
@@ -1049,6 +1085,13 @@ class Atom:
     Set z coordinate to z
     """
     self.coord[2]=z
+
+def q(self, q):
+    """ (Atom) -> NoneType
+    
+    Set QMcharge to q
+    """
+    self.QMcharge = q
 
 #############################################################################################################
 # Molecule class and class methods to be defined below
@@ -2091,7 +2134,11 @@ class Molecule:
         # Calculate the required screening parameter, then the energy for this pair, and add to the total
         # Note that proper calculation will require the D3 cutoff radii R_0D3 which are yet to be worked in
         rep_disp_AB = self.screen_RepDisp(i, j)
-        energy_AB = potPauliRep(rep_disp_AB, symA, symB, distance)
+        C6_A = C6[symA]
+        C6_B = C6[symB] 
+        C6_AB = (C6_A + C6_B)/2
+        C8_AB # To be completed - find value or define function to calculate from C6
+        energy_AB = potPauliRep(rep_disp_AB, symA, symB, distance, C6_AB, C8_AB)
         e_Pauli = e_Pauli + energy_AB
     energy = energy + e_Pauli
     if verbosity >= 1:
@@ -2136,9 +2183,12 @@ class Molecule:
         # Calculate the required paramenters and thence the energy for this pairwise interaction, then add to the total
         # Note that this is incomplete until the D3 cutoff radii R_0D3, as well as the coefficients C6_AB and C8_AB, are incorporated properly
         rep_disp_AB = self.screen_RepDisp(i, j)
-        BJdamp_AB = BJdamping(i, j) 
-        C6_AB # To be completed 
-        C8_AB # To be completed
+        C6_A = C6[symA]
+        C6_B = C6[symB] 
+        C6_AB = (C6_A + C6_B)/2
+        C8_AB # To be completed - find value or define function to calculate from C6
+        R0_AB = RadiusFromCn(C6_Ab, C8_AB)
+        BJdamp_AB = BJdamping(i, j, C6_AB, C8_AB) 
         energy_AB = potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB, distance)
         e_disp = e_disp + energy_AB
     energy = energy + e_disp
@@ -2175,8 +2225,9 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
       break
   f.close()
   
-  # GEOMETRY READING SECTION
+  # GEOMETRY AND ATOMIC CHARGE READING SECTION
   geom = []
+  charges = []
   # Read through Gaussian file, read *last* "Input orientation"
   if program == "g09":
     f = open(filename,'r')
@@ -2200,9 +2251,36 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
       print("\nReading of geometry finished.\nAdding atoms to WellFARe molecule: ", molecule.name)
     for i in geom:
       readBuffer=i.split()
-      molecule.addAtom(Atom(NumberToSymbol[int(readBuffer[1])],float(readBuffer[3]),float(readBuffer[4]),float(readBuffer[5]),"q")) # "q" a placeholder for QM calculated charge on the atom
+      molecule.addAtom(Atom(NumberToSymbol[int(readBuffer[1])],float(readBuffer[3]),float(readBuffer[4]),float(readBuffer[5]), 0.1)) # 0.1 a placeholder for QM calculated charge on the atom
       if verbosity >= 2:
         print(" {:<3} {: .8f} {: .8f} {: .8f}".format(NumberToSymbol[int(readBuffer[1])],float(readBuffer[3]),float(readBuffer[4]),float(readBuffer[5])))
+    f.close()
+    # Next read through Gaussian file, read Mulliken charges and assign to their correct atoms
+    # This part will need to be tested, may be possible to integrate more into geometry reading!
+    f = open(filename, 'r')
+    for line in f:
+      if line.find("Mulliken charges:") != -1:
+        if verbosity >= 2:
+          print("\nMulliken charges found, reading charges") # May not strictly need this
+        del charges[:]
+        readBuffer = f.next() # Only one line to skip, but check this works with no for loop
+        while True:
+          readBuffer = f.__next__()
+          if readBuffer.find("Sum of Mulliken charges") == -1 # Check that finding less than the full line works - if not need to include the value of the sum
+            charges.append(readBuffer)
+            if verbosity >= 3:
+              readBuffer = readBuffer.split()
+              print(" Found atomic charge listing: {:<3} {<3} {: .8f} in Mulliken charges".format(int(readBuffer[0]), str(readBuffer[1]), float(readBuffer[2]))
+          else:
+            break
+    if verbosity >= 1:
+      print("\nReading of Mulliken charges finished. \nAdding charges to atoms in WellFARe molecule: ", molecule.name)
+    for i in charges:
+      readBuffer = i.split()
+      n = readBuffer[0] - 1
+      molecule.atoms[n].q(readBuffer[2])
+      if verbosity >= 2:
+        print(molecule.atoms[n].__repr__())
     f.close()
   # Read through ORCA file, read *last* set of cartesian coordinates
   elif program == "orca":
@@ -2230,7 +2308,33 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
       if verbosity >= 2:
         print(" {:<3} {: .8f} {: .8f} {: .8f}".format(readBuffer[0],float(readBuffer[1]),float(readBuffer[2]),float(readBuffer[3])))
     f.close()
-    
+    # Read through ORCA file to locate and read Mulliken atomic charges
+    f = open(filename, 'r')
+    for line in f:
+      if line.find("MULLIKEN ATOMIC CHARGES") != -1:
+        if verbosity >= 2:
+          print("\nMulliken charges found, reading charges") # May not strictly need this
+        del charges[:]
+        readBuffer = f.next() # Only one line to skip, but check this works with no for loop
+        while True:
+          readBuffer = f.__next__()
+          if readBuffer.find("Sum of atomic charges:") == -1 # Check whether full line needed (as per comment in Gaussian09 section)
+            charges.append(readBuffer)
+            if verbosity >= 3:
+              readBuffer = readBuffer.split()
+              print(" Found atomic charge listing: {:<3} {<3} {: .8f} in Mulliken charges".format(int(readBuffer[0]), str(readBuffer[1]), float(readBuffer[3])) # Assuming that ':' is split into its own list entry. May need to check formatting around whitespace
+          else:
+            break
+    if verbosity >= 1:
+      print("\nReading of Mulliken charges finished. \nAdding charges to atoms in WellFARe molecule: ", molecule.name)
+    for i in charges:
+      readBuffer = i.split()
+      n = readBuffer[0] - 1
+      molecule.atoms[n].q(readBuffer[3]) # Again assuming that the charge is the 4th list entry, with ':' having been split on its own.
+      if verbosity >= 2:
+        print(molecule.atoms[n].__repr__())
+    f.close()
+
   # BOND ORDER READING SECTION
   bo = []
   bo = numpy.zeros((molecule.numatoms(), molecule.numatoms()))
