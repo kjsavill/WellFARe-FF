@@ -584,7 +584,7 @@ def potPauliRep(rep_disp_AB, symA, symB, r_AB, C6_AB, C8_AB):
     # Calculation of valence electron numbers, and where to implement determination of Cn_AB, still to be worked out
     z_eff_A = SymbolToValenceE[symA] * k_z[symA]
     z_eff_B = SymbolToValenceE[symB] * k_z[symB]
-    R_0D3 # Probably = RadiusFromCn(C6_AB, C8_AB)
+    R_0D3 = RadiusFromCn(C6_AB, C8_AB) # Note still need to confirm whether R_0D3 and R0_AB are actually equivalent
     u = rep_disp_AB * (z_eff_A*z_eff_B/r_AB) * math.exp(-1*beta_rep*r_AB/(R_0D3**(3/2)))
 
     return u
@@ -1086,7 +1086,7 @@ class Atom:
     """
     self.coord[2]=z
 
-def q(self, q):
+  def setq(self, q):
     """ (Atom) -> NoneType
     
     Set QMcharge to q
@@ -2137,7 +2137,7 @@ class Molecule:
         C6_A = C6[symA]
         C6_B = C6[symB] 
         C6_AB = (C6_A + C6_B)/2
-        C8_AB # To be completed - find value or define function to calculate from C6
+        C8_AB = C6_AB # Correct value to be implemented later, set equal to C6_AB solely to test
         energy_AB = potPauliRep(rep_disp_AB, symA, symB, distance, C6_AB, C8_AB)
         e_Pauli = e_Pauli + energy_AB
     energy = energy + e_Pauli
@@ -2169,10 +2169,10 @@ class Molecule:
       print("With electrostatic interactions, energy = " + str(energy))
 
     e_disp = 0.0
-    for i in range(len(molecule.atoms)):
-      for j in range(len(molecule.atoms)):
-        symA = molecule.atoms[i].symbol
-        symB = molecule.atoms[j].symbol
+    for i in range(len(self.atoms)):
+      for j in range(len(self.atoms)):
+        symA = self.atoms[i].symbol
+        symB = self.atoms[j].symbol
         # Calculate the distance between atoms i and j
         coordA =[cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
         coordB = [cartCoordinates[3*j], cartCoordinates[3*j + 1], cartCoordinates[3*j + 2]]
@@ -2186,8 +2186,8 @@ class Molecule:
         C6_A = C6[symA]
         C6_B = C6[symB] 
         C6_AB = (C6_A + C6_B)/2
-        C8_AB # To be completed - find value or define function to calculate from C6
-        R0_AB = RadiusFromCn(C6_Ab, C8_AB)
+        C8_AB = C8_AB # To be completed - temporarily set equal to C6 for test run only
+        R0_AB = RadiusFromCn(C6_AB, C8_AB)
         BJdamp_AB = BJdamping(i, j, C6_AB, C8_AB) 
         energy_AB = potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB, distance)
         e_disp = e_disp + energy_AB
@@ -2263,22 +2263,22 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
         if verbosity >= 2:
           print("\nMulliken charges found, reading charges") # May not strictly need this
         del charges[:]
-        readBuffer = f.next() # Only one line to skip, but check this works with no for loop
+        readBuffer = f.__next__() # Only one line to skip, but check this works with no for loop
         while True:
           readBuffer = f.__next__()
-          if readBuffer.find("Sum of Mulliken charges") == -1 # Check that finding less than the full line works - if not need to include the value of the sum
+          if readBuffer.find("Sum of Mulliken charges") == -1: # Check that finding less than the full line works - if not need to include the value of the sum
             charges.append(readBuffer)
             if verbosity >= 3:
               readBuffer = readBuffer.split()
-              print(" Found atomic charge listing: {:<3} {<3} {: .8f} in Mulliken charges".format(int(readBuffer[0]), str(readBuffer[1]), float(readBuffer[2]))
+              print(" Found atomic charge listing: {:<3} {<3} {: .8f} in Mulliken charges".format(int(readBuffer[0]), str(readBuffer[1]), float(readBuffer[2])))
           else:
             break
     if verbosity >= 1:
       print("\nReading of Mulliken charges finished. \nAdding charges to atoms in WellFARe molecule: ", molecule.name)
     for i in charges:
       readBuffer = i.split()
-      n = readBuffer[0] - 1
-      molecule.atoms[n].q(readBuffer[2])
+      n = int(readBuffer[0]) - 1
+      molecule.atoms[n].setq(float(readBuffer[2]))
       if verbosity >= 2:
         print(molecule.atoms[n].__repr__())
     f.close()
@@ -2318,11 +2318,11 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
         readBuffer = f.next() # Only one line to skip, but check this works with no for loop
         while True:
           readBuffer = f.__next__()
-          if readBuffer.find("Sum of atomic charges:") == -1 # Check whether full line needed (as per comment in Gaussian09 section)
+          if readBuffer.find("Sum of atomic charges:") == -1: # Check whether full line needed (as per comment in Gaussian09 section)
             charges.append(readBuffer)
             if verbosity >= 3:
               readBuffer = readBuffer.split()
-              print(" Found atomic charge listing: {:<3} {<3} {: .8f} in Mulliken charges".format(int(readBuffer[0]), str(readBuffer[1]), float(readBuffer[3])) # Assuming that ':' is split into its own list entry. May need to check formatting around whitespace
+              print(" Found atomic charge listing: {:<3} {<3} {: .8f} in Mulliken charges".format(int(readBuffer[0]), str(readBuffer[1]), float(readBuffer[3]))) # Assuming that ':' is split into its own list entry. May need to check formatting around whitespace
           else:
             break
     if verbosity >= 1:
@@ -2816,7 +2816,7 @@ infile = iofiles(sys.argv[1:])
 #   print(i)
 
 reactant_mol = Molecule("Reactant",0)
-extractCoordinates("g09-dielsalder-r.log", reactant_mol, verbosity = 2)
+extractCoordinates(infile, reactant_mol, verbosity = 2)
 
 product_mol = Molecule("Product",0)
 extractCoordinates("g09-dielsalder-p.log", product_mol, verbosity = 2)
@@ -2835,9 +2835,9 @@ coordinates2optimiseR = (numpy.array(coordinates2optimiseR)+(numpy.array(coordin
 
 print(reactant_mol.FFEnergy(coordinates2optimiseR, verbosity = 1))
 
-print("\nGeometry Optimizer:")
-xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
-print("\nOptimized Geometry:")
-print(xopt)
+#print("\nGeometry Optimizer:")
+#xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
+#print("\nOptimized Geometry:")
+#print(xopt)
 
 ProgramFooter()
