@@ -1366,17 +1366,17 @@ class Molecule:
     cos_phi3 = numpy.dot(bond_3, inplane_3)/(numpy.linalg.norm(bond_3)*numpy.linalg.norm(inplane_3))
 
     if (1.0 - (10**-15)) <= cos_phi1 and cos_phi1 <= (1.0 + (10**-15)):
-        phi1 = 0.0
-      else:
-        phi1 = numpy.arccos(cos_phi1)
-      if (1.0 - (10**-15)) <= cos_phi2 and cos_phi2 <= (1.0 + (10**-15)):
-        phi2 = 0.0
-      else:
-        phi2 = numpy.arccos(cos_phi2)
-      if (1.0 - (10**-15)) <= cos_phi3 and cos_phi3 <= (1.0 + (10**-15)):
-        phi3 = 0.0
-      else:
-        phi3 = numpy.arccos(cos_phi3)phi1 = numpy.arccos(cos_phi1)
+      phi1 = 0.0
+    else:
+      phi1 = numpy.arccos(cos_phi1)
+    if (1.0 - (10**-15)) <= cos_phi2 and cos_phi2 <= (1.0 + (10**-15)):
+      phi2 = 0.0
+    else:
+      phi2 = numpy.arccos(cos_phi2)
+    if (1.0 - (10**-15)) <= cos_phi3 and cos_phi3 <= (1.0 + (10**-15)):
+      phi3 = 0.0
+    else:
+      phi3 = numpy.arccos(cos_phi3)
 
     # Take the numerical average of the three out of plane angles
     # Note - other schemes for obtaining a single out of plane angle could be investigated
@@ -2214,7 +2214,8 @@ class Molecule:
     if verbosity >= 1:
       print("With London dispersion, energy = " + str(energy))
 
-    # Calculation of polarisation energy (for solute-solvent) to go here
+    # Calculation of polarisation energy (for solute-solvent) to go here in future
+    # Left out for version 1 as optional, only important as intermolecular interactions
 
     if verbosity >=1:
       print("Total energy:")
@@ -2623,7 +2624,11 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
     c[3*molecule.angles[i][2]] = bdprime[0]
     c[3*molecule.angles[i][2]+1] = bdprime[1]
     c[3*molecule.angles[i][2]+2] = bdprime[2]
-    c=c/numpy.linalg.norm(c)
+# Temporary fix to avoid divide-by-zero errors follows, may be replaced by better check in future
+    if c.all() == numpy.zeros(molecule.numatoms()*3).all():
+      print("Zero vector returned while extracting angle bend force constants, skipping normalisation")
+    else:
+      c=c/numpy.linalg.norm(c)
     fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
     if fc < 0.002:
       ProgramWarning()
@@ -2656,9 +2661,13 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
     c[3*molecule.dihedrals[i][2]+1] = p2[1]
     c[3*molecule.dihedrals[i][2]+2] = p2[2]
     if c.all() == numpy.zeros(molecule.numatoms()*3).all():
-      print("Zero vector returned, skipping normalisation") #Avoids fc=nan error for cases where all three atoms lie in the plane of two coordinate axes
+      print("Zero vector returned while extracting force constants, skipping normalisation") # Avoids fc=nan error for cases where all three atoms lie in the plane of two coordinate axes
     else:
       c=c/numpy.linalg.norm(c)
+# Note that the above is just an initial fix for cases where there would otherwise be a divide-by-zero error
+# These arise where several atoms have 0 in one coordinate which propogates through cross-products and are a 
+# side-effect of orienting molecule along principal axes from the centre of mass as bonds lie in a coordinate plane
+# Better fix may be possible/necessary - could translate molecule, for instance
     fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
     if fc < 0.002:
       ProgramWarning()
@@ -2698,7 +2707,11 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
     c[3*molecule.threefolds[i][3]] = dprime[0]
     c[3*molecule.threefolds[i][3]+1] = dprime[1]
     c[3*molecule.threefolds[i][3]+2] = dprime[2]
-    c = c/numpy.linalg.norm(c)
+# Temporary fix to avoid divide-by-zero errors follows, may be replaced by better check in future
+    if c.all() == numpy.zeros(molecule.numatoms()*3).all():
+      print("Zero vector returned while extracting inversion force constants, skipping normalisation")
+    else:
+      c=c/numpy.linalg.norm(c)
     fc = numpy.dot(numpy.dot(c,H), numpy.transpose(c))
     if fc < 0.002:
       ProgramWarning()
