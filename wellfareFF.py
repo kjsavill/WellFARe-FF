@@ -212,6 +212,29 @@ SymbolToRadius = {
 "Mt" : 1.50, "Ds" : 1.50, "Rg" : 1.50, "Cn" : 1.50, "Uut" : 1.50,"Uuq" : 1.50,
 "Uup" : 1.50, "Uuh" : 1.50, "Uus" : 1.50, "Uuo" : 1.50}
 
+# Define dictionary to convert atomic symbols to van der Waals radii (in Angstrom)
+SymbolToVdWRadius = {
+"H"  : 1.10, "He" : 1.40, "Li" : 1.82, "Be" : 1.53, "B"  : 1.92, "C"  : 1.70,
+"N"  : 1.55, "O"  : 1.52, "F"  : 1.47, "Ne" : 1.54, "Na" : 2.27, "Mg" : 1.73,
+"Al" : 1.84, "Si" : 2.10, "P"  : 1.80, "S"  : 1.80, "Cl" : 1.75, "Ar" : 1.88,
+"K"  : 2.75, "Ca" : 2.31, "Sc" : 2.15, "Ti" : 2.11, "V"  : 2.07, "Cr" : 2.06,
+"Mn" : 2.05, "Fe" : 2.04, "Co" : 2.00, "Ni" : 1.97, "Cu" : 1.96, "Zn" : 2.01,
+"Ga" : 1.87, "Ge" : 2.11, "As" : 1.85, "Se" : 1.90, "Br" : 1.85, "Kr" : 2.02,
+"Rb" : 3.03, "Sr" : 2.49, "Y"  : 2.32, "Zr" : 2.23, "Nb" : 2.18, "Mo" : 2.17,
+"Tc" : 2.16, "Ru" : 2.13, "Rh" : 2.10, "Pd" : 2.10, "Ag" : 2.11, "Cd" : 2.18,
+"In" : 1.93, "Sn" : 2.17, "Sb" : 2.06, "Te" : 2.06, "I"  : 1.98, "Xe" : 2.16,
+"Cs" : 3.43, "Ba" : 2.68, "La" : 2.43, "Ce" : 2.42, "Pr" : 2.40, "Nd" : 2.39,
+"Pm" : 2.38, "Sm" : 2.36, "Eu" : 2.35, "Gd" : 2.34, "Tb" : 2.33, "Dy" : 2.31,
+"Ho" : 2.30, "Er" : 2.29, "Tm" : 2.27, "Yb" : 2.26, "Lu" : 2.24, "Hf" : 2.23,
+"Ta" : 2.22, "W"  : 2.18, "Re" : 2.16, "Os" : 2.16, "Ir" : 2.13, "Pt" : 2.13,
+"Au" : 2.14, "Hg" : 2.23, "Tl" : 1.96, "Pb" : 2.02, "Bi" : 2.07, "Po" : 1.97,
+"At" : 2.02, "Rn" : 2.20, "Fr" : 3.48, "Ra" : 2.83, "Ac" : 2.47, "Th" : 2.45,
+"Pa" : 2.43, "U"  : 2.41, "Np" : 2.39, "Pu" : 2.43, "Am" : 2.44, "Cm" : 2.45,
+"Bk" : 2.44, "Cf" : 2.45, "Es" : 2.45, "Fm" : 2.45, "Md" : 2.46, "No" : 2.46,
+"Lr" : 2.46, "Rf" : "?", "Db" : "?", "Sg" : "?", "Bh" : "?", "Hs" : "?",
+"Mt" : "?", "Ds" : "?", "Rg" : "?", "Cn" : "?", "Uut" : "?", "Uuq" : "?",
+"Uup" : "?", "Uuh" : "?", "Uus" : "?", "Uuo" : "?" }
+
 # Define dictionary to convert atomic symbols to (Pauling) electronegativity
 SymbolToEN = {
 "H"  : 2.20, "He" : 0.00, "Li" : 0.98, "Be" : 1.57, "B"  : 2.04, "C"  : 2.55,
@@ -234,6 +257,122 @@ SymbolToEN = {
 "Lr" : 1.30, "Rf" : 1.30, "Db" : 1.30, "Sg" : 1.30, "Bh" : 1.30, "Hs" : 1.30,
 "Mt" : 1.30, "Ds" : 1.30, "Rg" : 1.30, "Cn" : 1.30, "Uut" : 1.30,"Uuq" : 1.30,
 "Uup" : 1.30, "Uuh" : 1.30, "Uus" : 1.30, "Uuo" : 1.30}
+
+# Define dictionary to convert atomic symbods to valence electron number
+SymbolToValenceE = {
+"H"  : 1, "He" : 2, "Li" : 1, "Be" : 2, "B"  : 3, "C"  : 4,
+"N"  : 5, "O"  : 6, "F"  : 7, "Ne" : 8, "Na" : 1, "Mg" : 2,
+"Al" : 3, "Si" : 4, "P"  : 5, "S"  : 6, "Cl" : 7, "Ar" : 8,
+"K"  : 1, "Ca" : 2, "Sc" : 3, "Ti" : 4, "V"  : 5, "Cr" : 6,
+"Mn" : 7, "Fe" : 8, "Co" : 9, "Ni" : 10, "Cu" : 11, "Zn" : 12}
+# Note that this will need to be completed later
+
+# ---------------------------------------------------
+# Define global empirical parameters for force field
+# ---------------------------------------------------
+
+# Define a dictionary for the element specific parameter k_a
+k_a = {
+ "H"  : 1.755, "He" : 1.755, "B"  : 2.287, "C"  : 2.463, "N"  : 2.559, "O"  : 2.579,
+ "F"  : 2.465, "Ne" : 2.465, "Al" : 2.508, "Si" : 2.684, "P"  : 2.780, "S"  : 2.800,
+ "Cl" : 2.686, "Li" : 2.20, "Na" : 2.20, "K"  : 2.20, "Rb" : 2.20, "Cs" : 2.20,
+ "Fr" : 2.20, "Be" : 2.80, "Mg" : 2.80, "Ca" : 2.80, "Sr" : 2.80, "Ba" : 2.80,
+ "Ra" : 2.80, "Ar" : 2.75, "Sc" : 2.95, "Ti" : 2.95, "V"  : 2.95, "Cr" : 2.95,
+ "Mn" : 2.95, "Fe" : 2.95, "Co" : 2.95, "Ni" : 2.95, "Cu" : 2.95, "Zn" : 2.95,
+ "Ga" : 2.95, "Ge" : 2.95, "As" : 2.95, "Se" : 2.95, "Br" : 2.95, "Kr" : 2.95,
+ "Y"  : 3.15, "Zr" : 3.15, "Nb" : 3.15, "Mo" : 3.15, "Tc" : 3.15, "Ru" : 3.15,
+ "Rh" : 3.15, "Pd" : 3.15, "Ag" : 3.15, "Cd" : 3.15, "In" : 3.15, "Sn" : 3.15,
+ "Sb" : 3.15, "Te" : 3.15, "I"  : 3.15, "Xe" : 3.15, "La" : 3.80, "Ce" : 3.80,
+ "Pr" : 3.80, "Nd" : 3.80, "Pm" : 3.80, "Sm" : 3.80, "Eu" : 3.80, "Gd" : 3.80,
+ "Tb" : 3.80, "Dy" : 3.80, "Ho" : 3.80, "Er" : 3.80, "Tm" : 3.80, "Yb" : 3.80,
+ "Lu" : 3.80, "Hf" : 3.80, "Ta" : 3.80, "W"  : 3.80, "Re" : 3.80, "Os" : 3.80,
+ "Ir" : 3.80, "Pt" : 3.80, "Au" : 3.80, "Hg" : 3.80, "Tl" : 3.80, "Pb" : 3.80,
+ "Bi" : 3.80, "Po" : 3.80, "At" : 3.80, "Rn" : 3.80}
+
+# Define dictionary for the element specific parameter k_z
+k_z = {
+ "H"  : 3.00, "He" : 2.35, "Li" : 1.70, "Be" : 5.50, "B"  : 0.95, "C"  : 0.95,
+ "N"  : 0.95, "O"  : 0.95, "F"  : 0.95, "Ne" : 0.95, "Na" : 2.50, "Mg" : 3.00,
+ "Al" : 0.75, "Si" : 0.75, "P"  : 0.75, "S"  : 0.75, "Cl" : 0.75, "Ar" : 0.75,
+ "K"  : 3.00, "Ca" : 3.00, "Sc" : 0.65, "Ti" : 0.65, "V"  : 0.65, "Cr" : 0.65,
+ "Mn" : 0.65, "Fe" : 0.65, "Co" : 0.65, "Ni" : 0.65, "Cu" : 0.65, "Zn" : 0.65,
+ "Ga" : 0.65, "Ge" : 0.65, "As" : 0.65, "Se" : 0.65, "Br" : 0.65, "Kr" : 0.65,
+ "Rb" : 3.00, "Sr" : 3.00, "Cs" : 0.60, "Ba" : 0.60, "La" : 0.60, "Ce" : 0.60,
+ "Pr" : 0.60, "Nd" : 0.60, "Pm" : 0.60, "Sm" : 0.60, "Eu" : 0.60, "Gd" : 0.60,
+ "Tb" : 0.60, "Dy" : 0.60, "Ho" : 0.60, "Er" : 0.60, "Tm" : 0.60, "Yb" : 0.60,
+ "Lu" : 0.60, "Hf" : 0.60, "Ta" : 0.60, "W"  : 0.60, "Re" : 0.60, "Os" : 0.60,
+ "Ir" : 0.60, "Pt" : 0.60, "Au" : 0.60, "Hg" : 0.60, "Tl" : 0.60, "Pb" : 0.60,
+ "Bi" : 0.60, "Po" : 0.60, "At" : 0.60, "Rn" : 0.60, "Fr" : 0.60, "Ra" : 0.60,
+ "Ac" : 0.60, "Th" : 0.60, "Pa" : 0.60, "U"  : 0.60, "Np" : 0.60, "Pu" : 0.60,
+ "Am" : 0.60, "Cm" : 0.60, "Bk" : 0.60, "Cf" : 0.60, "Es" : 0.60, "Fm" : 0.60,
+ "Md" : 0.60, "No" : 0.60, "Lr" : 0.60, "Rf" : 0.60, "Db" : 0.60, "Sg" : 0.60,
+ "Bh" : 0.60, "Hs" : 0.60, "Mt" : 0.60, "Ds" : 0.60, "Rg" : 0.60, "Cn" : 0.60,
+ "Uut" : 0.60,"Uuq" : 0.60, "Uup": 0.60, "Uuh" : 0.60, "Uus" : 0.60, "Uuo" : 0.60}
+# Note no values specified for row 5 elements outside s block - Grimme gives rows 1, 2, 3 and 4, then Z>54
+
+# Define individual global parameters
+k_EN = -0.164
+k_a2 = 0.221
+k_a13 = 2.81
+k_b13 = 0.53
+k_13r = 0.7
+k_damping = 0.11
+k_overlap = 0.5
+a1 = 0.45
+a2 = 4.0
+s8 = 2.7
+E_ES_14 = 0.85
+E_disp_rep = 0.5
+beta_rep = 16.5
+k_q = 1.15
+
+# Define dictionary for the element specific hydrogen bonding parameter
+k_hbnd = {"N": 0.8,
+           "O": 0.3,
+           "F": 0.1,
+           "P": 2.0,
+           "S": 2.0,
+           "Cl": 2.0,
+           "Se": 2.0,
+           "Br": 2.0}
+
+# Define dictionary for the element specific parameter k_X
+k_X = {"Cl": 0.3,
+       "Br": 0.6,
+       "I": 0.8,
+       "At": 1.0}
+
+# Define dictionaries for the hydrogen and halogen bonding parameters k_q1 and k_q2
+k_q1 = {"hbond": 10,
+        "xbond": -6.5}
+k_q2 = {"hbond": 5,
+        "xbond": 1}
+
+# Define a dictionary for the DFT-D3 C6 coefficients
+# (Values taken from www.thch.uni-bonn.de/tc/downloads/DFT-D3/data/refmol.txt
+C6 = {
+ "H"  : 7.5916, "He" : 1.5583, "Li" : 1163.4454, "Be" : 257.4863, "B"  : 107.1777,
+ "C"  : 49.1130, "N"  : 25.2685, "O"  : 15.5059, "F"  : 9.6916, "Ne" : 6.2896,
+ "Na" : 1608.0286, "Mg" : 683.3758, "Al" : 540.5406, "Si" : 317.8574, "P"  : 191.6887,
+ "S"  : 134.0066, "Cl" : 92.3460, "Ar" : 64.6462, "K"  : 4983.5009, "Ca" : 2352.6862,
+ "Sc" : 1702.6213, "Ti" : 1361.9185, "V"  : 1116.0984, "Cr" : 690.7425, "Mn" : 802.7484,
+ "Fe" : 109.5041, "Co" : 532.7794, "Ni" : 574.7436, "Cu" : 337.1808, "Zn" : 340.5213,
+ "Ga" : 483.7516, "Ge" : 363.5474, "As" : 262.9498, "Se" : 213.6738, "Br" : 167.1297,
+ "Kr" : 130.4017, "Rb" : 6138.7755, "Sr" : 3381.3672, "Y"  : 2365.8925, "Zr" : 1822.7181,
+ "Nb" : 1475.2500, "Mo" : 845.8972, "Tc" : 1067.0169, "Ru" : 239.0071, "Pd" : 608.5041,
+ "Ag" : 426.7450, "Cd" : 468.1900, "In" : 757.7397, "Sn" : 627.5677, "Sb" : 492.9379,
+ "Te" : 425.5355, "I"  : 351.9667, "Xe" : 290.2223, "Cs" : 9330.7294, "Ba" : 5726.9887,
+ "La" : 3990.6172, "Ce" : 688.0353, "Pr" : 4342.2386, "Nd" : 3924.4211, "Pm" : 3710.9375,
+ "Sm" : 3522.0508, "Eu" : 3358.3122, "Gd" : 1891.6719, "Tb" : 2851.6677, "Dy" : 2617.3310,
+ "Ho" : 2664.1668, "Er" : 2545.1713, "Tm" : 2437.4539, "Yb" : 2390.1227, "Lu" : 1597.4796,
+ "Hf" : 1441.2394, "Ta" : 1163.8241, "W"  : 814.3622, "Re" : 836.3310, "Os" : 297.8338,
+ "Ir" : 566.0660, "Pt" : 391.1448, "Au" : 342.3526, "Hg" : 362.0755, "Tl" : 792.2378,
+ "Pb" : 738.8156, "Bi" : 617.5296, "Po" : 562.6011, "At" : 483.6536, "Rn" : 412.8275,
+ "Fr" : 7314.7398, "Ra" : 5305.4399, "Ac" : 3799.6565, "Th" : 2847.2704, "Pa" : 2908.9206,
+ "U"  : 2721.5209, "Np" : 3032.9760, "Pu" : 2815.2366}
+# Note: Several elements have two different C6 values listed, for different numbers of unpaired electrons. At present, the value with fewest unpaired electrons is used
+# This affects Fe (4 unpaired, 491.3349; 0 unpaired 109.5041), Ru (4 unpaired, 598.1988; 0 unpaired, 239.0071), Os (4 unpaired, 678.5278; 0 unpaired, 297.8338)
+# Note also that values are for the element alone, except Ce with data available only for CeH3
 
 #############################################################################################################
 # Do *not* define constants or conversion factors below here
@@ -279,6 +418,206 @@ def potSimpleCosine(theta, theta0, k):
     
     return u
 
+def bond_exp(a, b):
+    """
+    Exponent a used in the Generalised Lennard-Jones potential for bond stretches
+    """
+    # Now taking as input the symbols a and b for the two atoms in a bond 
+    delta_EN = SymbolToEN[a] - SymbolToEN[b]
+    bond_exp = (k_a[a] * k_a[b]) + (k_EN * (delta_EN ** 2))
+
+    return bond_exp
+
+def exp_1_3(a, b):
+    """
+    Exponent a used in the Generalised Lennard-Jones potential for 1,3-stretches
+    """
+    # Now taking atomic symbols as input 
+    exp_1_3 = k_a13 + (k_b13 * k_a[a] * k_a[b])
+    # Special case: if both atoms are in a ring, then k_13r is added to exp_1_3. Detection of rings to be implemented later
+
+    return exp_1_3
+
+def potGLJ(r, r0, k_str, a):
+    """"
+    Generalised Lennard-Jones potential (for bond and 1,3 stretches)
+    """
+    # k_str to be set equal to force constant for /that/ bond as read from Hessian as an initial guess, fitting implemented later
+    u = k_str * (1 + ((r0/r) ** a) - 2 * ((r0/r) ** (a/2)))
+
+    return u
+
+def DampingFunction(a, b, r):
+    """
+    Distance dependent damping function for atoms with symbols a and b, and separation r
+    """
+    r_cov = SymbolToRadius[a] + SymbolToRadius[b]
+    # Covalent distance defined as sum of covalent radii for the two atoms - will need to check this is correct
+
+    f_dmp = 1 / (1 + k_damping * ((r/r_cov) ** 4))
+
+    return f_dmp
+
+def potBendNearLinear(a, a0, k_bnd, f_dmp):
+    """
+    Bending potential for equilibrium angles close to linearity
+    """
+
+    u = k_bnd * f_dmp * ((a0 - a) ** 2)
+
+    return u
+
+def potAnyBend(a, a0, k_bnd, f_dmp):
+    """
+    Double minimum bending potential
+    """
+
+    u = k_bnd * f_dmp * ((math.cos(a0) - math.cos(a)) ** 2)
+
+    return u
+
+def ChiralityFunction(theta):
+    """
+    Function used in torsion potential to give correct mirror symmetry
+    """
+
+    f_chiral = 0.5 * (1 - math.erf(theta - math.pi))
+
+    return f_chiral
+
+def potTorsion(theta, theta0, f_dmp, k_tors):
+    """
+    Torsion potential
+    """
+
+    f_chiral = ChiralityFunction(theta)
+
+    u = 0.0
+    # Sort out where n comes from in the following sum, check if k_tors ** n or k_tors_n
+    #for n in # Range to be determined:
+    #    inner_sum = (f_chiral * (1 + math.cos(n * (theta - theta0) + math.pi))) + ((1 - f_chiral) * (1 + math.cos(n * (theta + theta0 - (2 * math.pi)) + math.pi)))
+    #    u = u + ((k_tors ** n) * inner_sum)
+    #u = u * f_dmp
+
+    return u
+
+def AngleDamping(theta):
+    """
+    Angle dependent damping function for hydrogen bonding interactions
+    """
+
+    f_dmp_a = (0.5 * (math.cos(theta)+1)) ** 6
+
+    return f_dmp_a
+
+def HBondDamping(a, b, r_ab):
+    """
+    Distance dependent damping function for hydrogen bonding with donor/acceptor atoms having symbols a and b, separation r_ab
+    """
+    r_cov = SymbolToRadius[a] + SymbolToRadius[b]
+    # Covalent distance defined as sum of covalent radii for the two atoms - will need to check this is correct
+
+    f_dmp_hbnd = 1 / (1 + k_damping * ((r_ab/r_cov) ** 12))
+
+    return f_dmp_hbnd
+
+def AtomicHBondFactor(sym, chg):
+    """
+    Atomic factor c_hbnd for an atom with symbol sym and atomic charge chg, used in hydrogen bond interaction strength
+    """
+
+    c_hbnd = k_hbnd[sym] * (math.exp(-1*k_q1["hbond"] * chg) / (math.exp(-1*k_q1["hbond"] * chg) + k_q2["hbond"]))
+
+    return c_hbnd
+
+def HBondStrengthFactor(sym_a, chg_a, r_ah, sym_b, chg_b, r_bh):
+    """
+    Modifier for the strength of a hydrogen bonding interaction where donor/acceptor atoms a and b are at distances r_ah and r_bh from hydrogen
+    """
+
+    c_hbnd_a = AtomicHBondFactor(sym_a, chg_a)
+    c_hbnd_b = AtomicHBondFactor(sym_b, chg_b)
+    c_hbnd_ab = (c_hbnd_a * (r_ah ** 2) + c_hbnd_b * (r_bh ** 2)) / (r_ah ** 2 + r_bh ** 2)
+
+    return c_hbnd_ab
+
+def potHBond(f_dmp_a, f_dmp_hbnd, c_hbnd_ab, r_ab):
+    """
+    Function for the hydrogen bonding potential over a given atom triple with donor/acceptor atoms a and b at distance r_ab apart, and calculated damping and strength factors
+    """
+
+    u = f_dmp_a * f_dmp_hbnd * (c_hbnd_a/(r_ab ** 3))
+
+    return u
+
+def AtomicXBondFactor(sym, chg):
+    """
+    Atomic factor c_xbnd_x for a halogen acceptor atom with symbol sym and charge chg, used in halogen bonding potential
+    """
+
+    c_xbnd_x = k_X[sym] * (math.exp(-1*k_q1["xbond"])/(math.exp(-1*k_q1["xbond"]) + k_q2["xbond"]))
+
+    return c_xbnd_x
+
+def potXBond(f_dmp_theta, f_dmp_xbnd, c_xbnd_x, r_dx):
+    """
+    Function for the halogen bonding potential over a given atom triple with donor atom d and halogen x at a distance r_dx from one another, and calculated damping and strength factors
+    """
+
+    u = f_dmp_theta * f_dmp_xbnd * (c_xbnd_x/(r_dx**2))
+
+    return u
+
+def RadiusFromCn(C6_AB, C8_AB):
+    """
+    Function for the internuclear distance R0_AB used in London dispersion energy calculations
+    """
+    R0_AB = C6_AB/C8_AB
+    R0_AB = math.sqrt(R0_AB)
+
+    return R0_AB
+
+def potPauliRep(rep_disp_AB, symA, symB, r_AB, C6_AB, C8_AB):
+    """
+    Pairwise formula for the Pauli repulsion between two atoms
+    """
+    # Calculation of valence electron numbers, and where to implement determination of Cn_AB, still to be worked out
+    z_eff_A = SymbolToValenceE[symA] * k_z[symA]
+    z_eff_B = SymbolToValenceE[symB] * k_z[symB]
+    R_0D3 = RadiusFromCn(C6_AB, C8_AB) # Note still need to confirm whether R_0D3 and R0_AB are actually equivalent
+    u = rep_disp_AB * (z_eff_A*z_eff_B/r_AB) * math.exp(-1*beta_rep*r_AB/(R_0D3**(3/2)))
+
+    return u
+
+def BJdamping(a, b, C6_AB, C8_AB):
+    """
+    Function for the Becke-Johnson rational damping for atoms a and b
+    """
+    # Choice between taking C6_AB, C8_AB as arguments and including calculation from given atom symbols
+    R_0AB = RadiusFromCn(C6_AB, C8_AB)
+    damp = a1*R_0AB + a2
+
+    return damp
+
+def potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB, r_AB):
+    """
+    Function for the London dispersion energy under the D3 scheme employing Becke-Johnson rational damping via BJdamp_AB
+    """
+    # Calculation of rep_disp_AB, and correct values for the other arguments in this function, to be worked out
+    sixterm = C6_AB/(r_AB**6 + BJdamp_AB**6)
+    eightterm = C8_AB/(r_AB**8 + BJdamp_AB**8)
+    u = rep_disp_AB*(sixterm + s8*eightterm)
+
+    return u
+
+def potElectrostatic(elstat_AB, chg_A, chg_B, r_AB):
+    """
+    Function for the electrostatic potential between atoms A and B
+    """
+    # Determination of the screening parameter elstat_AB still to be implemented
+    u = elstat_AB*(chg_A*chg_B/r_AB)
+
+    return u
 
 #############################################################################################################
 # Classes for Force Field Terms defined below
@@ -291,21 +630,32 @@ class FFStretch:
     """ (FFStretch, int, int, number, int, [number]) -> NoneType
     
     A stretch potential between atoms number a and b with equilibrium
-    distance r0, of type typ with arguments [arg]
+    distance r0, of type typ with arguments [arg] where arg[2] and arg[3]
+    are the atomic symbols of atoms number a and b respectively
     """
     
     self.atom1 = a
     self.atom2 = b
     self.r0 = r0
+    self.typ = typ
+    
     if typ == 1:
       self.typ = typ
       self.k = arg[0]
     elif typ == 2:
       self.D = arg[0]
       self.b = arg[1]
+    elif typ == 3:
+        self.exp_a = bond_exp(arg[2], arg[3])
+    #check whether an Atom can be passed to a function this way
+        self.k_str = arg[0]
+    elif typ == 4:
+        self.exp_a = exp_1_3(arg[2], arg[3])
+        self.k_str = arg[0]
     else:
       self.typ = 1
       self.k = arg[0]
+
   
   def __str__(self):
     """ (FFStretch) -> str
@@ -353,7 +703,9 @@ class FFStretch:
       energy = potHarmonic(r, self.r0, self.k)
     elif self.typ == 2:
       energy = potMorse(r, self.r0, D, b)
-    
+    elif self.typ == 3 or self.typ == 4:
+        energy = potGLJ(r, self.r0, self.k_str, self.exp_a)
+   
     return energy
 
 class FFBend:
@@ -363,7 +715,9 @@ class FFBend:
     """ (FFStretch, int, int, int, number, int, [number]) -> NoneType
     
     A bending potential between atoms number a, b and c with equilibrium
-    angle a0, of type typ with arguments [arg]
+    angle a0, of type typ with arguments [arg] comprising angle force 
+    constant, atomic symbols of atoms a, b, and c, and the distances 
+    between atoms a and b and b and c
     """
     
     self.atom1 = a
@@ -373,12 +727,19 @@ class FFBend:
     if typ == 1:
       self.typ = typ
       self.k = arg[0]
-    else:
+    elif typ == 2:
+      self.typ = 2
+      self.k_bnd = arg[0]
+      r_12 = arg[4]
+      r_23 = arg[5]
+      f_dmp_12 = DampingFunction(arg[1], arg[2], r_12)
+      f_dmp_23 = DampingFunction(arg[2], arg[3], r_23)
+      self.f_dmp = f_dmp_12 * f_dmp_23
       self.typ = 1
       self.k = arg[0]
   
   def __str__(self):
-    """ (FFStretch) -> str
+    """ (FFBend) -> str
     
     Return a string representation of the bending potential in this format:
     
@@ -394,7 +755,7 @@ class FFBend:
     return s+r
   
   def __repr__(self):
-    """ (FFStretch) -> str
+    """ (FFBend) -> str
     
     Return a string representation of the bending potential in this format:
     
@@ -415,6 +776,12 @@ class FFBend:
     energy = 0.0
     if self.typ == 1:
       energy = potHarmonic(a, self.a0, self.k)
+    elif self.typ == 2:
+        if (math.pi - 0.01) <= self.a0 <= (math.pi + 0.01):
+        # Tolerance used here is essentially a placeholder, may need changing in either direction
+            energy = potBendNearLinear(a, self.a0, self.k_bnd, self.f_dmp)
+        else:
+            energy = potAnyBend(a, self.a0, self.k_bnd, self.f_dmp)
     
     return energy
 
@@ -425,7 +792,9 @@ class FFTorsion:
     """ (FFTorsion, int, int, int, int, number, int, [number]) -> NoneType
     
     A torsion potential between atoms number a, b, c and d with equilibrium
-    angle theta0, of type typ with arguments [arg]
+    angle theta0, of type typ with arguments [arg] comprising the dihedral
+    force constant, the atomic symbols of atoms a, b, c and d, and the 
+    ab, bc and cd bond lengths
     """
     
     self.atom1 = a
@@ -436,6 +805,16 @@ class FFTorsion:
     if typ == 1:
       self.typ = typ
       self.k = arg[0]
+    elif typ == 2:
+        self.typ = typ
+        r_12 = arg[5]
+        r_23 = arg[6]
+        r_34 = arg[7]
+        f_dmp_12 = DampingFunction(arg[1], arg[2], r_12)
+        f_dmp_23 = DampingFunction(arg[2], arg[3], r_23)
+        f_dmp_34 = DampingFunction(arg[3], arg[4], r_34)
+        self.f_dmp = f_dmp_12 * f_dmp_23 * f_dmp_34
+        self.k = arg[0]
     else:
       self.typ = 1
       self.k = arg[0]
@@ -478,8 +857,171 @@ class FFTorsion:
     energy = 0.0
     if self.typ == 1:
       energy = potSimpleCosine(theta, self.theta0, self.k)
-    
+    elif typ == 2:
+        energy = potTorsion(theta, self.theta0, self.f_dmp, self.k)
+    # Will need two cases, one for non-rotatable bonds, the other for rotatable bonds.
+    # Probably best to implement via types
     return energy
+
+class FFInversion:
+  """ An inversion potential for 3-fold coordinate atoms"""
+
+  def __init__(self, a, b, c, d, phi0, typ, arg):
+    """ (FFInversion, int, int, int, int, number, int, [number]) -> NoneType
+
+    An inversion potential between atoms number a, b, c and d (where a is the
+    central atom bonded to the other three) with equilibrium out of plane
+    angle phi0, of type typ with arguments [arg]
+    """
+
+    self.atom1 = a
+    self.atom2 = b
+    self.atom3 = c
+    self.atom4 = d
+    self.phi0 = phi0
+    if typ == 1:
+        self.typ = 1
+        self.k = arg[0]
+    elif typ == 2:
+        self.typ = 2
+        self.k_inv = arg[0] # Will need to check there is an appropriate force constant locatable for use here, eventually will require fitting to Hessian
+          # Damping constant needs to be checked - set up below on the assumption that a product of distance dependent damping functions for the three bonds will do
+        r_12 = arg[5]
+        r_13 = arg[6]
+        r_14 = arg[7]
+        f_dmp_12 = DampingFunction(arg[1], arg[2], r_12)
+        f_dmp_13 = DampingFunction(arg[1], arg[3], r_13)
+        f_dmp_14 = DampingFunction(arg[1], arg[4], r_14)
+        self.f_dmp = f_dmp_12 * f_dmp_13 * f_dmp_14
+    else:
+        self.typ = 1
+        self.k = arg[0]
+
+  def __str__(self):
+    """ (FFInversion) -> str
+
+    Return a string representation of the bending potential in this format:
+
+    (atom1, atom2, atom3, atom4, phi0, type, arguments)
+
+    """
+
+    s = '({0}, {1}, {2}, {3}, {4}, '.format(self.atom1, self.atom2, self.atom3, self.atom4, self.phi0, self.typ)
+
+    if self.typ == 1:
+      r = '{0})'.format(self.k)
+
+    return s+r
+
+  def __repr__(self):
+    """ (FFInversion) -> str
+
+    Return a string representation of the bending potential in this format:
+
+    (atom1, atom2, atom3, atom4, phi0, type, arguments)
+
+    """
+
+    s = '({0}, {1}, {2}, {3}, {4}, '.format(self.atom1, self.atom2, self.atom3, self.atom4, self.phi0, self.typ)
+
+    if self.typ == 1:
+      r = '{0})'.format(self.k)
+
+    return s+r
+
+  def energy(self, phi):
+    """ Returns the energy of this inversion potential at out of plane angle phi"""
+
+    energy = 0.0
+    if self.typ == 1:
+        energy = potHarmonic(phi, phi0, self.k_inv) # or use another sutiable simple potential here
+    elif self.typ == 2:
+      if (math.pi - 0.01) <= self.phi0 <= (math.pi + 0.01):
+      # Tolerance used here is essentially a placeholder, may need changing in either direction
+        energy = potBendNearLinear(phi, self.phi0, self.k_inv, self.f_dmp)
+      else:
+        energy = potAnyBend(phi, self.phi0, self.k_inv, self.f_dmp)
+
+    return energy
+
+class FFHBond:
+  """ A hydrogen bonding potential for an atom triple """
+
+  def __init__(self, a, b, c, theta, typ, arg):
+    """ (FFHBond, int, int, int, number, int, [number]) -> NoneType
+
+    A hydrogen bonding potential between atoms number a, b and c, where b is
+    hydrogen and the abc angle is theta, of type typ with arguments [arg]
+    comprising the atomic symbols and charges of atoms a, b and c, and distances
+    r_ab, r_bc, r_ab
+    """
+
+# Including type may not be necessary, has been done here just for consistency
+
+    self.atomA = a
+    self.atomH = b
+    self.atomB = c
+    self.theta = theta
+    if typ == 1:
+      self.typ = typ
+      self.symA = arg[0]
+      self.chgA = arg[1]
+      self.symH = arg[2]
+      self.chgH = arg[3]
+      self.symB = arg[4]
+      self.chgB = arg[5]
+      self.r_AH = arg[6]
+      self.r_BH = arg[7]
+      self.r_AB = arg[8]
+
+  def __str__(self):
+    """ (FFHbond) -> str
+
+    Return a string representation of the hydrogen bonding potential in this format:
+
+    (atomA, atomH, atomB, theta, type, arguments)
+
+    """
+
+    s = '({0}, {1}, {2}, {3), '.format(self.atomA, self.atomH, self.atomB, self.theta, self.typ)
+
+    if self.typ == 1:
+      r = ')'
+# Written now to just close the list, should ultimately expand to allow printing of all arguments in line with other classes
+   
+    return s+r
+
+  def __repr__(self):
+    """ (FFHbond) -> str
+
+    Return a string representation of the hydrogen bonding potential in this format:
+
+    (atomA, atomH, atomB, theta, type, arguments)
+
+    """
+
+    s = '({0}, {1}, {2}, {3), '.format(self.atomA, self.atomH, self.atomB, self.theta, self.typ)
+
+    if self.typ == 1:
+      r = ')'
+
+    return s+r
+
+  def energy(self):
+    """ Returns the energy for this hydrogen bonding potential """
+
+    c_hbnd_AB = HBondStrengthFactor(self.symA, self.chgA, self.r_AH, self.symB, self.chgB, self.r_BH)
+
+    f_dmp_theta = AngleDamping(self.theta)
+
+    f_dmp_hbnd = HBondDamping(self.symA, self.symB, self.r_AB)
+
+    energy = potHBond(f_dmp_theta, f_dmp_hbnd, c_hbnd_AB, self.r_AB) 
+
+    return energy
+    
+# Note - will need to check in adding hbond triples that the indices used above for arguments come out correct 
+    
 
 #############################################################################################################
 # Atom class and class methods to be defined below
@@ -488,7 +1030,7 @@ class FFTorsion:
 class Atom:
   """ An atom with an atomic symbol and cartesian coordinates"""
   
-  def __init__(self, sym, x, y, z):
+  def __init__(self, sym, x, y, z, q):
     """ (Atom, int, str, number, number, number) -> NoneType
     
     Create an Atom with (string) symbol sym,
@@ -501,6 +1043,7 @@ class Atom:
     self.charge = SymbolToNumber[sym]
     self.mass = SymbolToMass[sym]
     self.coord = [x, y, z]
+    self.QMcharge = q # Extracting q from input file yet to be implemented
   
   def __str__(self):
     """ (Atom) -> str
@@ -517,10 +1060,10 @@ class Atom:
     
     Return a string representation of this Atom in this format:"
     
-      Atom("SYMBOL", charge, mass, X, Y, Z)
+      Atom("SYMBOL", charge, QM charge, mass, X, Y, Z)
     """
     
-    return '("{0}", {1}, {2}, {3}, {4}, {5})'.format(self.symbol, self.charge, self.mass, self.coord[0], self.coord[1], self.coord[2])
+    return '("{0}", {1}, {2}, {3}, {4}, {5} {6})'.format(self.symbol, self.charge, self.QMcharge, self.mass, self.coord[0], self.coord[1], self.coord[2])
   
   def x(self, x):
     """ (Atom) -> NoneType
@@ -542,6 +1085,13 @@ class Atom:
     Set z coordinate to z
     """
     self.coord[2]=z
+
+  def setq(self, q):
+    """ (Atom) -> NoneType
+    
+    Set QMcharge to q
+    """
+    self.QMcharge = q
 
 #############################################################################################################
 # Molecule class and class methods to be defined below
@@ -566,13 +1116,18 @@ class Molecule:
     self.bonds = []
     self.angles = []
     self.dihedrals = []
+    self.threefolds = []
     self.stretch = []
     self.str13 = []
     self.bend = []
     self.tors = []
     self.inv = []
-    
+    self.hbonds = []
+    self.hatoms = []
+    self.highENatoms = []
+    self.halogens = [] 
   
+
   def addAtom(self, a):
     """ (Molecule, Atom) -> NoneType
     
@@ -777,6 +1332,58 @@ class Molecule:
     psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
 
     return psi
+
+  def outofplaneangle(self, i):
+    """ (Molecule) -> number (in radians)
+
+    Report the out of plane angle described by a set of four atoms in the inv list
+    """
+    
+    # Calculate the vectors along bonds, and construct a vector plane_norm orthogonal to the plane of end atoms
+    threefold  = self.threefolds[i]
+    atom_c = self.atoms[threefold[0]]
+    atom_e1 = self.atoms[threefold[1]]
+    atom_e2 = self.atoms[threefold[2]]
+    atom_e3 = self.atoms[threefold[3]]
+    bond_1 = [atom_e1.coord[i] - atom_c.coord[i] for i in range(3)]
+    bond_2 = [atom_e2.coord[i] - atom_c.coord[i] for i in range(3)]
+    bond_3 = [atom_e3.coord[i] - atom_c.coord[i] for i in range(3)]
+    inplane_12 = [atom_e2.coord[i] - atom_e1.coord[i] for i in range(3)]
+    inplane_13 = [atom_e3.coord[i] - atom_e1.coord[i] for i in range(3)]
+    plane_norm = numpy.cross(inplane_12, inplane_13)
+    
+    # Construct vectors between end atoms and the projection of the central atom on the end-atom plane
+    cross_1 = numpy.cross(bond_1, plane_norm)
+    cross_2 = numpy.cross(bond_2, plane_norm)
+    cross_3 = numpy.cross(bond_2, plane_norm)
+    inplane_1 = numpy.cross(plane_norm, cross_1)/numpy.dot(plane_norm, plane_norm)
+    inplane_2 = numpy.cross(plane_norm, cross_2)/numpy.dot(plane_norm, plane_norm)
+    inplane_3 = numpy.cross(plane_norm, cross_3)/numpy.dot(plane_norm, plane_norm)
+    
+    # Caclulate the out of plane angle for each of the three bonds
+    cos_phi1 = numpy.dot(bond_1, inplane_1)/(numpy.linalg.norm(bond_1)*numpy.linalg.norm(inplane_1))
+    cos_phi2 = numpy.dot(bond_2, inplane_2)/(numpy.linalg.norm(bond_2)*numpy.linalg.norm(inplane_2))
+    cos_phi3 = numpy.dot(bond_3, inplane_3)/(numpy.linalg.norm(bond_3)*numpy.linalg.norm(inplane_3))
+
+    if (1.0 - (10**-15)) <= cos_phi1 and cos_phi1 <= (1.0 + (10**-15)):
+        phi1 = 0.0
+      else:
+        phi1 = numpy.arccos(cos_phi1)
+      if (1.0 - (10**-15)) <= cos_phi2 and cos_phi2 <= (1.0 + (10**-15)):
+        phi2 = 0.0
+      else:
+        phi2 = numpy.arccos(cos_phi2)
+      if (1.0 - (10**-15)) <= cos_phi3 and cos_phi3 <= (1.0 + (10**-15)):
+        phi3 = 0.0
+      else:
+        phi3 = numpy.arccos(cos_phi3)phi1 = numpy.arccos(cos_phi1)
+
+    # Take the numerical average of the three out of plane angles
+    # Note - other schemes for obtaining a single out of plane angle could be investigated
+    phi = (phi1 + phi2 + phi3)/3
+    
+    return phi
+
 
   def orient(self):
     """ (Molecule) -> NoneType
@@ -1002,6 +1609,238 @@ class Molecule:
     if a >= 0 and b >= 0 and c >= 0 and d >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and d <= len(self.atoms) and a != b and a != c and a != d and b != c and b != d and c != d:
       self.tors.append(FFTorsion(a, b, c, d, theta0, typ, arg))
 
+  def addThreefold(self, a, b, c, d):
+    """ (Molecule) -> NoneType
+
+    Adds the atom a and its bonding partners b, c and d to the list of 3-fold coordinated atom groups
+    """
+
+    # Check if these atoms are already in the list inv
+    exists = False
+    for i in self.threefolds:
+        if i == [a, b, c, d]:
+            exists = True
+
+    # Append this three-fold coordinated group to list if it doesn't exist and is plausible
+    # Check currently based upon those for angles and dihedrals, for lack of a better alternative
+    if exists == False and a >= 0 and b >= 0 and c >= 0 and d >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and d <= len(self.atoms) and a != b and a != c and a != d and b != c and b != d and c != d:
+      self.threefolds.append([a, b, c, d])
+
+  def addFFInversion(self, a, b, c, d, phi0, typ, arg):
+    """ (Molecule) -> NoneType
+
+    Adds an out-of-plane inversion type potential between atoms a, b, c and d to the list of inversion
+    """
+
+    # Note: As for other potentials, no check to see if this inversion exists already since there's no
+    # reason not to allow two different functions to contribute energy to the same 'inversion'
+
+    # Append inversion to list if it doesn't exist and is plausible
+    if a >= 0 and b >= 0 and c >= 0 and d >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and d <= len(self.atoms) and a != b and a != c and a != d and b != c and b != d and c != d:
+      self.inv.append(FFInversion(a, b, c, d, phi0, typ, arg))
+
+  def addFFHBond(self, a, b, c, theta, typ, arg):
+    """ (Molecule) -> NoneType
+
+    Adds a hydrogen bonding interaction potential between donor/acceptor atoms a and c and hydrogen atom b to the list of hbonds
+    """
+
+   # Note: No check to see if this interaction exists already, consistent with the treatment of other potentials
+
+   # Append new hydrogen bonding interaction to the list if it's plausible
+   # Where plausibility is checked by distinct atoms only
+   # (Checks for distance over which hydrogen bonds could exist and the electronegativity of atoms involved could be added, but will be used to identify interactions to add in any case)
+    if a >= 0 and b >= 0 and c >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and a != b and a != c and b != c:
+      self.hbonds.append(FFHBond(a, b, c, theta, typ, arg))    
+
+  def addHAtom(self, a):
+    """ (Molecule) -> NoneType
+
+    Adds the atom a to the list of hydrogen atoms present in the molecule
+    """
+
+    # Note currently no check for whether this atom is already in the list
+    # May be worth implementing such a check. Could also check atomic symbol, though that will be done before calling this method
+    if a >= 0 and a <= len(self.atoms):
+      self.hatoms.append(a)
+
+  def addhighENatom(self, a):
+    """ (Molecule) -> NoneType
+
+    Adds the atom a to the list of atoms sufficiently electronegative to be involved in hydrogen bonding
+    """
+
+    # Note currently no check for whether the atom is already in the list
+    # As with list of hydrogens, could implement atomic symbol check for extra care
+    if a >= 0 and a <= len(self.atoms):
+      self.highENatoms.append(a)
+
+  def addXatom(self, a):
+    """ (Molecule) -> NoneType
+
+    Adds the atom a to the list of halogens present in the molecule
+    """
+
+    # Currently no check to see if this atom already belongs to the list
+    # Also no check on atomic symbol at present, but one could be implemented
+    if a >= 0 and a <= len(self.atoms):
+      self.halogens.append(a)
+
+  def screen_ES(self, a, b):
+    """ (Molecule) -> Number
+    
+    Calculates the number of bonds between atoms a and b, and returns the appropriate value of the topological screening parameter elstat_AB
+    """
+    # Determine the number of bonds separating atoms a and b
+    n_bonds = 4
+    if a == b:
+      n_bonds = 0
+    elif [a, b] in self.bonds or [b, a] in self.bonds:
+      n_bonds = 1
+    else:
+      bonds_a = []
+      bonds_b = []
+      # Find bonds from atom a to any other atom, and from atom b to any other atom
+      for bond in self.bonds:
+        if bond[0] == a:
+          bonds_a.append(bond)
+        elif bond[1] == a:
+          bonds_a.append([bond[1], bond[0]])
+        elif bond[0] == b:
+          bonds_b.append([bond[1], bond[0]])
+        elif bond[1] == b:
+          bonds_b.append(bond)
+      # Check whether there is a common third atom bonded to both a and b, stopping if one such atom is found 
+      for bd_a in bonds_a:
+        for bd_b in bonds_b:
+           if bd_a[1] == bd_b[0]:
+              n_bonds = 2
+              break
+        if n_bonds == 2:
+          break
+      # If not, find all bonds 1 bond away from each of atom a and atom b
+      if n_bonds > 2:
+        bonds_a1 = []
+        bonds_b1 = []
+        for bond in self.bonds:
+          for bd_a in bonds_a:
+            if bd_a[1] == bond[0]:
+              bonds_a1.append(bond)
+            elif bd_a[1] == bond[1]:
+              bonds_a1.append([bond[1], bond[0]])
+          for bd_b in bonds_b:
+            if bd_b[0] == bond[0]:
+              bonds_b1.append([bond[1], bond[0]])
+            elif bd_b[0] == bond[1]:
+              bonds_b1.append(bond)
+        # Then check whether there is one of those bonds in common to both a and b, ending the loop if so
+        for bd_a1 in bonds_a1:
+          for bd_b1 in bonds_b1:
+            if bd_a1 == bd_b1:
+              n_bonds = 3
+              break
+          if n_bonds == 3:
+              break
+      # All cases with more than three bonds between atoms a and b are treated identically, so do not check for 4 bonds or more explicitly  
+    # Determine the value of the screening parameter for the number of covalent bonds separating a and b
+    if n_bonds <= 2:
+      elstat_AB = 0
+    elif n_bonds == 3:
+      elstat_AB = E_ES_14
+    elif n_bonds >= 4:
+      elstat_AB = 1
+
+    return elstat_AB
+
+  def screen_RepDisp(self, a, b):
+    """ (Molecule) -> Number
+    
+    Calculates the number of bonds between atoms a and b, and returns the appropriate value of the topological screening parameter rep_disp_AB 
+    """
+    # Determine the number of bonds separating atoms a and b
+    n_bonds = 5
+    if a == b:
+      n_bonds = 0
+    elif [a, b] in self.bonds or [b, a] in self.bonds:
+      n_bonds = 1
+    else:
+      bonds_a = []
+      bonds_b = []
+      # Find bonds from atom a to any other atom, and from atom b to any other atom
+      for bond in self.bonds:
+        if bond[0] == a:
+          bonds_a.append(bond)
+        elif bond[1] == a:
+          bonds_a.append([bond[1], bond[0]])
+        elif bond[0] == b:
+          bonds_b.append([bond[1], bond[0]])
+        elif bond[1] == b:
+          bonds_b.append(bond)
+      # Check whether there is a common third atom bonded to both a and b, stopping if one such atom is found 
+      for bd_a in bonds_a:
+        for bd_b in bonds_b:
+           if bd_a[1] == bd_b[0]:
+              n_bonds = 2
+              break
+        if n_bonds == 2:
+          break
+      # If not, find all bonds 1 bond away from each of atom a and atom b
+      if n_bonds > 2:
+        bonds_a1 = []
+        bonds_b1 = []
+        for bond in self.bonds:
+          for bd_a in bonds_a:
+            if bd_a[1] == bond[0]:
+              bonds_a1.append(bond)
+            elif bd_a[1] == bond[1]:
+              bonds_a1.append([bond[1], bond[0]])
+          for bd_b in bonds_b:
+            if bd_b[0] == bond[0]:
+              bonds_b1.append([bond[1], bond[0]])
+            elif bd_b[0] == bond[1]:
+              bonds_b1.append(bond)
+        # Then check whether there is one of those bonds in common to both a and b, ending the loop if so
+        for bd_a1 in bonds_a1:
+          for bd_b1 in bonds_b1:
+            if bd_a1 == bd_b1:
+              n_bonds = 3
+              break
+          if n_bonds == 3:
+            break
+      # If not, find all bonds 2 bonds away from each of atom a and atom b
+      if n_bonds > 3:
+        bonds_a2 = []
+        bonds_b2 = []
+        for bond in self.bonds:
+          for bd_a1 in bonds_a1:
+            if bd_a1[1] == bond[0]:
+              bonds_a2.append(bond)
+            elif bd_a1[1] == bond[1]:
+              bonds_a2.append([bond[1], bond[0]])
+          for bd_b1 in bonds_b1:
+            if bd_b1[0] == bond[0]:
+              bonds_b2.append([bond[1], bond[0]])
+            elif bd_b1[0] == bond[1]:
+              bonds_b2.append(bond)
+        # Then check whether one of these bonds is common to both a and b, ending the loop if so
+        for bd_a2 in bonds_a2:
+          for bd_b2 in bonds_b2:
+            if bd_a2 == bd_b2:
+              n_bonds = 4
+              break
+          if n_bonds == 4:
+            break 
+      # All cases with more than four bonds between atoms a and b are treated identically, so do not check for 1,6- and higher cases explicitly
+    # Determine the value of the screening parameter for the number of covalent bonds separating a and b
+    if n_bonds <= 2:
+      rep_disp_AB = 0
+    elif n_bonds == 3 or n_bonds == 4:
+      rep_disp_AB = E_disp_rep
+    elif n_bonds >= 5:
+      rep_disp_AB = 1
+  
+    return rep_disp_AB
+
   def cartesianCoordinates(self):
     """ (Molecule) ->
 
@@ -1055,7 +1894,7 @@ class Molecule:
     s =s + "\n"
     return s
 
-  def FFEnergy(self, cartCoordinates):
+  def FFEnergy(self, cartCoordinates, verbosity = 0):
     """ (Molecule) -> number (Force Field energy)
 
       Returns a number containing the molecular energy according to the current Force Field definition at structure
@@ -1063,12 +1902,16 @@ class Molecule:
     """
 
     energy = 0.0
+    if verbosity >= 1:
+      print("Initial energy for calculation = " + str(energy))
     for i in self.stretch:
       distance=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
       distance += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
       distance += (cartCoordinates[3*i.atom1 + 2] - cartCoordinates[3*i.atom2 + 2]) ** 2
       distance=math.sqrt(distance)
       energy = energy + i.energy(distance)
+    if verbosity >= 1:
+      print("With bond stretches, energy = " + str(energy))
 
     for i in self.str13:
       distance=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
@@ -1076,6 +1919,8 @@ class Molecule:
       distance += (cartCoordinates[3*i.atom1 + 2] - cartCoordinates[3*i.atom2 + 2]) ** 2
       distance=math.sqrt(distance)
       energy = energy + i.energy(distance)
+    if verbosity >= 1:
+      print("With 1,3-stretches, energy = " + str(energy))
 
     for i in self.bend:
       d_bond_1=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
@@ -1099,6 +1944,8 @@ class Molecule:
       argument = numerator/denominator
       theta = numpy.arccos(argument)
       energy = energy + i.energy(theta)
+    if verbosity >=1:
+      print("With bends, energy = " + str(energy))
 
     for i in self.tors:
       # Calculate the vectors lying along bonds, and their cross products
@@ -1126,12 +1973,251 @@ class Molecule:
       vn1_coord_vc = numpy.dot(vnormal_1, basis_cv)
       psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
       energy = energy + i.energy(psi)
+    if verbosity >= 1:
+      print("With torsion, energy = " + str(energy))
 
-    for i in self.inv: # Inversion terms aren't implemented yet
-      energy += 0.0
+    for i in self.inv: 
+      # Calculate the vectors along bonds, and construct a vector plane_norm orthogonal to the plane of end ato
+      atom_c = [cartCoordinates[3*i.atom1], cartCoordinates[3*i.atom1+1], cartCoordinates[3*i.atom1+2]]
+      atom_e1 = [cartCoordinates[3*i.atom2], cartCoordinates[3*i.atom2+1], cartCoordinates[3*i.atom2+2]]
+      atom_e2 = [cartCoordinates[3*i.atom3], cartCoordinates[3*i.atom3+1], cartCoordinates[3*i.atom3+2]]
+      atom_e3 = [cartCoordinates[3*i.atom4], cartCoordinates[3*i.atom4+1], cartCoordinates[3*i.atom4+2]]
+      bond_1 = [atom_e1[i] - atom_c[i] for i in range(3)]
+      bond_2 = [atom_e2[i] - atom_c[i] for i in range(3)]
+      bond_3 = [atom_e3[i] - atom_c[i] for i in range(3)]
+      inplane_12 = [atom_e2[i] - atom_e1[i] for i in range(3)]
+      inplane_13 = [atom_e3[i] - atom_e1[i] for i in range(3)]
+      plane_norm = numpy.cross(inplane_12, inplane_13)
 
+      # Construct vectors between end atoms and the projection of the central atom on the end-atom pla
+      cross_1 = numpy.cross(bond_1, plane_norm)
+      cross_2 = numpy.cross(bond_2, plane_norm)
+      cross_3 = numpy.cross(bond_2, plane_norm)
+      inplane_1 = numpy.cross(plane_norm, cross_1)/numpy.dot(plane_norm, plane_norm)
+      inplane_2 = numpy.cross(plane_norm, cross_2)/numpy.dot(plane_norm, plane_norm)
+      inplane_3 = numpy.cross(plane_norm, cross_3)/numpy.dot(plane_norm, plane_norm)
+
+      # Caclulate the out of plane angle for each of the three bonds
+      cos_phi1 = numpy.dot(bond_1, inplane_1)/(numpy.linalg.norm(bond_1)*numpy.linalg.norm(inplane_1))
+      cos_phi2 = numpy.dot(bond_2, inplane_2)/(numpy.linalg.norm(bond_2)*numpy.linalg.norm(inplane_2))
+      cos_phi3 = numpy.dot(bond_3, inplane_3)/(numpy.linalg.norm(bond_3)*numpy.linalg.norm(inplane_3))
+
+      if (1.0 - (10**-15)) <= cos_phi1 and cos_phi1 <= (1.0 + (10**-15)):
+        phi1 = 0.0
+      else:
+        phi1 = numpy.arccos(cos_phi1)
+      if (1.0 - (10**-15)) <= cos_phi2 and cos_phi2 <= (1.0 + (10**-15)):
+        phi2 = 0.0
+      else:
+        phi2 = numpy.arccos(cos_phi2)
+      if (1.0 - (10**-15)) <= cos_phi3 and cos_phi3 <= (1.0 + (10**-15)):
+        phi3 = 0.0
+      else:
+        phi3 = numpy.arccos(cos_phi3)
+                                                                                 
+      # Take the numerical average of the three out of plane angles
+      # Note - other schemes for obtaining a single out of plane angle could be investigated
+      phi = (phi1 + phi2 + phi3)/3
+      
+      energy = energy + i.energy(phi)
+    if verbosity >= 1:
+      print("With inversion, energy = " + str(energy))
     # Don't forget to add non-bonded interactions here
 
+    e_hbnd = 0.0
+    for i in self.hatoms:
+      atH = [cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
+      for j in self.highENatoms:
+         atA = [cartCoordinates[3*j], cartCoordinates[3*j + 1], cartCoordinates[3*j + 2]]
+         # Calculate distance between hydrogen i and electronegative atom j
+         # Determine whether they are (likely) joined by a covalent bond
+         dist_HA = (atH[0] - atA[0])**2
+         dist_HA += (atH[1] - atA[1])**2
+         dist_HA += (atH[2] - atA[2])**2
+         dist_HA = math.sqrt(dist_HA)
+         bond_dist_HA = SymbolToRadius[self.atoms[i].symbol] + SymbolToRadius[self.atoms[j].symbol]
+         if dist_HA <= bond_dist_HA:
+           for k in self.highENatoms:
+             atB = [cartCoordinates[3*j], cartCoordinates[3*j + 1], cartCoordinates[3*j + 2]]             
+             # Calculate distance between hydrogen i and electronegative atom k
+             # Determine whether they are close enough for a hydrogen bonding interaction
+             dist_HB = (atH[0] - atB[0])**2
+             dist_HB += (atH[1] - atB[1])**2
+             dist_HB += (atH[2] - atB[2])**2
+             dist_HB = math.sqrt(dist_HB)
+             Hbond_dist_HB = SymbolToVdWRadius[self.atoms[i].symbol] + SymbolToVdWRadius[self.atoms[k].symbol]
+             # If so, and if A and B are distinct, take the triple AHB to be involved in hydrogen bonding and use to calculate energy
+             if dist_HB <= Hbond_dist_HB and atA != atB:
+                dist_AB = (atA[0] - atB[0])**2
+                dist_AB += (atA[1] - atB[1])**2
+                dist_AB += (atA[2] - atB[2])**2
+                dist_AB = math.sqrt(dist_AB)
+                
+                # Use the calculated distances and the cosine rule to calculate AHB andgle theta
+                numerator = dist_HA**2 + dist_HB**2 - dist_AB**2
+                denominator = 2*dist_HA*dist_HB
+                argument = numerator/denominator
+                theta = numpy.arccos(argument)
+
+                # Calculate the relevant constants for a hydrogen bonding potential
+                c_hbnd_AB = HBondStrengthFactor(j.symbol, j.charge, dist_HA, k.symbol, k.charge, dist_HB)
+                f_dmp_theta = AngleDamping(theta)
+                f_dmp_hbnd = HBondDamping(j.symbol, k.symbol, dist_AB)
+                
+                # Calculate the energy of this interaction, and add to the total hydrogen bonding contribution
+                e_hbnd = e_hbnd + potHBond(f_dmp_theta, f_dmp_hbnd, c_hbnd_AB, dist_AB)
+    # Calculate total hydrogen bonding contribution from the sum over AHB triples, and add to energy
+    e_hbnd = -1 * e_hbnd
+    energy = energy + e_hbnd
+    if verbosity >= 1:
+      print("With hydrogen bonding, energy = " + str(energy))
+
+    e_xbnd = 0.0
+    for i in self.halogens:
+      atX = [cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
+      # Locate bonding partner(s), Y, for X by searching through the list of bonds in the molecule
+      bondsX = []
+      for j in range(len(self.bonds)):
+        if self.bonds[j][0] == i:
+          bondsX.append([self.bonds[j][1], self.bonds[j][0]])
+        elif self.bonds[j][1] == i:
+          bondsX.append(self.bonds[j])
+      # Locate donor atoms D that could participate in halogen bonding (check for not being bonded to X implemented later)
+      # Sum of van der Waals radii currently employed as a check for this
+      donors = []
+      for k in range(len(self.atoms)):
+        sym = self.atoms[k].symbol
+        donorsyms = ["N", "O", "F", "P", "S", "Cl", "As", "Se", "Br", "Sb", "Te", "I", "Bi", "Bi", "Po", "At", "Uup", "Lv", "Uus"]
+        if sym in donorsyms:
+          atD = [cartCoordinates[3*k], cartCoordinates[3*k + 1], cartCoordinates[3*k + 2]]
+          dist_XD = (atX[0] - atD[0])**2
+          dist_XD += (atX[1] - atD[1])**2
+          dist_XD += (atX[2] - atD[2])**2
+          dist_XD = math.sqrt(dist_XD)
+          Xbond_dist_XD = SymbolToVdWRadius[self.atoms[k].symbol] + SymbolToVdWRadius[self.atoms[i].symbol]
+          if dist_XD <= Xbond_dist_XD:
+            donors.append([k, dist_XD])
+      # For each triple formed by a bond YX and donor D, calculate halogen bonding potential
+      for bond in bondsX:
+        for donor in donors:
+          if donor[0] != bond[0] and donor[0] != bond[1]:
+            symY = bond[0].symbol 
+            coordY = [cartCoordinates[3*bond[0]], cartCoordinates[3*bond[0] + 1], cartCoordinates[3*bond[0] + 2]]
+            symX = self.atoms[i].symbol
+            coordX = atX
+            symD = donor[0].symbol
+            coordD = [cartCoordinates[3*donor[0]], cartCoordinates[3*donor[0] + 1], cartCoordinates[3*donor[0] + 2]]
+            r_XD = self.atoms[donor[1]].symbol
+
+            # Calculate the DXY angle
+            r_XY = (coordY[0] - coordX[0])**2
+            r_XY += (coordY[1] - coordX[1])**2
+            r_XY += (coordY[2] - coordX[2])**2
+            r_XY = math.sqrt(r_XY)
+
+            r_DY = (coordY[0] - coordD[0])**2
+            r_DY += (coordY[1] - coordD[1])**2
+            r_DY += (coordY[2] - coordD[2])**2
+            r_DY = math.sqrt(r_DY)
+ 
+            numerator = r_XD**2 + r_XY**2 - r_DY**2
+            denominator = 2*r_XD*r_XY
+            argument = numerator/denominator
+            theta = numpy.arccos(argument)
+
+            # Calculate the relevant constants for a halogen bonding potential
+            f_dmp_theta = AngleDamping(theta)
+            f_dmp_xbnd = HBondDamping(symX, symD, r_XD)
+            c_xbnd = AtomicXBondFactor(symX, self.atoms[i].charge)
+  
+            # Calculate the energy of this halogen bonding interaction and add to the total
+            e_xbnd = e_xbnd + potXBond(f_dmp_theta, f_dmp_xbnd, c_xbnd_x, r_XD) 
+    # Calculate total halogen bonding contribution from the sum over DXY triples, and add to energy of the molecule
+    e_xbnd = -1 * e_xbnd
+    energy = energy + e_xbnd
+    if verbosity >= 1:
+      print("With halogen bonding, energy = " + str(energy))
+
+    e_Pauli = 0.0
+    for i in range(len(self.atoms)):
+      for j in range(i+1, len(self.atoms)):
+        symA = self.atoms[i].symbol
+        symB = self.atoms[j].symbol
+        # Calculate the distance between atoms i and j
+        coordA = [cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
+        coordB = [cartCoordinates[3*j], cartCoordinates[3*j + 1], cartCoordinates[3*j + 2]]
+        distance = (coordA[0] - coordB[0])**2
+        distance += (coordA[1] - coordB[1])**2
+        distance += (coordA[2] - coordB[2])**2
+        distance = math.sqrt(distance)
+        # Calculate the required screening parameter, then the energy for this pair, and add to the total
+        # Note that proper calculation will require the D3 cutoff radii R_0D3 which are yet to be worked in
+        rep_disp_AB = self.screen_RepDisp(i, j)
+        C6_A = C6[symA]
+        C6_B = C6[symB] 
+        C6_AB = (C6_A + C6_B)/2
+        C8_AB = C6_AB # Correct value to be implemented later, set equal to C6_AB solely to test
+        energy_AB = potPauliRep(rep_disp_AB, symA, symB, distance, C6_AB, C8_AB)
+        e_Pauli = e_Pauli + energy_AB
+    energy = energy + e_Pauli
+    if verbosity >= 1:
+      print("With Pauli repulsion, energy = " + str(energy))
+
+    e_ES = 0.0
+    for i in range(len(self.atoms)):
+      for j in range(i+1, len(self.atoms)):
+        # Note QM computed atomic charges at equilibrium structure should be used as per QMDFF
+        # Currently the charge in class atom is used, which comes from atomic number
+        chgA = self.atoms[i].charge # Use i.QMcharge once this has meaningful value attached
+        chgB = self.atoms[j].charge # Use j.QMcharge once this has meaningful value attached
+
+        # Calculate the distance between atoms i and j
+        coordA =[cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
+        coordB = [cartCoordinates[3*j], cartCoordinates[3*j + 1], cartCoordinates[3*j + 2]]
+        distance = (coordA[0] - coordB[0])**2
+        distance += (coordA[1] - coordB[1])**2
+        distance += (coordA[2] - coordB[2])**2
+        distance = math.sqrt(distance)
+        
+        # Calculate the required screening parameter, and the energy for this paiwise interaction, then add to the total
+        elstat_AB = self.screen_ES(i, j)
+        energy_AB = potElectrostatic(elstat_AB, chgA, chgB, distance)
+        e_ES = e_ES + energy_AB
+    energy = energy + e_ES
+    if verbosity >= 1:
+      print("With electrostatic interactions, energy = " + str(energy))
+
+    e_disp = 0.0
+    for i in range(len(self.atoms)):
+      for j in range(len(self.atoms)):
+        symA = self.atoms[i].symbol
+        symB = self.atoms[j].symbol
+        # Calculate the distance between atoms i and j
+        coordA =[cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
+        coordB = [cartCoordinates[3*j], cartCoordinates[3*j + 1], cartCoordinates[3*j + 2]]
+        distance = (coordA[0] - coordB[0])**2
+        distance += (coordA[1] - coordB[1])**2
+        distance += (coordA[2] - coordB[2])**2
+        distance = math.sqrt(distance)
+        # Calculate the required paramenters and thence the energy for this pairwise interaction, then add to the total
+        # Note that this is incomplete until the D3 cutoff radii R_0D3, as well as the coefficients C6_AB and C8_AB, are incorporated properly
+        rep_disp_AB = self.screen_RepDisp(i, j)
+        C6_A = C6[symA]
+        C6_B = C6[symB] 
+        C6_AB = (C6_A + C6_B)/2
+        C8_AB = C8_AB # To be completed - temporarily set equal to C6 for test run only
+        R0_AB = RadiusFromCn(C6_AB, C8_AB)
+        BJdamp_AB = BJdamping(i, j, C6_AB, C8_AB) 
+        energy_AB = potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB, distance)
+        e_disp = e_disp + energy_AB
+    energy = energy + e_disp
+    if verbosity >= 1:
+      print("With London dispersion, energy = " + str(energy))
+
+    # Calculation of polarisation energy (for solute-solvent) to go here
+
+    if verbosity >=1:
+      print("Total energy:")
     return energy
 
 
@@ -1158,8 +2244,9 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
       break
   f.close()
   
-  # GEOMETRY READING SECTION
+  # GEOMETRY AND ATOMIC CHARGE READING SECTION
   geom = []
+  charges = []
   # Read through Gaussian file, read *last* "Input orientation"
   if program == "g09":
     f = open(filename,'r')
@@ -1183,9 +2270,36 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
       print("\nReading of geometry finished.\nAdding atoms to WellFARe molecule: ", molecule.name)
     for i in geom:
       readBuffer=i.split()
-      molecule.addAtom(Atom(NumberToSymbol[int(readBuffer[1])],float(readBuffer[3]),float(readBuffer[4]),float(readBuffer[5])))
+      molecule.addAtom(Atom(NumberToSymbol[int(readBuffer[1])],float(readBuffer[3]),float(readBuffer[4]),float(readBuffer[5]), 0.1)) # 0.1 a placeholder for QM calculated charge on the atom
       if verbosity >= 2:
         print(" {:<3} {: .8f} {: .8f} {: .8f}".format(NumberToSymbol[int(readBuffer[1])],float(readBuffer[3]),float(readBuffer[4]),float(readBuffer[5])))
+    f.close()
+    # Next read through Gaussian file, read Mulliken charges and assign to their correct atoms
+    # This part will need to be tested, may be possible to integrate more into geometry reading!
+    f = open(filename, 'r')
+    for line in f:
+      if line.find("Mulliken charges:") != -1:
+        if verbosity >= 2:
+          print("\nMulliken charges found, reading charges") # May not strictly need this
+        del charges[:]
+        readBuffer = f.__next__() # Only one line to skip, but check this works with no for loop
+        while True:
+          readBuffer = f.__next__()
+          if readBuffer.find("Sum of Mulliken charges") == -1: # Check that finding less than the full line works - if not need to include the value of the sum
+            charges.append(readBuffer)
+            if verbosity >= 3:
+              readBuffer = readBuffer.split()
+              print(" Found atomic charge listing: {:<3} {<3} {: .8f} in Mulliken charges".format(int(readBuffer[0]), str(readBuffer[1]), float(readBuffer[2])))
+          else:
+            break
+    if verbosity >= 1:
+      print("\nReading of Mulliken charges finished. \nAdding charges to atoms in WellFARe molecule: ", molecule.name)
+    for i in charges:
+      readBuffer = i.split()
+      n = int(readBuffer[0]) - 1
+      molecule.atoms[n].setq(float(readBuffer[2]))
+      if verbosity >= 2:
+        print(molecule.atoms[n].__repr__())
     f.close()
   # Read through ORCA file, read *last* set of cartesian coordinates
   elif program == "orca":
@@ -1209,11 +2323,37 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
       print("\nReading of geometry finished.\nAdding atoms to WellFARe molecule: ", molecule.name)
     for i in geom:
       readBuffer=i.split()
-      molecule.addAtom(Atom(readBuffer[0],float(readBuffer[1]),float(readBuffer[2]),float(readBuffer[3])))
+      molecule.addAtom(Atom(readBuffer[0],float(readBuffer[1]),float(readBuffer[2]),float(readBuffer[3]), 0.1)) #0.1 a placeholder for QM computed carge on the atom
       if verbosity >= 2:
         print(" {:<3} {: .8f} {: .8f} {: .8f}".format(readBuffer[0],float(readBuffer[1]),float(readBuffer[2]),float(readBuffer[3])))
     f.close()
-    
+    # Read through ORCA file to locate and read Mulliken atomic charges
+    f = open(filename, 'r')
+    for line in f:
+      if line.find("MULLIKEN ATOMIC CHARGES") != -1:
+        if verbosity >= 2:
+          print("\nMulliken charges found, reading charges") # May not strictly need this
+        del charges[:]
+        readBuffer = f.__next__() # Only one line to skip, but check this works with no for loop
+        while True:
+          readBuffer = f.__next__()
+          if readBuffer.find("Sum of atomic charges:") == -1: # Check whether full line needed (as per comment in Gaussian09 section)
+            charges.append(readBuffer)
+            if verbosity >= 3:
+              readBuffer = readBuffer.split()
+              print(" Found atomic charge listing: {:<3} {<3} {: .8f} in Mulliken charges".format(int(readBuffer[0]), str(readBuffer[1]), float(readBuffer[3]))) # Assuming that ':' is split into its own list entry. May need to check formatting around whitespace
+          else:
+            break
+    if verbosity >= 1:
+      print("\nReading of Mulliken charges finished. \nAdding charges to atoms in WellFARe molecule: ", molecule.name)
+    for i in charges:
+      readBuffer = i.split()
+      n = int(readBuffer[0]) - 1
+      molecule.atoms[n].setq(readBuffer[3]) # Again assuming that the charge is the 4th list entry, with ':' having been split on its own.
+      if verbosity >= 2:
+        print(molecule.atoms[n].__repr__())
+    f.close()
+
   # BOND ORDER READING SECTION
   bo = []
   bo = numpy.zeros((molecule.numatoms(), molecule.numatoms()))
@@ -1372,7 +2512,47 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
           if verbosity >= 2:
             print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2], molecule.atoms[molecule.angles[j][1]].symbol, molecule.angles[j][1], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], math.degrees(molecule.dihedralangle(len(molecule.dihedrals)-1))))
 
-  # Now that we know bonds, angles and dihedrals, we determine the corresponding force constants
+  # Same for threefolds: Use angles to determine where they are
+  if verbosity >= 2:
+      print("\nAdding threefolds to WellFARe molecule: ", molecule.name)
+  for i in range(0, len(molecule.angles)):
+    for j in range(i+1, len(molecule.angles)):
+      for k in range(j+1, len(molecule.angles)):
+        if molecule.angles[i][1] == molecule.angles[j][1] == molecule.angles[k][1]:
+          if molecule.angles[i][0] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][2] and molecule.angles[i][2] == molecule.angles[k][0]:
+            molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][2], molecule.angles[i][2])
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
+          if molecule.angles[i][0] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][0] and molecule.angles[i][2] == molecule.angles[k][2]:
+            molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][2], molecule.angles[i][2])
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
+          if molecule.angles[i][0] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][0] and molecule.angles[i][2] == molecule.angles[k][2]:
+            molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][0], molecule.angles[i][2])
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
+          if molecule.angles[i][0] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][2] and molecule.angles[i][2] == molecule.angles[k][0]:
+            molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][0], molecule.angles[i][2])
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
+          if molecule.angles[i][2] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][0] and molecule.angles[i][0] == molecule.angles[k][2]:
+            molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][2], molecule.angles[j][2], molecule.angles[i][0])
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
+          if molecule.angles[i][2] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][2] and molecule.angles[i][0] == molecule.angles[k][0]:
+            molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][2], molecule.angles[j][2], molecule.angles[i][0])
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
+          if molecule.angles[i][2] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][0] and molecule.angles[i][0] == molecule.angles[k][2]:
+            molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][2], molecule.angles[j][0], molecule.angles[i][0])
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
+          if molecule.angles[i][2] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][2] and molecule.angles[i][0] == molecule.angles[k][0]:
+            molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][2], molecule.angles[j][0], molecule.angles[i][0])
+            if verbosity >= 2:
+              print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], math.degrees(molecule.outofplaneangle(len(molecule.threefolds)-1))))
+
+  # Now that we know bonds, angles, dihedrals and threefolds we determine the corresponding force constants
   # Bonds first:
   if verbosity >= 2:
     print("\nAdding Force Field bond stretching terms to WellFARe molecule: ", molecule.name)
@@ -1396,7 +2576,9 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
       print(" This force constant is smaller than 0.002")
     if verbosity >= 2:
       print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.bonds[i][0]].symbol, molecule.bonds[i][0], molecule.atoms[molecule.bonds[i][1]].symbol, molecule.bonds[i][1], fc))
-    molecule.addFFStretch(molecule.bonds[i][0],molecule.bonds[i][1],molecule.atmatmdist(molecule.bonds[i][0],molecule.bonds[i][1]),1,[fc])
+    molecule.addFFStretch(molecule.bonds[i][0],molecule.bonds[i][1],molecule.atmatmdist(molecule.bonds[i][0],molecule.bonds[i][1]),3,[fc,"b", molecule.atoms[molecule.bonds[i][0]].symbol, molecule.atoms[molecule.bonds[i][1]].symbol])
+# Note "b" as an argument in the previouw line is a placeholder so that indices are consistent in the FFstretch class
+# it  would need replacing with the appropriate value to make using the  Morse potential an option
 
   # Then 1,3-stretches:
   if verbosity >= 2:
@@ -1420,7 +2602,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
       print(" This force constant is smaller than 0.002")
     if verbosity >= 2:
       print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], fc))
-    molecule.addFFStr13(molecule.angles[i][0],molecule.angles[i][2],molecule.atmatmdist(molecule.angles[i][0],molecule.angles[i][2]),1,[fc])
+    molecule.addFFStr13(molecule.angles[i][0],molecule.angles[i][2],molecule.atmatmdist(molecule.angles[i][0],molecule.angles[i][2]),4,[fc, "b", molecule.atoms[molecule.angles[i][0]].symbol, molecule.atoms[molecule.angles[i][2]].symbol])
 
   # Then angle bends:
   if verbosity >= 2:
@@ -1447,10 +2629,12 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
       ProgramWarning()
       print(" This force constant is smaller than 0.002")
     if verbosity >= 2:
-      print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[j][1]].symbol, molecule.angles[j][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], fc))
-    molecule.addFFBend(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.bondangle(i),1,[fc])
+      print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], fc))
+    molecule.addFFBend(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.bondangle(i),2,[fc, molecule.atoms[molecule.angles[i][0]].symbol, molecule.atoms[molecule.angles[i][1]].symbol, molecule.atoms[molecule.angles[i][2]].symbol, molecule.atmatmdist(molecule.angles[i][0], molecule.angles[i][1]), molecule.atmatmdist(molecule.angles[i][1], molecule.angles[i][2])])
+# currently initiating bends with extra information in arguments list to avoid calling molecule or atom class methods inside FFBend.
+#  These quantities might ultimately be better included explicitly. 
 
-  # Dihedral torsions last:
+  # Then dihedral torsions:
   if verbosity >= 2:
     print("\nAdding Force Field torsion terms to WellFARe molecule: ", molecule.name)
   for i in range(0,len(molecule.dihedrals)):
@@ -1471,16 +2655,125 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
     c[3*molecule.dihedrals[i][2]] = p2[0]
     c[3*molecule.dihedrals[i][2]+1] = p2[1]
     c[3*molecule.dihedrals[i][2]+2] = p2[2]
-    c=c/numpy.linalg.norm(c)
+    if c.all() == numpy.zeros(molecule.numatoms()*3).all():
+      print("Zero vector returned, skipping normalisation") #Avoids fc=nan error for cases where all three atoms lie in the plane of two coordinate axes
+    else:
+      c=c/numpy.linalg.norm(c)
     fc = numpy.dot(numpy.dot(c,H),numpy.transpose(c))
     if fc < 0.002:
       ProgramWarning()
       print(" This force constant is smaller than 0.002")
     if verbosity >= 2:
       print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.dihedrals[i][0]].symbol, molecule.dihedrals[i][0], molecule.atoms[molecule.dihedrals[i][1]].symbol, molecule.dihedrals[i][1], molecule.atoms[molecule.dihedrals[i][2]].symbol, molecule.dihedrals[i][2], molecule.atoms[molecule.dihedrals[i][3]].symbol, molecule.dihedrals[i][3], fc))
-    molecule.addFFTorsion(molecule.dihedrals[i][0],molecule.dihedrals[i][1],molecule.dihedrals[i][2],molecule.dihedrals[i][3],molecule.dihedralangle(i),1,[fc])
+    molecule.addFFTorsion(molecule.dihedrals[i][0],molecule.dihedrals[i][1],molecule.dihedrals[i][2],molecule.dihedrals[i][3],molecule.dihedralangle(i),1,[fc, molecule.atoms[molecule.dihedrals[i][0]].symbol, molecule.atoms[molecule.dihedrals[i][1]].symbol, molecule.atoms[molecule.dihedrals[i][2]].symbol, molecule.atoms[molecule.dihedrals[i][3]].symbol, molecule.atmatmdist(molecule.dihedrals[i][0], molecule.dihedrals[i][1]), molecule.atmatmdist(molecule.dihedrals[i][1], molecule.dihedrals[i][2]), molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3])])
+# As for bends, arg list now includes atom symbols and bond lengths, which could be separated out later
 
-  # End of routine
+  # Threefold inversions last
+  if verbosity >= 2:
+    print("\nAdding Force Field inversion terms ro WellFARe molecule: ", molecule.name)
+  # (Extracting force constants to be implemented later)
+  for i in range(0, len(molecule.threefolds)):
+    a = numpy.array([molecule.atoms[molecule.threefolds[i][0]].coord[0], molecule.atoms[molecule.threefolds[i][0]].coord[1], molecule.atoms[molecule.threefolds[i][0]].coord[2]])
+    b = numpy.array([molecule.atoms[molecule.threefolds[i][1]].coord[0], molecule.atoms[molecule.threefolds[i][1]].coord[1], molecule.atoms[molecule.threefolds[i][1]].coord[2]])
+    c = numpy.array([molecule.atoms[molecule.threefolds[i][2]].coord[0], molecule.atoms[molecule.threefolds[i][2]].coord[1], molecule.atoms[molecule.threefolds[i][2]].coord[2]])
+    d = numpy.array([molecule.atoms[molecule.threefolds[i][3]].coord[0], molecule.atoms[molecule.threefolds[i][3]].coord[1], molecule.atoms[molecule.threefolds[i][3]].coord[2]])
+    ba = a-b
+    cb = b-c
+    db = b-d
+    dc = c-d
+    bprime = numpy.cross(-cb, -db)
+    cprime = numpy.cross(-dc, cb)
+    dprime = numpy.cross(db, dc)
+    aprime = numpy.cross(bprime, numpy.cross(-ba, bprime))/numpy.dot(bprime, bprime)
+    c = numpy.zeros(molecule.numatoms()*3)
+    c[3*molecule.threefolds[i][0]] = aprime[0]
+    c[3*molecule.threefolds[i][0]+1] = aprime[1]
+    c[3*molecule.threefolds[i][0]+2] = aprime[2]
+    c[3*molecule.threefolds[i][1]] = bprime[0]
+    c[3*molecule.threefolds[i][1]+1] = bprime[1]
+    c[3*molecule.threefolds[i][1]+2] = bprime[2]
+    c[3*molecule.threefolds[i][2]] = cprime[0]
+    c[3*molecule.threefolds[i][2]+1] = cprime[1]
+    c[3*molecule.threefolds[i][2]+2] = cprime[2]
+    c[3*molecule.threefolds[i][3]] = dprime[0]
+    c[3*molecule.threefolds[i][3]+1] = dprime[1]
+    c[3*molecule.threefolds[i][3]+2] = dprime[2]
+    c = c/numpy.linalg.norm(c)
+    fc = numpy.dot(numpy.dot(c,H), numpy.transpose(c))
+    if fc < 0.002:
+      ProgramWarning()
+      print(" This force constant is smaller than 0.002")
+    if verbosity >= 2:
+      print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(molecule.atoms[molecule.threefolds[i][0]].symbol, molecule.threefolds[i][0], molecule.atoms[molecule.threefolds[i][1]].symbol, molecule.threefolds[i][1], molecule.atoms[molecule.threefolds[i][2]].symbol, molecule.threefolds[i][2], molecule.atoms[molecule.threefolds[i][3]].symbol, molecule.threefolds[i][3], fc))
+    molecule.addFFInversion(molecule.threefolds[i][0], molecule.threefolds[i][1], molecule.threefolds[i][2], molecule.threefolds[i][3],molecule.outofplaneangle(i) , 2, [fc, molecule.atoms[molecule.threefolds[i][0]].symbol, molecule.atoms[molecule.threefolds[i][1]].symbol, molecule.atoms[molecule.threefolds[i][2]].symbol, molecule.atoms[molecule.threefolds[i][3]].symbol, molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][1]), molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][2]), molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][3])])
+
+  # Moving to noncovalent interactions
+  # Locate hydrogen atoms and add them to the list hatoms
+  if verbosity >= 2:
+    print("\nListing hydrogen atoms in WellFARe molecule: ", molecule.name)
+  for i in range(0, len(molecule.atoms)):
+    if molecule.atoms[i].symbol == "H":
+      molecule.addHAtom(i)
+      if verbosity >= 2:
+        print(molecule.atoms[i].symbol, molecule.atoms[i].coord)
+
+  # Locate high electronegatvity atoms and add them to the list highENatoms
+  if verbosity >= 2:
+    print("Listing highly electronegative atoms in WellFARe molecule: ", molecule.name)
+  for i in range(0, len(molecule.atoms)):
+    sym = molecule.atoms[i].symbol
+    if sym == "N" or sym == "O" or sym == "F" or sym == "S" or sym == "Cl":
+      molecule.addhighENatom(i)
+      if verbosity >= 2:
+        print(sym, molecule.atoms[i].coord)
+
+  # Locate halogen atoms and add them to the list halogens
+  if verbosity >= 2:
+    print("Listing non-F halogen atoms in WellFARe molecule: ", molecule.name)
+  for i in range(0, len(molecule.atoms)):
+    sym = molecule.atoms[i].symbol
+    if sym == "Cl" or sym == "Br" or sym == "I" or sym == "At":
+      molecule.addXatom(i)
+      if verbosity >= 2:
+        print(sym, molecule.atoms[i].coord)
+
+
+  # Locate hydrogen bonding triples AHB and create instances of FFHBond
+  if verbosity >= 2:
+    print("\nAdding hydrogen bonds to WellFARe molecule: ", molecule.name)
+  for i in range(0, len(molecule.bonds)):
+    sym1 = molecule.atoms[molecule.bonds[i][0]].symbol
+    sym2 = molecule.atoms[molecule.bonds[i][1]].symbol
+    if sym1 == "H":
+      atH = molecule.bonds[i][0]
+      if sym2 == "N" or sym2 == "O" or sym2 == "F" or sym2 == "S" or sym2 == "Cl":
+        atA = molecule.bonds[i][1]
+        for j in range(0, len(molecule.atoms)):
+          sym3 = molecule.atoms[j].symbol
+          if sym3 == "N" or sym3 == "O" or sym3 == "F" or sym3 == "S" or sym3 == "Cl":
+            r = molecule.atmatmdist(atH, j)
+            r_check = SymbolToVdWRadius[molecule.atoms[atH].symbol] + SymbolToVdWRadius[molecule.atoms[j].symbol] # Using sum of van der Waals radii
+            if r <= r_check and j != atA:
+              theta = molecule.anybondangle(atA, atH, j)
+              molecule.addFFHBond(atA, atH, j, theta, 1, [sym2, molecule.atms[atA].charge, sym1, molecule.atoms[atH].charge, sym3, molecule.atoms[j].charge, molecule.atmatmdist(atA, atH), molecule.atmatmdist(j, atH), molecule.atmatmdist(atA, j)])
+              if verbosity >= 2:
+                print(" ({:<3}, {:<3}, {:<3} {:3.2f} deg), {:<3}, [{:<3}, {:3.2f}, {:<3}, {:3.2f}, {:<3}, {:3.2f}, {:3.2f}, {:3.2f}, {:3.2f}]".format(atA, atH, j, theta, 1, sym2, molecule.atoms[atA].charge, sym1, molecule.atoms[atH].charge, sym3, molecule.atoms[j].charge, molecule.atmatmdist(atA, atH), molecule.atmatmdist(j, atH), molecule.atmatmdist(atA, j)))
+    elif sym2 == "H":
+      atH = molecule.bonds[i][1]  
+      if sym1 == "N" or sym1 == "O" or sym1 == "F" or sym1 == "S" or sym1 == "Cl":
+        atA = molecule.bonds[i][0]
+        for j in range(0, len(molecule.atoms)):
+          sym3 = molecule.atoms[j].symbol
+          if sym3 == "N" or sym3 == "O" or sym3 == "F" or sym3 == "S" or sym3 == "Cl":
+            r = molecule.atmatmdist(atH, j)
+            r_check = SymbolToVdWRadius[sym1] + SymbolToVdWRadius[sym2] # Sum of van der Waals radii again used as check
+            if r <= r_check and j != atA:
+              theta = molecule.anybondangle(atA, atH, j)
+              molecule.addFFHBond(atA, atH, j, theta, 1, [sym1, molecule.atoms[atA].charge, sym2, molecule.atoms[atH].charge, sym3, molecule.atoms[j].charge, molecule.atmatmdist(atA, atH), molecule.atmatmdist(j, atH), molecule.atmatmdist(atA, j)])
+              if verbosity >= 2:
+                print(" ({:<3}, {:<3}, {:<3} {:3.2f} deg), {:<3}, [{:<3}, {:3.2f}, {:<3}, {:3.2f}, {:<3}, {:3.2f}, {:3.2f}, {:3.2f}, {:3.2f}]".format(atA, atH, j, theta, 1, sym1, molecule.atoms[atA].charge, sym2, molecule.atoms[atH].charge, sym3, molecule.atoms[j].charge, molecule.atmatmdist(atA, atH), molecule.atmatmdist(j, atH), molecule.atmatmdist(atA, j)))
+
+# End of routine
 
 ###############################################################################
 #                                                                             #
@@ -1547,7 +2840,7 @@ infile = iofiles(sys.argv[1:])
 #   print(i)
 
 reactant_mol = Molecule("Reactant",0)
-extractCoordinates("g09-dielsalder-r.log", reactant_mol, verbosity = 2)
+extractCoordinates(infile, reactant_mol, verbosity = 2)
 
 product_mol = Molecule("Product",0)
 extractCoordinates("g09-dielsalder-p.log", product_mol, verbosity = 2)
@@ -1556,7 +2849,7 @@ extractCoordinates("g09-dielsalder-p.log", product_mol, verbosity = 2)
 # print(reactant_mol.cartesianCoordinates())
 
 print("\nForce Field Energy:")
-print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates()))
+print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity = 1))
 
 print("\nDistort Geometry and print energy again:")
 coordinates2optimiseR = reactant_mol.cartesianCoordinates()
@@ -1564,11 +2857,11 @@ coordinates2optimiseP = product_mol.cartesianCoordinates()
 
 coordinates2optimiseR = (numpy.array(coordinates2optimiseR)+(numpy.array(coordinates2optimiseP))/2.0)
 
-print(reactant_mol.FFEnergy(coordinates2optimiseR))
+print(reactant_mol.FFEnergy(coordinates2optimiseR, verbosity = 1))
 
-print("\nGeometry Optimizer:")
-xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
-print("\nOptimized Geometry:")
-print(xopt)
+#print("\nGeometry Optimizer:")
+#xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
+#print("\nOptimized Geometry:")
+#print(xopt)
 
 ProgramFooter()
