@@ -638,7 +638,8 @@ class FFStretch:
     self.atom2 = b
     self.r0 = r0
     self.typ = typ
-    
+    self.k = 0.0
+ 
     if typ == 1:
       self.typ = typ
       self.k = arg[0]
@@ -948,8 +949,10 @@ class FFInversion:
 
     Set the inversion force constant for this potential equal to newk
     """
-    self.k = newk
-    self.k_inv = newk
+    if self.typ == 1:
+      self.k = newk
+    elif self.typ == 2:
+      self.k_inv = newk
 
   def energy(self, phi):
     """ Returns the energy of this inversion potential at out of plane angle phi"""
@@ -1148,7 +1151,7 @@ class Molecule:
     self.hatoms = []
     self.highENatoms = []
     self.halogens = [] 
-  
+    self.H_QM = numpy.zeros((3,3)) # Array size arbitrary, just a placeholder for type 
 
   def addAtom(self, a):
     """ (Molecule, Atom) -> NoneType
@@ -1501,6 +1504,13 @@ class Molecule:
     # Append bond to list if doesn't exist and is plausible
     if exists == False and a >= 0 and b >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c != d:
       self.bonds.append([c, d])
+
+  def setHessian(self, H):
+    """ (Molecule) -> NoneType
+
+    Set the Quantum Mechanically calculated Hessian, H_QM, equal to H
+    """
+    self.H_QM = H
 
   def addFFStretch(self, a, b, r0, typ, arg):
     """ (Molecule) -> NoneType
@@ -2587,28 +2597,54 @@ class Molecule:
       print("Total energy:")
     return(energy)
 
-######################################################################
-# Additional functions required for the Hessian fit defined below here
-######################################################################
+  def kdepHessian(ForceConstants):
+    """ (Molecule) -> 3N x 3N matrix
 
-def HessianDiffSquared(H_QM, H_FF):
-  """
-  Objective function to be minimised in the Hessian fit
-  Gives squared deviation between QM Hessian H_QM and Force Field Hessian H_FF
-  """
-# There is a choice whether to take H_FF as an input, or integrate the calculation of H_FF from energy in here - may adjust later
+    Returns the Hessian matrix for the molecule as calculated numerically from the Force field energy with the specified list of force constants
+    """
+  # For greater flexibility in usage, a list of Cartesian Coordinates could also be given as an argument if dependence upon force constants alone were not desired
+    # Take the original Cartesian coordinates of the molecule as initial geometry
+    coords = self.cartesianCoordinates
+    epsilon = 1*(10**-5)
+    # Use the finite difference approximation to calculate first derivatives at the initial geometry
+    deriv1 = scipy.optimise.approx_fprime(coords, self.kdepFFEnergy, epsilon, ForceConstants, verbosity = 0)
+# Check whether the syntax for additional arguments in approx_fprime is correct here or whether they should be in a list
+# Also whether a approx_fprime works as well with a class method as with an independently defined function
+# If not, may need to write out in full
+    # Set up a zero matrix to become the Force Field Hessian
+    n = len(coords)
+    H_FF = numpy.zeros((n, n))
+    # For each coordinate, displace by epsilon and calculate the second derivatives using another finite difference approximation
+    for i in range(n):
+      x0 = coords[i]
+      coords[i] = x0 + epsilon
+      deriv2 = scipy.optimise.approx_fprime(coords, self.kdepFFEnergy, epsilon, ForceConstants, verbosity = 0) # Same checks apply as above
+      # Place the calculated second derivatives for coordinate i into the ith column of the Hessian matrix
+      H_FF[:, i] = (deriv2 - deriv1)/epsilon
+      coords[i] = x0
+    return H_FF
 
-  sqdev = 0.0
-  # Given H_QM and H_FF as arrays of equal size and shape, iterate over the individual entries of each
-  for i in range(int(numpy.sqrt(H_QM.size))):
-    for j in range(int(numpy.sqrt(H_QM.size))):
-      # Take the difference between entries and square it
-      diff = H_QM[i, j] - H_FF[i, j]
-      diff = diff ** 2
-      # Add this to the total squared deviation
-      sqdev = sqdev + diff
+  def HessianDiffSquared(self, ForceConstants):
+    """
+    Objective function to be minimised in the Hessian fit
+    Gives squared deviation between QM Hessian H_QM and Force Field Hessian H_FF
+    """
+    # Take the QM calculated Hessian stored as an attribute of the molecule
+    H_QM = self.H_QM
+    # Calculate the Force Field Hessian for the given force constants
+    H_FF = self.kdepHessian(ForceConstants)
 
-  return sqdev
+    sqdev = 0.0
+    # Given H_QM and H_FF as arrays of equal size and shape, iterate over the individual entries of each
+    for i in range(int(numpy.sqrt(H_QM.size))):
+      for j in range(int(numpy.sqrt(H_QM.size))):
+        # Take the difference between entries and square it
+        diff = H_QM[i, j] - H_FF[i, j]
+        diff = diff ** 2
+        # Add this to the total squared deviation
+        sqdev = sqdev + diff
+
+    return sqdev
 
 #############################################################################################################
 # Most important function so far: Read Quantum Chemistry output file and construct WellFaRe Molecule from it
@@ -2827,6 +2863,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
             for i in range(0,len(row)-1):
               H[int(row[0])-1][int(columns[i])-1] =  row[i+1].replace('D','E')
               H[int(columns[i])-1][int(row[0])-1] =  row[i+1].replace('D','E')
+    molecule.setHessian(H) # Store H as the QM calculated Hessian for this molecule  
     if verbosity >= 3:
           print("\nForce constants in Cartesian coordinates (Input orientation):")
           #numpy.set_printoptions(suppress=True)
@@ -3176,6 +3213,49 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
 
 # End of routine
 
+################################################################################
+# Last function needed to set up force field: carry out Hessian fit to determine
+# force constants for stretches, bends and inversion potentials
+################################################################################
+
+def fitForceConstants(molecule, verbosity = 0):
+  if verbosity >= 1:
+    print("\nFitting force constants for WellFARe molecule: ", molecule.name)
+  # Construct a list of the force constants initially assigned to the molecule
+  ForceConstants = []
+  for i in range(len(molecule.stretch)):
+    ForceConstants.append(molecule.stretch[i].k)
+  for i in range(len(molecule.str13)):
+    ForceConstants.append(molecule.str13[i].k)
+  for i in range(len(molecule.bend)):
+    ForceConstants.append(molecule.bend[i].k)
+  for i in range(len(molecule.inv)):
+    if molecule.inv[i].typ == 1:
+      ForceConstants.append(molecule.inv[i].k)
+    elif molecule.inv[i].typ == 2:
+      ForceConstants.append(molecule.inv[i].k_inv)
+  if verbosity >= 1:
+    print("\nForce constants to be optimised:")
+    print(ForceConstants)
+
+  # Carry out Hessian fitting procedure to determine the appropriate values of those force constants
+  scipy.optimize.fmin_bfgs(molecule.HessianDiffSquared, ForceConstants) # Other optimisers might be more suitable, and extra parameters can be specified if needed
+  if verbosity >= 1:
+    print("\nFitted Force constants")
+    print(xopt)
+
+  # Assign the fitted force constants to the corresponding force field potentials
+  # Note: could add verbosity option here to print a representation of each after changing force constant, but probably not required
+  for i in range(len(molecule.stretch)):
+    molecule.stretch[i].setk(xopt[i])
+  for i in range(len(molecule.str13)):
+    molecule.str13[i].setk(xopt[len(molecule.stretch) + i])
+  for i in range(len(molecule.bend)):
+    molecule.bend[i].setk(xopt[len(molecule.stretch) + len(molecule.str13) + i])
+  for i in range(len(molecule.inv)):
+    molecule.inv[i].setk(xopt[len(molecule.stretch) + len(molecule.str13) + len(molecule.bend) + i])
+
+  
 ###############################################################################
 #                                                                             #
 # The main part of the program starts here                                    #
@@ -3242,9 +3322,11 @@ infile = iofiles(sys.argv[1:])
 
 reactant_mol = Molecule("Reactant",0)
 extractCoordinates(infile, reactant_mol, verbosity = 2)
+fitForceConstants(reactant_mol, verbosity = 2)
 
 product_mol = Molecule("Product",0)
 extractCoordinates("g09-dielsalder-p.log", product_mol, verbosity = 2)
+fitForceConstants(product_mol, verbosity = 2)
 
 # print("\nCartesian Coordinates (as one list):")
 # print(reactant_mol.cartesianCoordinates())
