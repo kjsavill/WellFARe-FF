@@ -619,6 +619,18 @@ def potElectrostatic(elstat_AB, chg_A, chg_B, r_AB):
 
     return u
 
+def potC6OnlyDisp(R_AB, R_0AB):
+    """
+    Function for the contribution to London dispersion energy from a single pair of atoms, AB, following the D3(CSO) scheme
+    """
+    # Since this potential requires cutoff radii, but does not use C8 coefficients, a suitable method for determining those radii will be needed
+    # The extra parameters an for this version of the dispersion correction must also be defined
+    C6indep = s6 + a1/(1 + exp(R_AB - (a2 * R_0AB)))
+    C6dep = C6_AB/(R_AB ** 6 + (a3 * R_0AB + a4) ** 6)
+    u = C6indep * C6dep
+
+    return u
+
 #############################################################################################################
 # Classes for Force Field Terms defined below
 #############################################################################################################
@@ -1385,7 +1397,7 @@ class Molecule:
     inplane_2 = numpy.cross(plane_norm, cross_2)/numpy.dot(plane_norm, plane_norm)
     inplane_3 = numpy.cross(plane_norm, cross_3)/numpy.dot(plane_norm, plane_norm)
     
-    # Caclulate the out of plane angle for each of the three bonds
+    # Calculate the out of plane angle for each of the three bonds
     cos_phi1 = numpy.dot(bond_1, inplane_1)/(numpy.linalg.norm(bond_1)*numpy.linalg.norm(inplane_1))
     cos_phi2 = numpy.dot(bond_2, inplane_2)/(numpy.linalg.norm(bond_2)*numpy.linalg.norm(inplane_2))
     cos_phi3 = numpy.dot(bond_3, inplane_3)/(numpy.linalg.norm(bond_3)*numpy.linalg.norm(inplane_3))
@@ -2029,7 +2041,7 @@ class Molecule:
       inplane_2 = numpy.cross(plane_norm, cross_2)/numpy.dot(plane_norm, plane_norm)
       inplane_3 = numpy.cross(plane_norm, cross_3)/numpy.dot(plane_norm, plane_norm)
 
-      # Caclulate the out of plane angle for each of the three bonds
+      # Calculate the out of plane angle for each of the three bonds
       cos_phi1 = numpy.dot(bond_1, inplane_1)/(numpy.linalg.norm(bond_1)*numpy.linalg.norm(inplane_1))
       cos_phi2 = numpy.dot(bond_2, inplane_2)/(numpy.linalg.norm(bond_2)*numpy.linalg.norm(inplane_2))
       cos_phi3 = numpy.dot(bond_3, inplane_3)/(numpy.linalg.norm(bond_3)*numpy.linalg.norm(inplane_3))
@@ -2262,13 +2274,17 @@ class Molecule:
     """
 # Note the function fed to the optimiser will need to have only force constants as variables, so must fix cartesian coordinates somehow for the molecule.
     energy = 0.0
+#    print("Initial force constants for k-dependent energy calculation:") # REMOVE ONCE FIXED
+#    print(ForceConstants) # REMOVE ONCE FIXED
+#    print("Input coordinates for k-dependent energy calculation:") # REMOVE ONCE FIXED
+#    print(cartCoordinates) #REMOVE ONCE FIXED
     if verbosity >= 1:
       print("Initial energy for calculation = " + str(energy))
     for j in range(len(self.stretch)):
       i = self.stretch[j]
       k_str0 = i.k_str # Store the value of k_str originally associated with this stretching potential
       i.setk(ForceConstants[j]) # Set k_str equal to the value specified in the force constant list for this stretch
-      distance=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
+      distance = (cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2]) ** 2
       distance += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
       distance += (cartCoordinates[3*i.atom1 + 2] - cartCoordinates[3*i.atom2 + 2]) ** 2
       distance=math.sqrt(distance)
@@ -2292,7 +2308,7 @@ class Molecule:
 
     for j in range(len(self.bend)):
       i = self.bend[j]
-      k_bnd0 = i.kbnd # Store the value of k_bnd originally associated with this bending potential
+      k_bnd0 = i.k_bnd # Store the value of k_bnd originally associated with this bending potential
       i.setk(ForceConstants[len(self.stretch) + len(self.str13) + j]) # Se k_bnd equal to the value specified in the force constant list for this bend 
       d_bond_1=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
       d_bond_1 += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
@@ -2350,8 +2366,11 @@ class Molecule:
 
     for j in range(len(self.inv)):
       i = self.inv[j]
-      k_bnd0 = self.k # Store the force constant k originally associated with this inversion potential 
-      self.setk(ForceConstants[len(self.stretch) + len(self.str13) + len(self.bend) + j]) # Set k_inv equal to the value specified for this inversion potential in the force constants list
+      if i.typ == 2:
+        k_inv0 = i.k_inv # Store the force constant k originally associated with this inversion potential 
+      else:
+        k_inv0 = i.k
+      i.setk(ForceConstants[len(self.stretch) + len(self.str13) + len(self.bend) + j]) # Set k_inv equal to the value specified for this inversion potential in the force constants list
       # Calculate the vectors along bonds, and construct a vector plane_norm orthogonal to the plane of end ato
       atom_c = [cartCoordinates[3*i.atom1], cartCoordinates[3*i.atom1+1], cartCoordinates[3*i.atom1+2]]
       atom_e1 = [cartCoordinates[3*i.atom2], cartCoordinates[3*i.atom2+1], cartCoordinates[3*i.atom2+2]]
@@ -2372,7 +2391,7 @@ class Molecule:
       inplane_2 = numpy.cross(plane_norm, cross_2)/numpy.dot(plane_norm, plane_norm)
       inplane_3 = numpy.cross(plane_norm, cross_3)/numpy.dot(plane_norm, plane_norm)
 
-      # Caclulate the out of plane angle for each of the three bonds
+      # Calculate the out of plane angle for each of the three bonds
       cos_phi1 = numpy.dot(bond_1, inplane_1)/(numpy.linalg.norm(bond_1)*numpy.linalg.norm(inplane_1))
       cos_phi2 = numpy.dot(bond_2, inplane_2)/(numpy.linalg.norm(bond_2)*numpy.linalg.norm(inplane_2))
       cos_phi3 = numpy.dot(bond_3, inplane_3)/(numpy.linalg.norm(bond_3)*numpy.linalg.norm(inplane_3))
@@ -2395,7 +2414,7 @@ class Molecule:
       phi = (phi1 + phi2 + phi3)/3
       
       energy = energy + i.energy(phi)
-      self.setk(k_inv0) # Restore the original value of k_inv so that this inversion potential is not permanently modified by the energy caculation
+      i.setk(k_inv0) # Restore the original value of k_inv so that this inversion potential is not permanently modified by the energy caculation
     if verbosity >= 1:
       print("With inversion, energy = " + str(energy))
     # Don't forget to add non-bonded interactions here
@@ -2597,17 +2616,21 @@ class Molecule:
       print("Total energy:")
     return(energy)
 
-  def kdepHessian(ForceConstants):
+  def kdepHessian(self, ForceConstants):
     """ (Molecule) -> 3N x 3N matrix
 
     Returns the Hessian matrix for the molecule as calculated numerically from the Force field energy with the specified list of force constants
     """
   # For greater flexibility in usage, a list of Cartesian Coordinates could also be given as an argument if dependence upon force constants alone were not desired
     # Take the original Cartesian coordinates of the molecule as initial geometry
-    coords = self.cartesianCoordinates
+    coords = self.cartesianCoordinates()
+#    print("Initial coordinates for FF Hessian calculation:") # REMOVE ONCE FIXED
+#    print(coords) # REMOVE ONCE FIXED
     epsilon = 1*(10**-5)
+#    print("For FF Hessian calculation, epsilon = " + str(epsilon)) # REMOVE ONCE FIXED
     # Use the finite difference approximation to calculate first derivatives at the initial geometry
-    deriv1 = scipy.optimise.approx_fprime(coords, self.kdepFFEnergy, epsilon, ForceConstants, verbosity = 0)
+#    print("Calculating approximate first derivatives:") # REMOVE ONCE FIXED
+    deriv1 = scipy.optimize.approx_fprime(coords, self.kdepFFEnergy, epsilon, ForceConstants) # Note verbosity option not passed as an argument, so cannot be used from kdepFFEnergy at present except by modifying default values
 # Check whether the syntax for additional arguments in approx_fprime is correct here or whether they should be in a list
 # Also whether a approx_fprime works as well with a class method as with an independently defined function
 # If not, may need to write out in full
@@ -2618,7 +2641,7 @@ class Molecule:
     for i in range(n):
       x0 = coords[i]
       coords[i] = x0 + epsilon
-      deriv2 = scipy.optimise.approx_fprime(coords, self.kdepFFEnergy, epsilon, ForceConstants, verbosity = 0) # Same checks apply as above
+      deriv2 = scipy.optimize.approx_fprime(coords, self.kdepFFEnergy, epsilon, ForceConstants) # Same comments on verbosity and checks apply as above
       # Place the calculated second derivatives for coordinate i into the ith column of the Hessian matrix
       H_FF[:, i] = (deriv2 - deriv1)/epsilon
       coords[i] = x0
@@ -2631,7 +2654,10 @@ class Molecule:
     """
     # Take the QM calculated Hessian stored as an attribute of the molecule
     H_QM = self.H_QM
+    print("QM Hessian used for Hessian difference:") # REMOVE ONCE FIXED
+    print(H_QM) # REMOVE ONCE FIXED
     # Calculate the Force Field Hessian for the given force constants
+    print("Calculating FF Hessian")
     H_FF = self.kdepHessian(ForceConstants)
 
     sqdev = 0.0
@@ -3239,7 +3265,8 @@ def fitForceConstants(molecule, verbosity = 0):
     print(ForceConstants)
 
   # Carry out Hessian fitting procedure to determine the appropriate values of those force constants
-  scipy.optimize.fmin_bfgs(molecule.HessianDiffSquared, ForceConstants) # Other optimisers might be more suitable, and extra parameters can be specified if needed
+  print("Running Optimisation") # REMOVE ONCE FIXED
+  xopt = scipy.optimize.fmin_bfgs(molecule.HessianDiffSquared, ForceConstants) # Other optimisers might be more suitable, and extra parameters can be specified if needed
   if verbosity >= 1:
     print("\nFitted Force constants")
     print(xopt)
