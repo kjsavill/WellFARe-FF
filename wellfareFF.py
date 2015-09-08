@@ -577,24 +577,42 @@ def RadiusFromCn(C6_AB, C8_AB):
 
     return R0_AB
 
-def potPauliRep(rep_disp_AB, symA, symB, r_AB, C6_AB, C8_AB):
+def VdWCutoffRadius(symA, symB):
+    """
+    Function to calculate the cutoff radius for a pair of atoms with symbols symA and symB as the average of van der Waals radii
+    """
+    R_A = SymbolToVdWRadius(symA)
+    R_B = SymbolToVdWRadius(symB)
+    R0_AB = (R_A + R_B)/2
+    
+    return R0_AB
+
+def potPauliRep(rep_disp_AB, symA, symB, r_AB, C6_AB, C8_AB, typ = 1):
     """
     Pairwise formula for the Pauli repulsion between two atoms
     """
     # Calculation of valence electron numbers, and where to implement determination of Cn_AB, still to be worked out
     z_eff_A = SymbolToValenceE[symA] * k_z[symA]
     z_eff_B = SymbolToValenceE[symB] * k_z[symB]
-    R_0D3 = RadiusFromCn(C6_AB, C8_AB) # Note still need to confirm whether R_0D3 and R0_AB are actually equivalent
+    if typ == 1:
+      R_0D3 = VdWCutoffRadius(symA, symB)
+    elif typ == 2:
+      R_0D3 = RadiusFromCn(C6_AB, C8_AB) # Note still need to confirm whether R_0D3 and R0_AB are actually equivalent
     u = rep_disp_AB * (z_eff_A*z_eff_B/r_AB) * math.exp(-1*beta_rep*r_AB/(R_0D3**(3/2)))
 
     return u
 
-def BJdamping(a, b, C6_AB, C8_AB):
+def BJdamping(a, b, symA, symB, typ = 1):
     """
     Function for the Becke-Johnson rational damping for atoms a and b
     """
-    # Choice between taking C6_AB, C8_AB as arguments and including calculation from given atom symbols
-    R_0AB = RadiusFromCn(C6_AB, C8_AB)
+    # Calculation of cutoff radius is optionally performed using either van der Waals radii or C6 and C8 coefficients
+    if typ == 1:
+      R0_AB = VdWCutoffRadius(symA, symB)
+    elif typ == 2:
+      C6_AB = (C6[a] + C6[b])/2 # Check this is correct for C6
+      C8_AB = 1.0 # 1 used as a placeholder until C8 values can be added as a dictionary
+      R_0AB = RadiusFromCn(C6_AB, C8_AB)
     damp = a1*R_0AB + a2
 
     return damp
@@ -1938,11 +1956,12 @@ class Molecule:
     s =s + "\n"
     return s
 
-  def FFEnergy(self, cartCoordinates, verbosity = 0):
+  def FFEnergy(self, cartCoordinates, verbosity = 0, dtyp = 1):
     """ (Molecule) -> number (Force Field energy)
 
       Returns a number containing the molecular energy according to the current Force Field definition at structure
       specified by the provided cartesian coordinates.
+      The dispersion correction used is specified by dtyp, with 1 for C6-only calculating cutoff radius from van der Waals radii, 2 for full D3 using C6 and C8 coefficients
     """
 
     energy = 0.0
@@ -2250,9 +2269,8 @@ class Molecule:
         C6_B = C6[symB] 
         C6_AB = (C6_A + C6_B)/2
         C8_AB = C8_AB # To be completed - temporarily set equal to C6 for test run only
-        R0_AB = RadiusFromCn(C6_AB, C8_AB)
-        BJdamp_AB = BJdamping(i, j, C6_AB, C8_AB) 
-        energy_AB = potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB, distance)
+        BJdamp_AB = BJdamping(i, j, symA, symB, dtyp) # Calculation of cutoff radii is incorporated in this function
+        energy_AB = potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB, distance) # Will need adapting for C6 only
         e_disp = e_disp + energy_AB
     energy = energy + e_disp
     if verbosity >= 1:
@@ -2265,12 +2283,14 @@ class Molecule:
       print("Total energy:")
     return energy
 
-  def kdepFFEnergy(self, cartCoordinates, ForceConstants, verbosity = 0):
+  def kdepFFEnergy(self, cartCoordinates, ForceConstants, verbosity = 0, dtyp = 1):
     """ (Molecule) -> number (Force Field energy)
 
       Returns a number containing the molecular energy according to the current Force Field definition at a fixed structure specified by cartCoordinates
       and using the stretch, bend and inversion force constants specified by ForceConstants
       The contribution from non-covalent interactions, and the torsional force constants, are fixed
+      The dispersion potential
+      The dispersion correction used is specified by dtyp, with 1 for C6-only calculating cutoff radius from van der Waals radii, 2 for full D3 using C6 and C8 coefficients
     """
 # Note the function fed to the optimiser will need to have only force constants as variables, so must fix cartesian coordinates somehow for the molecule.
     energy = 0.0
@@ -2601,9 +2621,8 @@ class Molecule:
         C6_B = C6[symB] 
         C6_AB = (C6_A + C6_B)/2
         C8_AB = C8_AB # To be completed - temporarily set equal to C6 for test run only
-        R0_AB = RadiusFromCn(C6_AB, C8_AB)
-        BJdamp_AB = BJdamping(i, j, C6_AB, C8_AB) 
-        energy_AB = potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB, distance)
+        BJdamp_AB = BJdamping(i, j, symA, symB, dtyp) # Calculation of cutoff radii incorporated here 
+        energy_AB = potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB, distance) # Will need adjusting for C6 only version
         e_disp = e_disp + energy_AB
     energy = energy + e_disp
     if verbosity >= 1:
@@ -3260,16 +3279,27 @@ def fitForceConstants(molecule, verbosity = 0):
       ForceConstants.append(molecule.inv[i].k)
     elif molecule.inv[i].typ == 2:
       ForceConstants.append(molecule.inv[i].k_inv)
+  InitialFC = ForceConstants
   if verbosity >= 1:
     print("\nForce constants to be optimised:")
     print(ForceConstants)
 
   # Carry out Hessian fitting procedure to determine the appropriate values of those force constants
-  print("Running Optimisation") # REMOVE ONCE FIXED
-  xopt = scipy.optimize.fmin_bfgs(molecule.HessianDiffSquared, ForceConstants) # Other optimisers might be more suitable, and extra parameters can be specified if needed
+  timestamp("Running Optimisation ") # REMOVE ONCE FIXED
+  xopt = scipy.optimize.fmin_bfgs(molecule.HessianDiffSquared, ForceConstants, gtol= 0.01) # Other optimisers might be more suitable, and extra parameters can be specified if needed
+# Tolerance has been increased from the default 1e-05 in order to speed up the optimisation
   if verbosity >= 1:
-    print("\nFitted Force constants")
+    if verbosity >= 2:
+      print("\nInitial Force constants:")
+      print(InitialFC)
+      print("\QM Hessian:")
+      print(molecule.H_QM)
+      print("\nInitial Force Field Hessian:")
+      print(molecule.kdepHessian(InitialFC))
+    timestamp("\nFitted Force constants: ")
     print(xopt)
+    print("\nForce Field Hessian with those force constants:")
+    print(molecule.kdepHessian(xopt))
 
   # Assign the fitted force constants to the corresponding force field potentials
   # Note: could add verbosity option here to print a representation of each after changing force constant, but probably not required
@@ -3351,9 +3381,9 @@ reactant_mol = Molecule("Reactant",0)
 extractCoordinates(infile, reactant_mol, verbosity = 2)
 fitForceConstants(reactant_mol, verbosity = 2)
 
-product_mol = Molecule("Product",0)
-extractCoordinates("g09-dielsalder-p.log", product_mol, verbosity = 2)
-fitForceConstants(product_mol, verbosity = 2)
+#product_mol = Molecule("Product",0)
+#extractCoordinates("g09-dielsalder-p.log", product_mol, verbosity = 2)
+#fitForceConstants(product_mol, verbosity = 2)
 
 # print("\nCartesian Coordinates (as one list):")
 # print(reactant_mol.cartesianCoordinates())
@@ -3362,12 +3392,12 @@ print("\nForce Field Energy:")
 print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity = 1))
 
 print("\nDistort Geometry and print energy again:")
-coordinates2optimiseR = reactant_mol.cartesianCoordinates()
-coordinates2optimiseP = product_mol.cartesianCoordinates()
+#coordinates2optimiseR = reactant_mol.cartesianCoordinates()
+#coordinates2optimiseP = product_mol.cartesianCoordinates()
 
-coordinates2optimiseR = (numpy.array(coordinates2optimiseR)+(numpy.array(coordinates2optimiseP))/2.0)
+#coordinates2optimiseR = (numpy.array(coordinates2optimiseR)+(numpy.array(coordinates2optimiseP))/2.0)
 
-print(reactant_mol.FFEnergy(coordinates2optimiseR, verbosity = 1))
+#print(reactant_mol.FFEnergy(coordinates2optimiseR, verbosity = 1))
 
 #print("\nGeometry Optimizer:")
 #xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
