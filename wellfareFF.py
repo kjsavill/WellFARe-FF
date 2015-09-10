@@ -53,7 +53,7 @@ def ProgramAbort():
   sys.exit()
   return
 
-def ProgramWarning():
+def ProgramWarning(warntext=''):
   print ("\n###################################################################")
   print (" __          __              _             ")
   print (" \ \        / /             (_)            ")
@@ -64,6 +64,9 @@ def ProgramWarning():
   print ("                                      __/ |")
   print ("                                     |___/ ")
   timestamp('Warning time/date: ')
+  if warntext != '':
+    print ("###################################################################")
+    print("# ", warntext)
   print ("###################################################################")
   return
 
@@ -1127,14 +1130,15 @@ class Molecule:
     self.highENatoms = []
     self.halogens = [] 
   
-
-  def addAtom(self, a):
+  def addAtom(self, a, verbosity = 0):
     """ (Molecule, Atom) -> NoneType
     
     Add a to my list of Atoms.
     """
     
     self.atoms.append(a)
+    if verbosity >= 2:
+        print(" {:<3} {: .8f} {: .8f} {: .8f}".format(a.symbol,a.coord[0],a.coord[1],a.coord[2]))
     nucchg = 0
     for i in self.atoms:
       nucchg = nucchg + i.charge
@@ -1457,7 +1461,7 @@ class Molecule:
       i.coord[1] = vector[1]
       i.coord[2] = vector[2]
   
-  def addBond(self, a, b):
+  def addBond(self, a, b, verbosity = 2, bondorder = 0.0, distance = 0.0):
     """ (Molecule) -> NoneType
     
     Adds a bond between atoms a and b to the list of bonds
@@ -1479,8 +1483,14 @@ class Molecule:
     # Append bond to list if doesn't exist and is plausible
     if exists == False and a >= 0 and b >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c != d:
       self.bonds.append([c, d])
+      if verbosity >= 2 and bondorder > 0.0 and distance == 0.0:
+        print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Bond order: {: .3f})".format(self.atoms[c].symbol, c, self.atoms[d].symbol, d, bondorder))
+      elif verbosity >= 2 and distance > 0.0 and bondorder == 0.0:
+        print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Distance: {:.3f} A)".format(self.atoms[c].symbol, c, self.atoms[d].symbol, d, distance))
+      elif verbosity >= 2:
+        print(" {:<3} ({:3d}) and {:<3} ({:3d})".format(self.atoms[c].symbol, c, self.atoms[d].symbol, d))
 
-  def addFFStretch(self, a, b, r0, typ, arg):
+  def addFFStretch(self, a, b, r0, typ, arg, verbosity = 2):
     """ (Molecule) -> NoneType
 
     Adds a stretching potential between atoms a and b to the list of stretches
@@ -1499,8 +1509,12 @@ class Molecule:
     # Append stretch to list if doesn't exist and is plausible
     if a >= 0 and b >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c != d:
       self.stretch.append(FFStretch(c, d, r0, typ, arg))
+      if verbosity >= 2 and typ == 1:
+        if arg[0] < 0.002:
+          ProgramWarning("This force constant is smaller than 0.002")
+        print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(self.atoms[a].symbol, a, self.atoms[b].symbol, b, arg[0]))
 
-  def addFFStr13(self, a, b, r0, typ, arg):
+  def addFFStr13(self, a, b, r0, typ, arg, verbosity = 2):
     """ (Molecule) -> NoneType
 
     Adds a stretching potential between atoms a and b to the list of stretches
@@ -1519,6 +1533,10 @@ class Molecule:
     # Append stretch to list if doesn't exist and is plausible
     if a >= 0 and b >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c != d:
       self.str13.append(FFStretch(c, d, r0, typ, arg))
+      if verbosity >= 2 and typ == 1:
+        if arg[0] < 0.002:
+          ProgramWarning("This force constant is smaller than 0.002")
+        print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(self.atoms[a].symbol, a, self.atoms[b].symbol, b, arg[0]))
 
   def delBond(self, a, b):
     """ (Molecule) -> NoneType
@@ -1543,7 +1561,7 @@ class Molecule:
     if exists == True:
       self.bonds.remove([c, d])
   
-  def addAngle(self, a, b, c):
+  def addAngle(self, a, b, c, verbosity = 2):
     """ (Molecule) -> NoneType
     
     Adds an angle between atoms a, b and c to the list of angles
@@ -1560,6 +1578,8 @@ class Molecule:
     # better sanity checks)
     if exists == False and a >= 0 and b >= 0 and c >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and a != b and a != c and b != c:
       self.angles.append([a, b, c])
+      if verbosity >= 2:
+        print(" {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({:6.2f} deg)".format(self.atoms[a].symbol, a, self.atoms[b].symbol, b, self.atoms[c].symbol, c, math.degrees(self.bondangle(len(self.angles)-1))))
 
   def addFFBend(self, a, b, c, a0, typ, arg):
     """ (Molecule) -> NoneType
@@ -1576,7 +1596,7 @@ class Molecule:
     if a >= 0 and b >= 0 and c >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and a != b and a != c and b != c:
       self.bend.append(FFBend(a, b, c, a0, typ, arg))
 
-  def addDihedral(self, a, b, c, d):
+  def addDihedral(self, a, b, c, d, verbosity = 2):
     """ (Molecule) -> NoneType
     
     Adds a dihedral between atoms a, b, c and d to the list of dihedrals
@@ -1593,6 +1613,8 @@ class Molecule:
     # better sanity checks)
     if exists == False and a >= 0 and b >= 0 and c >= 0 and d >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c <= len(self.atoms) and d <= len(self.atoms) and a != b and a != c and a != d and b != c and b != d and c != d:
       self.dihedrals.append([a, b, c, d])
+      if verbosity >= 2:
+        print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(self.atoms[a].symbol, a, self.atoms[b].symbol, b, self.atoms[c].symbol, c, self.atoms[d].symbol, d, math.degrees(self.dihedralangle(len(self.dihedrals)-1))))
 
   def addFFTorsion(self, a, b, c, d, theta0, typ, arg):
     """ (Molecule) -> NoneType
@@ -2453,9 +2475,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
     for i in range(0,molecule.numatoms()):
      for j in range(i+1,molecule.numatoms()):
          if bo[i][j] >= bondcutoff:
-            molecule.addBond(i,j)
-            if verbosity >= 2:
-              print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Bond order: {: .3f})".format(molecule.atoms[i].symbol, i, molecule.atoms[j].symbol, j, bo[i][j]))
+            molecule.addBond(i,j, verbosity = verbosity, bondorder = bo[i][j])
   # Else use 130% of the sum of covalent radii as criterion for a bond (user defined: distfactor)
   else:
     if verbosity >= 1:
@@ -2464,9 +2484,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
     for i in range(0,molecule.numatoms()):
      for j in range(i+1,molecule.numatoms()):
          if molecule.atmatmdist(i,j)<=(SymbolToRadius[molecule.atoms[i].symbol]+SymbolToRadius[molecule.atoms[j].symbol])*distfactor:
-            molecule.addBond(i,j)
-            if verbosity >= 2:
-              print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Distance: {:.3f} A)".format(molecule.atoms[i].symbol, i, molecule.atoms[j].symbol, j, molecule.atmatmdist(i,j)))
+            molecule.addBond(i,j, verbosity = verbosity, distance = molecule.atmatmdist(i,j))
 
   # Now that we know where the bonds are, find angles
   if verbosity >=2:
@@ -2474,43 +2492,27 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
   for i in range(0,len(molecule.bonds)):
     for j in range(i+1,len(molecule.bonds)):
       if molecule.bonds[i][0]==molecule.bonds[j][0]:
-        molecule.addAngle(molecule.bonds[i][1],molecule.bonds[i][0],molecule.bonds[j][1])
-        if verbosity >= 2:
-              print(" {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({:6.2f} deg)".format(molecule.atoms[molecule.bonds[i][1]].symbol, molecule.bonds[i][1], molecule.atoms[molecule.bonds[i][0]].symbol, molecule.bonds[i][0], molecule.atoms[molecule.bonds[j][1]].symbol, molecule.bonds[j][1], math.degrees(molecule.bondangle(len(molecule.angles)-1))))
+        molecule.addAngle(molecule.bonds[i][1],molecule.bonds[i][0],molecule.bonds[j][1], verbosity = verbosity)
       if molecule.bonds[i][0]==molecule.bonds[j][1]:
-        molecule.addAngle(molecule.bonds[i][1],molecule.bonds[i][0],molecule.bonds[j][0])
-        if verbosity >= 2:
-              print(" {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({:6.2f} deg)".format(molecule.atoms[molecule.bonds[i][1]].symbol, molecule.bonds[i][1], molecule.atoms[molecule.bonds[i][0]].symbol, molecule.bonds[i][0], molecule.atoms[molecule.bonds[j][0]].symbol, molecule.bonds[j][0], math.degrees(molecule.bondangle(len(molecule.angles)-1))))
+        molecule.addAngle(molecule.bonds[i][1],molecule.bonds[i][0],molecule.bonds[j][0], verbosity = verbosity)
       if molecule.bonds[i][1]==molecule.bonds[j][0]:
-        molecule.addAngle(molecule.bonds[i][0],molecule.bonds[i][1],molecule.bonds[j][1])
-        if verbosity >= 2:
-              print(" {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({:6.2f} deg)".format(molecule.atoms[molecule.bonds[i][0]].symbol, molecule.bonds[i][0], molecule.atoms[molecule.bonds[i][1]].symbol, molecule.bonds[i][1], molecule.atoms[molecule.bonds[j][1]].symbol, molecule.bonds[j][1], math.degrees(molecule.bondangle(len(molecule.angles)-1))))
+        molecule.addAngle(molecule.bonds[i][0],molecule.bonds[i][1],molecule.bonds[j][1], verbosity = verbosity)
       if molecule.bonds[i][1]==molecule.bonds[j][1]:
-        molecule.addAngle(molecule.bonds[i][0],molecule.bonds[i][1],molecule.bonds[j][0])
-        if verbosity >= 2:
-              print(" {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({:6.2f} deg)".format(molecule.atoms[molecule.bonds[i][0]].symbol, molecule.bonds[i][0], molecule.atoms[molecule.bonds[i][1]].symbol, molecule.bonds[i][1], molecule.atoms[molecule.bonds[j][0]].symbol, molecule.bonds[j][0], math.degrees(molecule.bondangle(len(molecule.angles)-1))))
+        molecule.addAngle(molecule.bonds[i][0],molecule.bonds[i][1],molecule.bonds[j][0], verbosity = verbosity)
 
   # Same for dihedrals: Use angles to determine where they are
   if verbosity >= 2:
       print("\nAdding dihedrals to WellFARe molecule: ", molecule.name)
   for i in range(0,len(molecule.angles)):
     for j in range(i+1,len(molecule.angles)):
-        if molecule.angles[i][1]==molecule.angles[j][0] and molecule.angles[i][2]==molecule.angles[j][1]:
-          molecule.addDihedral(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.angles[j][2])
-          if verbosity >= 2:
-            print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2], math.degrees(molecule.dihedralangle(len(molecule.dihedrals)-1))))
-        if molecule.angles[i][1]==molecule.angles[j][2] and molecule.angles[i][2]==molecule.angles[j][1]:
-          molecule.addDihedral(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.angles[j][0])
-          if verbosity >= 2:
-            print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1], molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], math.degrees(molecule.dihedralangle(len(molecule.dihedrals)-1))))
-        if molecule.angles[i][1]==molecule.angles[j][0] and molecule.angles[i][0]==molecule.angles[j][1]:
-          molecule.addDihedral(molecule.angles[i][2],molecule.angles[j][0],molecule.angles[j][1],molecule.angles[j][2])
-          if verbosity >= 2:
-            print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], molecule.atoms[molecule.angles[j][1]].symbol, molecule.angles[j][1], molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2], math.degrees(molecule.dihedralangle(len(molecule.dihedrals)-1))))
-        if molecule.angles[i][1]==molecule.angles[j][2] and molecule.angles[i][0]==molecule.angles[j][1]:
-          molecule.addDihedral(molecule.angles[i][2],molecule.angles[j][2],molecule.angles[j][1],molecule.angles[j][0])
-          if verbosity >= 2:
-            print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2], molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2], molecule.atoms[molecule.angles[j][1]].symbol, molecule.angles[j][1], molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0], math.degrees(molecule.dihedralangle(len(molecule.dihedrals)-1))))
+      if molecule.angles[i][1]==molecule.angles[j][0] and molecule.angles[i][2]==molecule.angles[j][1]:
+        molecule.addDihedral(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.angles[j][2], verbosity = verbosity)
+      if molecule.angles[i][1]==molecule.angles[j][2] and molecule.angles[i][2]==molecule.angles[j][1]:
+        molecule.addDihedral(molecule.angles[i][0],molecule.angles[i][1],molecule.angles[i][2],molecule.angles[j][0], verbosity = verbosity)
+      if molecule.angles[i][1]==molecule.angles[j][0] and molecule.angles[i][0]==molecule.angles[j][1]:
+        molecule.addDihedral(molecule.angles[i][2],molecule.angles[j][0],molecule.angles[j][1],molecule.angles[j][2], verbosity = verbosity)
+      if molecule.angles[i][1]==molecule.angles[j][2] and molecule.angles[i][0]==molecule.angles[j][1]:
+        molecule.addDihedral(molecule.angles[i][2],molecule.angles[j][2],molecule.angles[j][1],molecule.angles[j][0], verbosity = verbosity)
 
   # Same for threefolds: Use angles to determine where they are
   if verbosity >= 2:
