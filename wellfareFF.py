@@ -3377,6 +3377,78 @@ def fitForceConstants(molecule, verbosity = 0):
   for i in range(len(molecule.inv)):
     molecule.inv[i].setk(xopt[len(molecule.stretch) + len(molecule.str13) + len(molecule.bend) + i])
 
+######################################################################################
+# Functions for additional calculations, optional to the program, defined below here #
+######################################################################################
+
+def dissociateBond(molecule, atom1, atom2, epsilon, cutoff):
+  """
+  Function to progressively increase separation between atoms number a1 and a2 in increments of size epsilon until it exceeds the specified cutoff, and calculate potential energy at each new geometry
+  Output can be used to generate a dissociation curve
+  """
+
+  # Identify the atoms to be moved apart
+  a1 = molecule.atoms[atom1]
+  a2 = molecule.atoms[atom2]
+  # Check that the two are actually bonded in the molecule, give error/warning if not
+  if [a1, a2] in molecule.bonds:
+    bond = [a1, a2]
+  elif [a2, a1] in molecule.bonds:
+    bond = [a2, a1]
+  else:
+    ProgramWarning()
+    print("\nAtoms for dissociation are not bonded in input structure")
+  # Determine how many other bonding partners each atom has
+  bonded_a1 = []
+  bonded_a2 = []
+  for i in range(len(molecule.atoms)):
+    if atom1 != i and atom2 != i:
+      if [atom1, i] in molecule.bonds or [i, atom1] in molecule.bonds:
+        bonded_a1.append(i)
+      elif [atom2, i] in molecule.bonds or [i, atom2] in molecule.bonds:
+        bonded_a2.append(i)
+  nbonds_a1 = len(bonded_a1)
+  nbonds_a2 = len(bonded_a2)
+  # Set the atom with fewest bonding partners to move, the other to remain stationary
+  if nbonds_a1 <= nbonds_a2:
+    atM = a1
+    atomM = atom1
+    atS = a2
+    atomS = atom2
+  elif nbonds_a2 < nbonds_a2:
+    atM = a2
+    atomM = atom2
+    atS = a1
+    atomS = atom1
+  # Calculate the vector along which movement should occur
+  dvector = [atM.coord[i] - atS.coord[i] for i in range(3)]
+  norm_dv = numpy.linalg.norm(dvector)
+  unitdv = [dvector[i]/norm_dv for i in range(3)]
+  movevector = [unitdv[i]*epsilon for i in range(3)]
+
+  # Calculate initial energy
+  DissocEnergies = []
+  r0 = molecule.atmatmdist(atom1, atom2)
+  cartCoords = molecule.cartesianCoordinates()
+  e0 = molecule.FFEnergy(cartCoords, verbosity = 1)
+  DissocEnergies.append([r0, e0])
+  # Iteratively increase separation and re-calculate energy for the distorted geometry until separation exceeds the given cutoff
+  r = r0
+  while r <= cutoff:
+    for i in range(3):
+      cartCoords[(atomM * 3) + i] = cartCoords[(atomM * 3) + i] + movevector[i]
+    r = r + epsilon
+    e = molecule.FFEnergy(carCoords, verbosity = 1)
+    DissocEnergies.append([r, e])
+  # NOTE Currently moving only one atom - full version should move whole bonded fragment
+
+  # Output results in a nice format
+  print("\nDissociation cutoff reached")
+  print("\nCalculated distance and dissociation energy for atoms " + str(atomS)+ ", " + str(atomM) + ":")
+  for i in range(len(DissocEnergies)):
+    print("r= " + str(DissocEnergies[i][0]) + " " + "Energy= " + str(DissocEnergies[i][1]))
+
+# End of routine
   
 ###############################################################################
 #                                                                             #
@@ -3450,11 +3522,11 @@ fitForceConstants(reactant_mol, verbosity = 2)
 #extractCoordinates("g09-dielsalder-p.log", product_mol, verbosity = 2)
 #fitForceConstants(product_mol, verbosity = 2)
 
-print("\nCartesian Coordinates (as one list):")
-print(reactant_mol.cartesianCoordinates())
+#print("\nCartesian Coordinates (as one list):")
+#print(reactant_mol.cartesianCoordinates())
 
-print("\nForce Field Energy:")
-print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity = 1))
+#print("\nForce Field Energy:")
+#print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity = 1))
 
 #print("\nDistort Geometry and print energy again:")
 #coordinates2optimiseR = reactant_mol.cartesianCoordinates()
