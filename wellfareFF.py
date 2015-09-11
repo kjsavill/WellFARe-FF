@@ -349,7 +349,7 @@ k_q2 = {"hbond": 5,
         "xbond": 1}
 
 # Define a dictionary for the DFT-D3 C6 coefficients
-# (Values taken from www.thch.uni-bonn.de/tc/downloads/DFT-D3/data/refmol.txt
+# (Values taken from www.thch.uni-bonn.de/tc/downloads/DFT-D3/data/refmol.txt)
 C6 = {
  "H"  : 7.5916, "He" : 1.5583, "Li" : 1163.4454, "Be" : 257.4863, "B"  : 107.1777,
  "C"  : 49.1130, "N"  : 25.2685, "O"  : 15.5059, "F"  : 9.6916, "Ne" : 6.2896,
@@ -373,6 +373,12 @@ C6 = {
 # Note: Several elements have two different C6 values listed, for different numbers of unpaired electrons. At present, the value with fewest unpaired electrons is used
 # This affects Fe (4 unpaired, 491.3349; 0 unpaired 109.5041), Ru (4 unpaired, 598.1988; 0 unpaired, 239.0071), Os (4 unpaired, 678.5278; 0 unpaired, 297.8338)
 # Note also that values are for the element alone, except Ce with data available only for CeH3
+
+# Define a dictionary for the optimised values of the parameter a1 used in C6-only dispersion for different density functional approximations
+# Values in atomic units from DOI: 10.1021/acs.jctc.5b00400
+CSO_a1 = {
+"BLYP"   :  1.28, "BP86"   :  1.01, "PBE"   :  0.24, "TPSS"  :  0.72,
+"B3LYP"  :  0.86, "PBE0"   :  0.20, "PW6B95": -0.15, "B2PLYP":  0.24}
 
 #############################################################################################################
 # Do *not* define constants or conversion factors below here
@@ -581,8 +587,8 @@ def VdWCutoffRadius(symA, symB):
     """
     Function to calculate the cutoff radius for a pair of atoms with symbols symA and symB as the average of van der Waals radii
     """
-    R_A = SymbolToVdWRadius(symA)
-    R_B = SymbolToVdWRadius(symB)
+    R_A = SymbolToVdWRadius[symA]
+    R_B = SymbolToVdWRadius[symB]
     R0_AB = (R_A + R_B)/2
     
     return R0_AB
@@ -608,7 +614,7 @@ def BJdamping(a, b, symA, symB, typ = 1):
     """
     # Calculation of cutoff radius is optionally performed using either van der Waals radii or C6 and C8 coefficients
     if typ == 1:
-      R0_AB = VdWCutoffRadius(symA, symB)
+      R_0AB = VdWCutoffRadius(symA, symB)
     elif typ == 2:
       C6_AB = (C6[a] + C6[b])/2 # Check this is correct for C6
       C8_AB = 1.0 # 1 used as a placeholder until C8 values can be added as a dictionary
@@ -637,14 +643,16 @@ def potElectrostatic(elstat_AB, chg_A, chg_B, r_AB):
 
     return u
 
-def potC6OnlyDisp(R_AB, R_0AB):
+def potCSODisp(C6_AB, R_AB, R_0AB):
     """
     Function for the contribution to London dispersion energy from a single pair of atoms, AB, following the D3(CSO) scheme
     """
-    # Since this potential requires cutoff radii, but does not use C8 coefficients, a suitable method for determining those radii will be needed
-    # The extra parameters an for this version of the dispersion correction must also be defined
-    C6indep = s6 + a1/(1 + exp(R_AB - (a2 * R_0AB)))
-    C6dep = C6_AB/(R_AB ** 6 + (a3 * R_0AB + a4) ** 6)
+    # Note there are different values for a1 depending on functional, default used here is B3LYP
+    # Also s6 can have other values, and should if aligning with the B2PLYP functional
+    a1 = CSO_a1["B3LYP"]
+    s6 = 1
+    C6indep = s6 + a1/(1 + math.exp(R_AB - (2.5 * R_0AB)))
+    C6dep = C6_AB/(R_AB ** 6 + (2.5 ** 2) ** 6)
     u = C6indep * C6dep
 
     return u
@@ -926,7 +934,7 @@ class FFInversion:
     self.phi0 = phi0
     if typ == 1:
         self.typ = 1
-        self.k = arg[0]
+        self.k_inv = arg[0]
     elif typ == 2:
         self.typ = 2
         self.k_inv = arg[0] # Will need to check there is an appropriate force constant locatable for use here, eventually will require fitting to Hessian
@@ -940,7 +948,7 @@ class FFInversion:
         self.f_dmp = f_dmp_12 * f_dmp_13 * f_dmp_14
     else:
         self.typ = 1
-        self.k = arg[0]
+        self.k_inv = arg[0]
 
   def __str__(self):
     """ (FFInversion) -> str
@@ -954,7 +962,7 @@ class FFInversion:
     s = '({0}, {1}, {2}, {3}, {4}, '.format(self.atom1, self.atom2, self.atom3, self.atom4, self.phi0, self.typ)
 
     if self.typ == 1:
-      r = '{0})'.format(self.k)
+      r = '{0})'.format(self.k_inv)
 
     return s+r
 
@@ -970,7 +978,7 @@ class FFInversion:
     s = '({0}, {1}, {2}, {3}, {4}, '.format(self.atom1, self.atom2, self.atom3, self.atom4, self.phi0, self.typ)
 
     if self.typ == 1:
-      r = '{0})'.format(self.k)
+      r = '{0})'.format(self.k_inv)
 
     return s+r
 
@@ -979,10 +987,7 @@ class FFInversion:
 
     Set the inversion force constant for this potential equal to newk
     """
-    if self.typ == 1:
-      self.k = newk
-    elif self.typ == 2:
-      self.k_inv = newk
+    self.k_inv = newk
 
   def energy(self, phi):
     """ Returns the energy of this inversion potential at out of plane angle phi"""
@@ -1167,6 +1172,7 @@ class Molecule:
     self.name = name
     self.charge = charge
     self.mult = 1
+    self.Ee_QM = 0.0 # Initially set to a placeholder value for type only
     self.atoms = []
     self.bonds = []
     self.angles = []
@@ -1541,6 +1547,13 @@ class Molecule:
     Set the Quantum Mechanically calculated Hessian, H_QM, equal to H
     """
     self.H_QM = H
+
+  def setQMenergy(self, E):
+    """ (Molecule) -> NoneType
+
+    Set the Quantum Mechanically calculated equilibrium energy, Ee_QM, equal to E
+    """
+    self.Ee_QM = E
 
   def addFFStretch(self, a, b, r0, typ, arg):
     """ (Molecule) -> NoneType
@@ -1967,6 +1980,10 @@ class Molecule:
     energy = 0.0
     if verbosity >= 1:
       print("Initial energy for calculation = " + str(energy))
+    energy = energy + self.Ee_QM
+    if verbosity >= 1:
+      print("With QM energy of equilibrium structure, energy = " + str(energy))
+
     for i in self.stretch:
       distance=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
       distance += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
@@ -2270,7 +2287,11 @@ class Molecule:
         C6_AB = (C6_A + C6_B)/2
         C8_AB = C8_AB # To be completed - temporarily set equal to C6 for test run only
         BJdamp_AB = BJdamping(i, j, symA, symB, dtyp) # Calculation of cutoff radii is incorporated in this function
-        energy_AB = potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB, distance) # Will need adapting for C6 only
+        if dtyp == 1:
+          R0_AB = VdWCutoffRadius(symA, symB)
+          energy_AB = potCSODisp(C6_AB, distance, R0_AB)
+        elif dtyp == 2:
+          energy_AB = potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB, distance)
         e_disp = e_disp + energy_AB
     energy = energy + e_disp
     if verbosity >= 1:
@@ -2300,6 +2321,9 @@ class Molecule:
 #    print(cartCoordinates) #REMOVE ONCE FIXED
     if verbosity >= 1:
       print("Initial energy for calculation = " + str(energy))
+    energy = energy + self.Ee_QM
+    if verbosity >= 1:
+      print("With QM energy of equilibrium structure, energy = " + str(energy))
     for j in range(len(self.stretch)):
       i = self.stretch[j]
       k_str0 = i.k_str # Store the value of k_str originally associated with this stretching potential
@@ -2386,10 +2410,7 @@ class Molecule:
 
     for j in range(len(self.inv)):
       i = self.inv[j]
-      if i.typ == 2:
-        k_inv0 = i.k_inv # Store the force constant k originally associated with this inversion potential 
-      else:
-        k_inv0 = i.k
+      k_inv0 = i.k_inv # Store the force constant k originally associated with this inversion potential 
       i.setk(ForceConstants[len(self.stretch) + len(self.str13) + len(self.bend) + j]) # Set k_inv equal to the value specified for this inversion potential in the force constants list
       # Calculate the vectors along bonds, and construct a vector plane_norm orthogonal to the plane of end ato
       atom_c = [cartCoordinates[3*i.atom1], cartCoordinates[3*i.atom1+1], cartCoordinates[3*i.atom1+2]]
@@ -2622,7 +2643,11 @@ class Molecule:
         C6_AB = (C6_A + C6_B)/2
         C8_AB = C8_AB # To be completed - temporarily set equal to C6 for test run only
         BJdamp_AB = BJdamping(i, j, symA, symB, dtyp) # Calculation of cutoff radii incorporated here 
-        energy_AB = potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB, distance) # Will need adjusting for C6 only version
+        if dtyp == 1:
+          R0_AB = VdWCutoffRadius(symA, symB)
+          energy_AB = potCSODisp(C6_AB, distance, R0_AB)
+        elif dtyp == 2:
+          energy_AB = potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB, distance)
         e_disp = e_disp + energy_AB
     energy = energy + e_disp
     if verbosity >= 1:
@@ -2676,8 +2701,9 @@ class Molecule:
     print("QM Hessian used for Hessian difference:") # REMOVE ONCE FIXED
     print(H_QM) # REMOVE ONCE FIXED
     # Calculate the Force Field Hessian for the given force constants
-    print("Calculating FF Hessian")
-    H_FF = self.kdepHessian(ForceConstants)
+    print("Calculated FF Hessian:")
+    H_FF = self.kdepHessian(ForceConstants) # Temporary print
+    print(H_FF)
 
     sqdev = 0.0
     # Given H_QM and H_FF as arrays of equal size and shape, iterate over the individual entries of each
@@ -2759,7 +2785,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
             charges.append(readBuffer)
             if verbosity >= 3:
               readBuffer = readBuffer.split()
-              print(" Found atomic charge listing: {:<3} {<3} {: .8f} in Mulliken charges".format(int(readBuffer[0]), str(readBuffer[1]), float(readBuffer[2])))
+              print(" Found atomic charge listing: {:<3} {:<3} {: .8f} in Mulliken charges".format(int(readBuffer[0]), str(readBuffer[1]), float(readBuffer[2])))
           else:
             break
     if verbosity >= 1:
@@ -2811,7 +2837,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
             charges.append(readBuffer)
             if verbosity >= 3:
               readBuffer = readBuffer.split()
-              print(" Found atomic charge listing: {:<3} {<3} {: .8f} in Mulliken charges".format(int(readBuffer[0]), str(readBuffer[1]), float(readBuffer[3]))) # Assuming that ':' is split into its own list entry. May need to check formatting around whitespace
+              print(" Found atomic charge listing: {:<3} {:<3} {: .8f} in Mulliken charges".format(int(readBuffer[0]), str(readBuffer[1]), float(readBuffer[3]))) # Assuming that ':' is split into its own list entry. May need to check formatting around whitespace
           else:
             break
     if verbosity >= 1:
@@ -2822,6 +2848,48 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
       molecule.atoms[n].setq(readBuffer[3]) # Again assuming that the charge is the 4th list entry, with ':' having been split on its own.
       if verbosity >= 2:
         print(molecule.atoms[n].__repr__())
+    f.close()
+
+  # EQUILIBRIUM ENERGY READING SECTION
+  QM_energies = []
+  # Read through Gaussian file, read energies from SCF in A.U.
+  if program == "g09":
+    f = open(filename, 'r')
+    for line in f:
+      if line.find("SCF Done:") != -1:
+        if verbosity >= 3:
+          print("\nEnergy from SCF cycle found")
+          print(str(line))
+        QM_energies.append(line)
+    # Take the last SCF energy from the file and assign that value as the QM equilibrium energy of the molecule
+    i = QM_energies[len(QM_energies) - 1]
+    readBuffer = i.split()
+    print(readBuffer) # REMOVE AFTER TESTING
+    QMenergy = float(readBuffer[4])
+    molecule.setQMenergy(QMenergy)
+    if verbosity >= 1:
+      print("\nReading of QM equilibrium energy complete")
+      if verbosity >= 2:
+        print("Ee_QM = " + str(QMenergy))
+    f.close()
+  # Read through ORCA file and assign the final single point energy reported as the QM equilibrium energy of the molecule
+  if program == "orca":
+    f = open(filename, 'r')
+    for line in f:
+      if line.find("FINAL SINGLE POINT ENERGY") != -1:
+        if verbosity >= 3:
+          print("\nSingle point energy found")
+          print(str(line))
+        QM_energies.append(line)
+    i = QM_energies[len(QM_energies) - 1]
+    readBuffer = i.split()
+    print(readBuffer) # REMOVE AFTER TESTING
+    QMenergy = float(readBuffer[4])
+    molecule.setQMenergy(QMenergy)
+    if verbosity >= 1:
+      print("\nReading of QM equilibrium energy complete")
+      if verbosity >= 2:
+        print("Ee_QM = " + str(QMenergy))
     f.close()
 
   # BOND ORDER READING SECTION
@@ -3275,9 +3343,6 @@ def fitForceConstants(molecule, verbosity = 0):
   for i in range(len(molecule.bend)):
     ForceConstants.append(molecule.bend[i].k)
   for i in range(len(molecule.inv)):
-    if molecule.inv[i].typ == 1:
-      ForceConstants.append(molecule.inv[i].k)
-    elif molecule.inv[i].typ == 2:
       ForceConstants.append(molecule.inv[i].k_inv)
   InitialFC = ForceConstants
   if verbosity >= 1:
@@ -3385,13 +3450,13 @@ fitForceConstants(reactant_mol, verbosity = 2)
 #extractCoordinates("g09-dielsalder-p.log", product_mol, verbosity = 2)
 #fitForceConstants(product_mol, verbosity = 2)
 
-# print("\nCartesian Coordinates (as one list):")
-# print(reactant_mol.cartesianCoordinates())
+print("\nCartesian Coordinates (as one list):")
+print(reactant_mol.cartesianCoordinates())
 
 print("\nForce Field Energy:")
 print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity = 1))
 
-print("\nDistort Geometry and print energy again:")
+#print("\nDistort Geometry and print energy again:")
 #coordinates2optimiseR = reactant_mol.cartesianCoordinates()
 #coordinates2optimiseP = product_mol.cartesianCoordinates()
 
