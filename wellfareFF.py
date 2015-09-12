@@ -142,6 +142,22 @@ def Ang2Bohr(ang):
 def Bohr2Ang(bohr):
     return bohr/1.889725989
 
+# Conversion of energy in Joules to atomic units (Hartrees)
+def J2au(J):
+  return J/(4.35974394 * (10 ** -18))
+
+# Same in reverse
+def au2J(au):
+  return au * (4.35974393 * (10 ** -18))
+
+# Conversion of energy in kcal/mol to atomic units (Hartrees)
+def kcal_mol2au(kcm):
+  return kcm/627.503
+
+# Same in reverse
+def au2kcal_mol(au):
+  return au * 627.503
+
 SymbolToNumber = {
 "H" :1, "He" :2, "Li" :3, "Be" :4, "B" :5, "C" :6, "N" :7, "O" :8, "F" :9,
 "Ne" :10, "Na" :11, "Mg" :12, "Al" :13, "Si" :14, "P" :15, "S"  :16, "Cl" :17,
@@ -2301,7 +2317,7 @@ class Molecule:
     # Left out for version 1 as optional, only important as intermolecular interactions
 
     if verbosity >=1:
-      print("Total energy:")
+      print("Total energy: " + str(energy))
     return energy
 
   def kdepFFEnergy(self, cartCoordinates, ForceConstants, verbosity = 0, dtyp = 1):
@@ -3381,20 +3397,28 @@ def fitForceConstants(molecule, verbosity = 0):
 # Functions for additional calculations, optional to the program, defined below here #
 ######################################################################################
 
-def dissociateBond(molecule, atom1, atom2, epsilon, cutoff):
+def dissociateBond(molecule, atom1, atom2, epsilon, cutoff, verbosity = 1):
   """
   Function to progressively increase separation between atoms number a1 and a2 in increments of size epsilon until it exceeds the specified cutoff, and calculate potential energy at each new geometry
   Output can be used to generate a dissociation curve
   """
-
+  
+  if verbosity >= 1:
+    print("\nSetting up for bond dissociation")
+    print("epsilon = " + str(epsilon))
+    print("cutoff = " + str(cutoff))
   # Identify the atoms to be moved apart
   a1 = molecule.atoms[atom1]
   a2 = molecule.atoms[atom2]
   # Check that the two are actually bonded in the molecule, give error/warning if not
-  if [a1, a2] in molecule.bonds:
-    bond = [a1, a2]
-  elif [a2, a1] in molecule.bonds:
-    bond = [a2, a1]
+  if [atom1, atom2] in molecule.bonds:
+    bond = [atom1, atom2]
+    if verbosity >= 2:
+      print("Bond to dissociate: " + str(bond))
+  elif [atom2, atom1] in molecule.bonds:
+    bond = [atom2, atom1]
+    if verbosity >= 2:
+      print("Bond to dissociate: " + str(bond))
   else:
     ProgramWarning()
     print("\nAtoms for dissociation are not bonded in input structure")
@@ -3410,44 +3434,74 @@ def dissociateBond(molecule, atom1, atom2, epsilon, cutoff):
   nbonds_a1 = len(bonded_a1)
   nbonds_a2 = len(bonded_a2)
   # Set the atom with fewest bonding partners to move, the other to remain stationary
+  atM = a1
+  atomM = atom1
+  atS = a2
+  atomS = atom2
   if nbonds_a1 <= nbonds_a2:
-    atM = a1
-    atomM = atom1
-    atS = a2
-    atomS = atom2
+    if verbosity >= 1:
+      print("Fixing atom " + str(atom2))
+      print("Moving atom " + str(atom1))
   elif nbonds_a2 < nbonds_a2:
     atM = a2
     atomM = atom2
     atS = a1
     atomS = atom1
+    if verbosity >= 1:
+      print("Fixing atom " + str(atom1))
+      print("Moving atom " + str(atom2))
   # Calculate the vector along which movement should occur
   dvector = [atM.coord[i] - atS.coord[i] for i in range(3)]
   norm_dv = numpy.linalg.norm(dvector)
   unitdv = [dvector[i]/norm_dv for i in range(3)]
   movevector = [unitdv[i]*epsilon for i in range(3)]
 
-  # Calculate initial energy
+  # Calculate initial energy, at half the equilibrium bond length
   DissocEnergies = []
   r0 = molecule.atmatmdist(atom1, atom2)
+  ri = r0/2
   cartCoords = molecule.cartesianCoordinates()
-  e0 = molecule.FFEnergy(cartCoords, verbosity = 1)
-  DissocEnergies.append([r0, e0])
+  initialmv = [unitdv[i]*(r0/2) for i in range(3)]
+  for i in range(3):
+    cartCoords[(atomM * 3) + i] = cartCoords[(atomM * 3) + i] - initialmv[i]
+  if verbosity >= 1:
+    print("\nCalculating initial energy, at separation " + str(ri) + ":")
+    ei = molecule.FFEnergy(cartCoords, verbosity = 1)
+  else:
+    ei = molecule.FFEnergy(cartCoords, verbosity = 0)
+  DissocEnergies.append([ri, Bohr2Ang(ri), ei, au2kcal_mol(ei)])
   # Iteratively increase separation and re-calculate energy for the distorted geometry until separation exceeds the given cutoff
-  r = r0
+  r = ri
   while r <= cutoff:
     for i in range(3):
       cartCoords[(atomM * 3) + i] = cartCoords[(atomM * 3) + i] + movevector[i]
     r = r + epsilon
-    e = molecule.FFEnergy(carCoords, verbosity = 1)
-    DissocEnergies.append([r, e])
+    if verbosity >= 1:
+      print("\nCalculating energy at separation " + str(r) + ":")
+      e = molecule.FFEnergy(cartCoords, verbosity = 1)
+    else:
+      e = molecule.FFEnergy(cartCoords, verbosity = 0)
+    DissocEnergies.append([r, Bohr2Ang(r), e, au2kcal_mol(e)])
+  else:
+    if verbosity >= 1:
+      print("\nCutoff reached, dissociation calculation complete")
   # NOTE Currently moving only one atom - full version should move whole bonded fragment
+  # Calculate total increase in separation, total energy change
+  nsteps = len(DissocEnergies)
+  delta_r = DissocEnergies[nsteps - 1][0] - ri
+  delta_e = DissocEnergies[nsteps - 1][1] - ei
 
   # Output results in a nice format
-  print("\nDissociation cutoff reached")
-  print("\nCalculated distance and dissociation energy for atoms " + str(atomS)+ ", " + str(atomM) + ":")
+  print("\nNumber of points evaluated: " + str(nsteps))
+  print("\nCalculated distance and dissociation energy for " + str(molecule.name) + " atoms " + str(atomS)+ ", " + str(atomM) + ":")
+  print("---------------------------------------------------------------------")
+  print('{:<11}   {:<11}   {:<11}     {:<11}'.format("r (AU)", "r (Angstrom)", "E (Hartree)", "E (kcal/mol)"))
   for i in range(len(DissocEnergies)):
-    print("r= " + str(DissocEnergies[i][0]) + " " + "Energy= " + str(DissocEnergies[i][1]))
-
+    data = DissocEnergies[i]
+    print('{:.8f}    {:.8f}     {:.7f}     {:.5f}'.format(data[0], data[1], data[2], data[3]))
+  print("\nTotal increase in separation: " + str(delta_r))
+  print("\nTotal energy change: " + str(delta_e))
+ 
 # End of routine
   
 ###############################################################################
@@ -3540,5 +3594,9 @@ fitForceConstants(reactant_mol, verbosity = 2)
 #xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
 #print("\nOptimized Geometry:")
 #print(xopt)
+
+print("\nBond Dissociation:")
+dissociateBond(reactant_mol, 0, 2, 10**-3, 8)
+
 
 ProgramFooter()
