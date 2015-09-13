@@ -659,7 +659,7 @@ def potElectrostatic(elstat_AB, chg_A, chg_B, r_AB):
 
     return u
 
-def potCSODisp(C6_AB, R_AB, R_0AB):
+def potCSODisp(C6_AB, R_AB, R0_AB):
     """
     Function for the contribution to London dispersion energy from a single pair of atoms, AB, following the D3(CSO) scheme
     """
@@ -667,7 +667,25 @@ def potCSODisp(C6_AB, R_AB, R_0AB):
     # Also s6 can have other values, and should if aligning with the B2PLYP functional
     a1 = CSO_a1["B3LYP"]
     s6 = 1
-    C6indep = s6 + a1/(1 + math.exp(R_AB - (2.5 * R_0AB)))
+    exparg = (R_AB - (2.5 * R0_AB))
+    #print(" \nFor C6-only dispersion calculation, R_AB = " + str(R_AB) + ", R0_AB = " + str(R0_AB))
+    if exparg < math.log(sys.float_info.min):
+      ProgramWarning()
+      print("Exponential cannot be computed in C6-only dispersion potential")
+      print("Problem value of R_AB -(2.5 * R0_AB) = " + str(exparg))
+      print("Arising from: R_AB = " + str(R_AB) + ", R0_AB = " + str(R0_AB))
+      exparg = math.log(sys.float_info.min)
+      print("Setting R_AB - (2.5 * R0_AB) = " + str(exparg))
+      print("exp(R_AB - (2.5 * R0_AB) = " + str(math.exp(exparg)))
+    elif exparg > math.log(sys.float_info.max):
+      ProgramWarning()
+      print("Exponential cannot be computed in C6-only dispersion potential")
+      print("Problem value of R_AB -(2.5 * R0_AB) = " + str(exparg))
+      print("Arising from: R_AB = " + str(R_AB) + ", R0_AB = " + str(R0_AB))
+      exparg = math.log(sys.float_info.max)
+      print("Setting R_AB - (2.5 * R0_AB) = " + str(exparg))
+      print("exp(R_AB - (2.5 * R0_AB) = " + str(math.exp(exparg)))
+    C6indep = s6 + a1/(1 + math.exp(exparg))
     C6dep = C6_AB/(R_AB ** 6 + (2.5 ** 2) ** 6)
     u = C6indep * C6dep
 
@@ -2880,7 +2898,6 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
     # Take the last SCF energy from the file and assign that value as the QM equilibrium energy of the molecule
     i = QM_energies[len(QM_energies) - 1]
     readBuffer = i.split()
-    print(readBuffer) # REMOVE AFTER TESTING
     QMenergy = float(readBuffer[4])
     molecule.setQMenergy(QMenergy)
     if verbosity >= 1:
@@ -3576,27 +3593,27 @@ fitForceConstants(reactant_mol, verbosity = 2)
 #extractCoordinates("g09-dielsalder-p.log", product_mol, verbosity = 2)
 #fitForceConstants(product_mol, verbosity = 2)
 
-#print("\nCartesian Coordinates (as one list):")
-#print(reactant_mol.cartesianCoordinates())
+print("\nCartesian Coordinates (as one list):")
+print(reactant_mol.cartesianCoordinates())
 
-#print("\nForce Field Energy:")
-#print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity = 1))
+print("\nForce Field Energy:")
+print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity = 1))
 
 #print("\nDistort Geometry and print energy again:")
-#coordinates2optimiseR = reactant_mol.cartesianCoordinates()
+coordinates2optimiseR = reactant_mol.cartesianCoordinates()
 #coordinates2optimiseP = product_mol.cartesianCoordinates()
 
 #coordinates2optimiseR = (numpy.array(coordinates2optimiseR)+(numpy.array(coordinates2optimiseP))/2.0)
 
 #print(reactant_mol.FFEnergy(coordinates2optimiseR, verbosity = 1))
 
-#print("\nGeometry Optimizer:")
-#xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
-#print("\nOptimized Geometry:")
-#print(xopt)
+print("\nGeometry Optimizer:")
+xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
+print("\nOptimized Geometry:")
+print(xopt)
 
-print("\nBond Dissociation:")
-dissociateBond(reactant_mol, 0, 2, 10**-3, 8)
+#print("\nBond Dissociation:")
+#dissociateBond(reactant_mol, 0, 1, 10**-3, 14)
 
 
 ProgramFooter()
