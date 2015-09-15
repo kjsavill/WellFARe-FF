@@ -670,22 +670,17 @@ def potCSODisp(C6_AB, R_AB, R0_AB):
     exparg = (R_AB - (2.5 * R0_AB))
     #print(" \nFor C6-only dispersion calculation, R_AB = " + str(R_AB) + ", R0_AB = " + str(R0_AB))
     if exparg < math.log(sys.float_info.min):
-      ProgramWarning()
       print("Exponential cannot be computed in C6-only dispersion potential")
       print("Problem value of R_AB -(2.5 * R0_AB) = " + str(exparg))
       print("Arising from: R_AB = " + str(R_AB) + ", R0_AB = " + str(R0_AB))
-      exparg = math.log(sys.float_info.min)
-      print("Setting R_AB - (2.5 * R0_AB) = " + str(exparg))
-      print("exp(R_AB - (2.5 * R0_AB) = " + str(math.exp(exparg)))
+      ProgramAbort()
     elif exparg > math.log(sys.float_info.max):
-      ProgramWarning()
-      print("Exponential cannot be computed in C6-only dispersion potential")
-      print("Problem value of R_AB -(2.5 * R0_AB) = " + str(exparg))
-      print("Arising from: R_AB = " + str(R_AB) + ", R0_AB = " + str(R0_AB))
-      exparg = math.log(sys.float_info.max)
-      print("Setting R_AB - (2.5 * R0_AB) = " + str(exparg))
-      print("exp(R_AB - (2.5 * R0_AB) = " + str(math.exp(exparg)))
-    C6indep = s6 + a1/(1 + math.exp(exparg))
+      # Internuclear distance R_AB is larger than 709, exponential greater than 1.8e308, and computing it would give an error
+      # The contribution from a1/exparg is negligible, so set C6indep equal to the limit value it approaches, that is the constant parameter s6
+      C6indep = s6
+      # print("Setting a1/(R_AB - (2.5 * R0_AB)) = 0 ")
+    else:
+      C6indep = s6 + a1/(1 + math.exp(exparg))
     C6dep = C6_AB/(R_AB ** 6 + (2.5 ** 2) ** 6)
     u = C6indep * C6dep
 
@@ -1301,7 +1296,21 @@ class Molecule:
     self.atoms[n].x(x)
     self.atoms[n].y(y)
     self.atoms[n].z(z)
-  
+
+  def setGeometry(self, cartCoordinates):
+    """ (Molecule) -> NoneType
+
+    Move all atoms in the molecule to give the geometry defined by the input coordinates
+    """
+    n = int(len(self.atoms)) 
+    print(str(n))
+    if len(cartCoordinates) != 3*n:
+      ProgramWarning()
+      print("Cannot update geometry of " + str(self.name) + ", supplied coordinates do not match number of atoms")
+    else:
+     for i in range(n):
+       self.movatom(i, cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2])
+ 
   def atmmass(self, n, m):
     """ (Molecule) -> NoneType
     
@@ -1996,7 +2005,7 @@ class Molecule:
       Returns a string containing cartesian coordinates in Gaussian format
     """
     
-    s = "\n" + self.name + "\n\n" + str(molecule.charge) + " "+ str(molecule.mult) + "\n"
+    s = "\n" + self.name + "\n\n" + str(self.charge) + " "+ str(self.mult) + "\n"
     for i in self.atoms:
       t = "{:<3} {: .8f} {: .8f} {: .8f}\n".format(i.symbol, i.coord[0], i.coord[1], i.coord[2])
       s = s + t
@@ -3339,7 +3348,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
             r_check = SymbolToVdWRadius[molecule.atoms[atH].symbol] + SymbolToVdWRadius[molecule.atoms[j].symbol] # Using sum of van der Waals radii
             if r <= r_check and j != atA:
               theta = molecule.anybondangle(atA, atH, j)
-              molecule.addFFHBond(atA, atH, j, theta, 1, [sym2, molecule.atms[atA].charge, sym1, molecule.atoms[atH].charge, sym3, molecule.atoms[j].charge, molecule.atmatmdist(atA, atH), molecule.atmatmdist(j, atH), molecule.atmatmdist(atA, j)])
+              molecule.addFFHBond(atA, atH, j, theta, 1, [sym2, molecule.atoms[atA].charge, sym1, molecule.atoms[atH].charge, sym3, molecule.atoms[j].charge, molecule.atmatmdist(atA, atH), molecule.atmatmdist(j, atH), molecule.atmatmdist(atA, j)])
               if verbosity >= 2:
                 print(" ({:<3}, {:<3}, {:<3} {:3.2f} deg), {:<3}, [{:<3}, {:3.2f}, {:<3}, {:3.2f}, {:<3}, {:3.2f}, {:3.2f}, {:3.2f}, {:3.2f}]".format(atA, atH, j, theta, 1, sym2, molecule.atoms[atA].charge, sym1, molecule.atoms[atH].charge, sym3, molecule.atoms[j].charge, molecule.atmatmdist(atA, atH), molecule.atmatmdist(j, atH), molecule.atmatmdist(atA, j)))
     elif sym2 == "H":
@@ -3520,6 +3529,9 @@ def dissociateBond(molecule, atom1, atom2, epsilon, cutoff, verbosity = 1):
   print("\nTotal energy change: " + str(delta_e))
  
 # End of routine
+
+# Define objective function for SEAM algorithm
+# Define any further functions needed to implement SEAM
   
 ###############################################################################
 #                                                                             #
@@ -3609,11 +3621,16 @@ coordinates2optimiseR = reactant_mol.cartesianCoordinates()
 
 print("\nGeometry Optimizer:")
 xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
-print("\nOptimized Geometry:")
+print("\nOptimized Geometry coordinates:")
 print(xopt)
+
+reactant_mol.setGeometry(xopt)
+print("\nOptimized Geometry in Gaussian format:")
+print(reactant_mol.gaussString())
 
 #print("\nBond Dissociation:")
 #dissociateBond(reactant_mol, 0, 1, 10**-3, 14)
 
+# SEAM here, taking start geometry as 50:50 linear interpolation
 
 ProgramFooter()
