@@ -2012,6 +2012,19 @@ class Molecule:
     s =s + "\n"
     return s
 
+  def gaussStringatX(self, cartCoordinates):
+    """ (Molecule) -> str
+
+    Returns a string in Gaussian format with the given cartesian coordinates for the molecule
+    """
+
+    s = "\n" + self.name + "\n\n" + str(self.charge) + " "+ str(self.mult) + "\n"   
+    for i in range(len(self.atoms)):
+      atm = self.atoms[i]
+      t = "{:<3} {: .8f} {: .8f} {: .8f}\n".format(atm.symbol, cartCoordinates[3*i + 0], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2])
+      s = s + t
+    s =s + "\n"
+    return s                                                                                           
   def FFEnergy(self, cartCoordinates, verbosity = 0, dtyp = 1):
     """ (Molecule) -> number (Force Field energy)
 
@@ -3530,9 +3543,81 @@ def dissociateBond(molecule, atom1, atom2, epsilon, cutoff, verbosity = 1):
  
 # End of routine
 
-# Define objective function for SEAM algorithm
-# Define any further functions needed to implement SEAM
+def ObjFuncSEAM(X, reactant, product):
+  """
+  Objective function employed in the SEAM method to find a minimum on the intersction of reactant and product potential energy surfaces
+  Here reactant and product both belong to the class Molecule, and X is a list of cartesian coordinates with the Lagrange multiplier L appended
+  """
+  cartCoordinates = numpy.zeros(len(X) - 1)
+  for i in range(len(X) - 1):
+    cartCoordinates[i] = X[i]
+  lm = X[len(X) - 1]
+
+  E_r = reactant.FFEnergy(cartCoordinates, verbosity = 0, dtyp = 1) # Extra arguments included as a reminder of options
+  E_p = product.FFEnergy(cartCoordinates, verbosity = 0, dtyp = 1)
+    
+  L = (E_r + E_p) - lm * (E_r - E_p)
+
+  return L
+
+def dObjFuncSEAM(X, reactant, product):
+  """
+  Function to calculate the (first) derivate of the objective function for the SEAM method by finite differences
+  """
+  dL = numpy.zeros(len(X))
+  h = 1e-3 # Step size for use in numerical evaluation of gradient, can be tailored
+
+  for i in range(len(X)):
+    dX = numpy.zeros(len(X))
+    dX[i] = h
+    dL[i] = (ObjFuncSEAM((X + dX), reactant, product) - ObjFuncSEAM((X-dX), reactant, product))/(2 * h)
+   
+  return dL
+
+def TSbySEAM(reactant, product, verbosity = 1):
+  """
+  Function to carry out the search for a transition state by the SEAM method
+  """
   
+  # Set up the list of variables X to be optimised, taking a 50:50 interpolation of coordinates for reactant and product as the initial guess
+  CoordsR = reactant.cartesianCoordinates()
+  print(CoordsR) # Testing only
+  CoordsP = product.cartesianCoordinates()
+  guessL = 0 # Initial guess for the Lagrange multiplier can be modified as desired
+  if len(CoordsR) == len(CoordsP):
+    guessCoords = numpy.zeros(len(CoordsR))
+    for i in range(len(CoordsR)):
+      guessCoords[i] = (CoordsR[i] + CoordsP[i])/2
+  else:
+    print("Molecules provided to SEAM method have incompatible coordinates (length mismatch)")
+    ProgramError() # Consider arranging such that the function does not execute further in this case
+  X = numpy.zeros(len(guessCoords) + 1) 
+  for i in range(len(guessCoords)):
+    X[i] = guessCoords[i]
+  X[len(guessCoords)] = guessL
+  if verbosity >= 1:
+    print("Starting SEAM with initial coordinates + multiplier:")
+    print(X)
+
+  # Starting from X, optimise to a stationary point of the objective function
+  X_opt = scipy.optimize.fsolve(dObjFuncSEAM, X, args = (reactant, product))
+  
+  # Check that the stationary point found is a minimum?
+
+  if verbosity >= 1:
+    print("Candidate transition state + multiplier located by SEAM:")
+    print(X_opt)
+
+  # Print out the SEAM transition state in a format readable by Gaussian 
+  TS = numpy.zeros(len(X_opt) - 1)
+  for i in range((len(X_opt) - 1)):
+    TS[i] = X_opt[i] 
+  print("\nSEAM Transition state in Gaussian format:")
+  print(reactant.gaussStringatX(TS)) 
+
+  return TS
+  
+   
 ###############################################################################
 #                                                                             #
 # The main part of the program starts here                                    #
@@ -3601,9 +3686,9 @@ reactant_mol = Molecule("Reactant",0)
 extractCoordinates(infile, reactant_mol, verbosity = 2)
 fitForceConstants(reactant_mol, verbosity = 2)
 
-#product_mol = Molecule("Product",0)
-#extractCoordinates("g09-dielsalder-p.log", product_mol, verbosity = 2)
-#fitForceConstants(product_mol, verbosity = 2)
+product_mol = Molecule("Product",0)
+extractCoordinates("BSB_H2+CO_P.log", product_mol, verbosity = 2)
+fitForceConstants(product_mol, verbosity = 2)
 
 print("\nCartesian Coordinates (as one list):")
 print(reactant_mol.cartesianCoordinates())
@@ -3611,13 +3696,13 @@ print(reactant_mol.cartesianCoordinates())
 print("\nForce Field Energy:")
 print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity = 1))
 
-#print("\nDistort Geometry and print energy again:")
+print("\nDistort Geometry and print energy again:")
 coordinates2optimiseR = reactant_mol.cartesianCoordinates()
-#coordinates2optimiseP = product_mol.cartesianCoordinates()
+coordinates2optimiseP = product_mol.cartesianCoordinates()
 
-#coordinates2optimiseR = (numpy.array(coordinates2optimiseR)+(numpy.array(coordinates2optimiseP))/2.0)
+coordinates2optimiseR = (numpy.array(coordinates2optimiseR)+(numpy.array(coordinates2optimiseP))/2.0)
 
-#print(reactant_mol.FFEnergy(coordinates2optimiseR, verbosity = 1))
+print(reactant_mol.FFEnergy(coordinates2optimiseR, verbosity = 1))
 
 print("\nGeometry Optimizer:")
 xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
@@ -3631,6 +3716,6 @@ print(reactant_mol.gaussString())
 #print("\nBond Dissociation:")
 #dissociateBond(reactant_mol, 0, 1, 10**-3, 14)
 
-# SEAM here, taking start geometry as 50:50 linear interpolation
+TSbySEAM(reactant_mol, product_mol, verbosity = 1)
 
 ProgramFooter()
