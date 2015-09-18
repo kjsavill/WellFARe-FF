@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+
 
 import sys
 import getopt
@@ -705,11 +705,11 @@ class FFStretch:
     self.atom2 = b
     self.r0 = r0
     self.typ = typ
-    self.k = 0.0
+    self.k_str = 0.0
  
     if typ == 1:
       self.typ = typ
-      self.k = arg[0]
+      self.k_str = arg[0]
     elif typ == 2:
       self.D = arg[0]
       self.b = arg[1]
@@ -722,7 +722,7 @@ class FFStretch:
         self.k_str = arg[0]
     else:
       self.typ = 1
-      self.k = arg[0]
+      self.k_str = arg[0]
 
   
   def __str__(self):
@@ -738,10 +738,12 @@ class FFStretch:
     r = ''
 
     if self.typ == 1:
-      r = '{0})'.format(self.k)
+      r = '{0})'.format(self.k_str)
     elif self.typ == 2:
       r = '{0}, {1})'.format(self.D, self.b)
-    
+    elif self.typ == 3 or self.typ == 4:
+      r = '{0}, {1}'.format(self.k_str, self.exp_a)   
+ 
     return s+r
   
   def __repr__(self):
@@ -757,7 +759,7 @@ class FFStretch:
     r = ''
 
     if self.typ == 1:
-      r = '{0})'.format(self.k)
+      r = '{0})'.format(self.k_str)
     elif self.typ == 2:
       r = '{0}, {1})'.format(self.D, self.b)
     
@@ -775,11 +777,17 @@ class FFStretch:
     
     energy = 0.0
     if self.typ == 1:
-      energy = potHarmonic(r, self.r0, self.k)
+#      print("Using Harmonic potential for stretch") # REMOVE ONCE FIXED
+      print("With r = " + str(r) + ", r0 = " + str(self.r0) + ", k = " + str(self.k))
+      energy = potHarmonic(r, self.r0, self.k_str)
     elif self.typ == 2:
+#      print("Using Morse potential for stretch") # REMOVE ONCE FIXED
+      print("With r = " + str(r) + ", r0 = " + str(self.r0) + ", D = " + str(self.D) + ", b = " + str(self.b)) 
       energy = potMorse(r, self.r0, D, b)
     elif self.typ == 3 or self.typ == 4:
-        energy = potGLJ(r, self.r0, self.k_str, self.exp_a)
+#      print("Using GLJ potential for stretch") # REMOVE ONCE FIXED 
+      print("With r = " + str(r) + ", r0 = " + str(self.r0) + ", k = " + str(self.k_str) + ", a = " + str(self.exp_a))
+      energy = potGLJ(r, self.r0, self.k_str, self.exp_a)
    
     return energy
 
@@ -1617,6 +1625,7 @@ class Molecule:
     # Append stretch to list if doesn't exist and is plausible
     if a >= 0 and b >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c != d:
       self.stretch.append(FFStretch(c, d, r0, typ, arg))
+#    print("Adding FFStretch with bond " + str([a, b]) + " and fc = " + str(arg[0])) # REMOVE ONCE FIXED
 
   def addFFStr13(self, a, b, r0, typ, arg):
     """ (Molecule) -> NoneType
@@ -1637,6 +1646,7 @@ class Molecule:
     # Append stretch to list if doesn't exist and is plausible
     if a >= 0 and b >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c != d:
       self.str13.append(FFStretch(c, d, r0, typ, arg))
+#    print("Adding FFStretch with bond " + str([a, b]) + " and fc = " + str(arg[0])) # REMOVE ONCE FIXED
 
   def delBond(self, a, b):
     """ (Molecule) -> NoneType
@@ -2040,11 +2050,15 @@ class Molecule:
     if verbosity >= 1:
       print("With QM energy of equilibrium structure, energy = " + str(energy))
 
+  #  if verbosity >= 1: # REMOVE ONCE FIXED
+  #    print("Omitting stretching energy") # REMOVE ONCE FIXED
+   
     for i in self.stretch:
       distance=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
       distance += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
       distance += (cartCoordinates[3*i.atom1 + 2] - cartCoordinates[3*i.atom2 + 2]) ** 2
       distance=math.sqrt(distance)
+      print("Adding energy for bond " + str([i.atom1, i.atom2]) + ", distance = " + str(distance) + " energy = " + str(i.energy(distance)) + " to total")
       energy = energy + i.energy(distance)
     if verbosity >= 1:
       print("With bond stretches, energy = " + str(energy))
@@ -2057,7 +2071,7 @@ class Molecule:
       energy = energy + i.energy(distance)
     if verbosity >= 1:
       print("With 1,3-stretches, energy = " + str(energy))
-
+    
     for i in self.bend:
       d_bond_1=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
       d_bond_1 += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
@@ -2160,6 +2174,8 @@ class Molecule:
       print("With inversion, energy = " + str(energy))
     # Don't forget to add non-bonded interactions here
 
+#    print("Omitting all non-covalent interactions") # REMOVE ONCE FIXED
+     
     e_hbnd = 0.0
     for i in self.hatoms:
       atH = [cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
@@ -2355,7 +2371,7 @@ class Molecule:
 
     # Calculation of polarisation energy (for solute-solvent) to go here in future
     # Left out for version 1 as optional, only important as intermolecular interactions
-
+    
     if verbosity >=1:
       print("Total energy: " + str(energy))
     return energy
@@ -2380,6 +2396,10 @@ class Molecule:
     energy = energy + self.Ee_QM
     if verbosity >= 1:
       print("With QM energy of equilibrium structure, energy = " + str(energy))
+
+#    if verbosity >= 1: # REMOVE ONCE FIXED
+#      print("Omitting stretching energy") # REMOVE ONCE FIXED
+    
     for j in range(len(self.stretch)):
       i = self.stretch[j]
       k_str0 = i.k_str # Store the value of k_str originally associated with this stretching potential
@@ -2388,11 +2408,12 @@ class Molecule:
       distance += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
       distance += (cartCoordinates[3*i.atom1 + 2] - cartCoordinates[3*i.atom2 + 2]) ** 2
       distance=math.sqrt(distance)
+      print("Adding energy for bond " + str([i.atom1, i.atom2]) + ", distance = " + str(distance) + " energy = " + str(i.energy(distance)) + " to total")
       energy = energy + i.energy(distance)
       i.setk(k_str0) # Restore the original value of k_str so this stretching potential is not permanently modified by the calculation
     if verbosity >= 1:
       print("With bond stretches, energy = " + str(energy))
-
+    
     for j in range(len(self.str13)):
       i = self.str13[j]
       k_str0 = i.k_str # Store the value of k_str originally associated with this 1,3-stretching potential
@@ -2514,8 +2535,16 @@ class Molecule:
       i.setk(k_inv0) # Restore the original value of k_inv so that this inversion potential is not permanently modified by the energy caculation
     if verbosity >= 1:
       print("With inversion, energy = " + str(energy))
-    # Don't forget to add non-bonded interactions here
 
+#    if verbosity >= 1: # REMOVE ONCE FIXED
+#      print("Omitting all non-covalent interactions") # REMOVE ONCE FIXED
+
+#    if verbosity >=1: # REMOVE ONCE FIXED
+#      print("Total energy:") # REMOVE ONCE FIXED
+#    return energy # REMOVE ONCE FIXED
+
+
+     
     e_hbnd = 0.0
     for i in self.hatoms:
       atH = [cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
@@ -2715,6 +2744,7 @@ class Molecule:
     if verbosity >=1:
       print("Total energy:")
     return(energy)
+    
 
   def kdepHessian(self, ForceConstants):
     """ (Molecule) -> 3N x 3N matrix
@@ -3392,9 +3422,9 @@ def fitForceConstants(molecule, verbosity = 0):
   # Construct a list of the force constants initially assigned to the molecule
   ForceConstants = []
   for i in range(len(molecule.stretch)):
-    ForceConstants.append(molecule.stretch[i].k)
+    ForceConstants.append(molecule.stretch[i].k_str)
   for i in range(len(molecule.str13)):
-    ForceConstants.append(molecule.str13[i].k)
+    ForceConstants.append(molecule.str13[i].k_str)
   for i in range(len(molecule.bend)):
     ForceConstants.append(molecule.bend[i].k)
   for i in range(len(molecule.inv)):
@@ -3534,7 +3564,7 @@ def dissociateBond(molecule, atom1, atom2, epsilon, cutoff, verbosity = 1):
   print("\nNumber of points evaluated: " + str(nsteps))
   print("\nCalculated distance and dissociation energy for " + str(molecule.name) + " atoms " + str(atomS)+ ", " + str(atomM) + ":")
   print("---------------------------------------------------------------------")
-  print('{:<11}   {:<11}   {:<11}     {:<11}'.format("r (AU)", "r (Angstrom)", "E (Hartree)", "E (kcal/mol)"))
+  print('{:<11}   {:<11}   {:<11}      {:<11}'.format("r (AU)", "r (Angstrom)", "E (Hartree)", "E (kcal/mol)"))
   for i in range(len(DissocEnergies)):
     data = DissocEnergies[i]
     print('{:.8f}    {:.8f}     {:.7f}     {:.5f}'.format(data[0], data[1], data[2], data[3]))
@@ -3608,12 +3638,16 @@ def TSbySEAM(reactant, product, verbosity = 1):
     print("Candidate transition state + multiplier located by SEAM:")
     print(X_opt)
 
-  # Print out the SEAM transition state in a format readable by Gaussian 
+  # Calculate the energy at the transition state (should be equal using either force field)
   TS = numpy.zeros(len(X_opt) - 1)
   for i in range((len(X_opt) - 1)):
     TS[i] = X_opt[i] 
+  E_TS = reactant.FFEnergy(TS)
+
+  # Print out the SEAM transition state in a format readable by Gaussian 
   print("\nSEAM Transition state in Gaussian format:")
   print(reactant.gaussStringatX(TS)) 
+  print("\nEnergy at Transition state: " + str(E_TS))
 
   return TS
   
@@ -3686,9 +3720,9 @@ reactant_mol = Molecule("Reactant",0)
 extractCoordinates(infile, reactant_mol, verbosity = 2)
 fitForceConstants(reactant_mol, verbosity = 2)
 
-product_mol = Molecule("Product",0)
-extractCoordinates("BSB_H2+CO_P.log", product_mol, verbosity = 2)
-fitForceConstants(product_mol, verbosity = 2)
+#product_mol = Molecule("Product",0)
+#extractCoordinates("g09-dielsalder-p.log", product_mol, verbosity = 2)
+#fitForceConstants(product_mol, verbosity = 2)
 
 print("\nCartesian Coordinates (as one list):")
 print(reactant_mol.cartesianCoordinates())
@@ -3696,11 +3730,11 @@ print(reactant_mol.cartesianCoordinates())
 print("\nForce Field Energy:")
 print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity = 1))
 
-print("\nDistort Geometry and print energy again:")
+#print("\nDistort Geometry and print energy again:")
 coordinates2optimiseR = reactant_mol.cartesianCoordinates()
-coordinates2optimiseP = product_mol.cartesianCoordinates()
+#coordinates2optimiseP = product_mol.cartesianCoordinates()
 
-coordinates2optimiseR = (numpy.array(coordinates2optimiseR)+(numpy.array(coordinates2optimiseP))/2.0)
+#coordinates2optimiseR = (numpy.array(coordinates2optimiseR)+(numpy.array(coordinates2optimiseP))/2.0)
 
 print(reactant_mol.FFEnergy(coordinates2optimiseR, verbosity = 1))
 
@@ -3716,6 +3750,6 @@ print(reactant_mol.gaussString())
 #print("\nBond Dissociation:")
 #dissociateBond(reactant_mol, 0, 1, 10**-3, 14)
 
-TSbySEAM(reactant_mol, product_mol, verbosity = 1)
+#TSbySEAM(reactant_mol, product_mol, verbosity = 1)
 
 ProgramFooter()
