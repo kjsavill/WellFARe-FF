@@ -782,11 +782,11 @@ class FFStretch:
       energy = potHarmonic(r, self.r0, self.k_str)
     elif self.typ == 2:
 #      print("Using Morse potential for stretch") # REMOVE ONCE FIXED
-      print("With r = " + str(r) + ", r0 = " + str(self.r0) + ", D = " + str(self.D) + ", b = " + str(self.b)) 
+#      print("With r = " + str(r) + ", r0 = " + str(self.r0) + ", D = " + str(self.D) + ", b = " + str(self.b)) # REMOVE ONCE FIXED 
       energy = potMorse(r, self.r0, D, b)
     elif self.typ == 3 or self.typ == 4:
 #      print("Using GLJ potential for stretch") # REMOVE ONCE FIXED 
-      print("With r = " + str(r) + ", r0 = " + str(self.r0) + ", k = " + str(self.k_str) + ", a = " + str(self.exp_a))
+#      print("With r = " + str(r) + ", r0 = " + str(self.r0) + ", k = " + str(self.k_str) + ", a = " + str(self.exp_a)) # REMOVE ONCE FIXED
       energy = potGLJ(r, self.r0, self.k_str, self.exp_a)
    
     return energy
@@ -1820,6 +1820,7 @@ class Molecule:
     Calculates the number of bonds between atoms a and b, and returns the appropriate value of the topological screening parameter elstat_AB
     """
     # Determine the number of bonds separating atoms a and b
+#    print("Determining number of bonds between atoms: " + str((a, b))) # REMOVE ONCE FIXED
     n_bonds = 4
     if a == b:
       n_bonds = 0
@@ -1839,6 +1840,8 @@ class Molecule:
         elif bond[1] == b:
           bonds_b.append(bond)
       # Check whether there is a common third atom bonded to both a and b, stopping if one such atom is found 
+#      print("Bonds from atom " + str(a) +": " + str(bonds_a)) # REMOVE ONCE FIXED
+#      print("Bonds from atom " + str(b) +": " + str(bonds_b)) # REMOVE ONCE FIXED
       for bd_a in bonds_a:
         for bd_b in bonds_b:
            if bd_a[1] == bd_b[0]:
@@ -1862,6 +1865,8 @@ class Molecule:
             elif bd_b[0] == bond[1]:
               bonds_b1.append(bond)
         # Then check whether there is one of those bonds in common to both a and b, ending the loop if so
+#        print("Bonds one bond away from atom " + str(a) +": " + str(bonds_a1)) # REMOVE ONCE FIXED
+#        print("Bonds one bond away from atom " + str(b) +": " + str(bonds_b1)) # REMOVE ONCE FIXED
         for bd_a1 in bonds_a1:
           for bd_b1 in bonds_b1:
             if bd_a1 == bd_b1:
@@ -1871,13 +1876,14 @@ class Molecule:
               break
       # All cases with more than three bonds between atoms a and b are treated identically, so do not check for 4 bonds or more explicitly  
     # Determine the value of the screening parameter for the number of covalent bonds separating a and b
+#    print("Number of bonds between atoms " + str((a, b)) + " = " + str(n_bonds)) # REMOVE ONCE FIXED
     if n_bonds <= 2:
       elstat_AB = 0
     elif n_bonds == 3:
       elstat_AB = E_ES_14
     elif n_bonds >= 4:
       elstat_AB = 1
-
+#    print("Screening parameter value for atoms " + str((a, b)) + " = " + str(elstat_AB)) # REMOVE ONCE FIXED
     return elstat_AB
 
   def screen_RepDisp(self, a, b):
@@ -2058,7 +2064,7 @@ class Molecule:
       distance += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
       distance += (cartCoordinates[3*i.atom1 + 2] - cartCoordinates[3*i.atom2 + 2]) ** 2
       distance=math.sqrt(distance)
-      print("Adding energy for bond " + str([i.atom1, i.atom2]) + ", distance = " + str(distance) + " energy = " + str(i.energy(distance)) + " to total")
+#      print("Adding energy for bond " + str([i.atom1, i.atom2]) + ", distance = " + str(distance) + " energy = " + str(i.energy(distance)) + " to total")
       energy = energy + i.energy(distance)
     if verbosity >= 1:
       print("With bond stretches, energy = " + str(energy))
@@ -2175,6 +2181,12 @@ class Molecule:
     # Don't forget to add non-bonded interactions here
 
 #    print("Omitting all non-covalent interactions") # REMOVE ONCE FIXED
+#    print("Omitting hydrogen bonding interactions") # REMOVE ONCE FIXED
+#    print("Omitting all non-covalent interactions except hydrogen bonding")
+#    print("Omitting all non-covalent interactions expcept halogen bonding")
+#    print("Omitting all non-covalent interactions except Pauli repulsion")         
+#    print("Omitting all non-covalent interactions except electrostatics")
+#    print("Omitting all non-covalent interactions except dispersion")
      
     e_hbnd = 0.0
     for i in self.hatoms:
@@ -2223,7 +2235,8 @@ class Molecule:
     energy = energy + e_hbnd
     if verbosity >= 1:
       print("With hydrogen bonding, energy = " + str(energy))
-
+#    print("Omitting halogen bonding interactions")
+    
     e_xbnd = 0.0
     for i in self.halogens:
       atX = [cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
@@ -2289,7 +2302,8 @@ class Molecule:
     energy = energy + e_xbnd
     if verbosity >= 1:
       print("With halogen bonding, energy = " + str(energy))
-
+#    print("Omitting all Pauli repulsion interactions")
+    
     e_Pauli = 0.0
     for i in range(len(self.atoms)):
       for j in range(i+1, len(self.atoms)):
@@ -2314,14 +2328,15 @@ class Molecule:
     energy = energy + e_Pauli
     if verbosity >= 1:
       print("With Pauli repulsion, energy = " + str(energy))
-
+#    print("Omitting all electrostatic interactions")
+    
     e_ES = 0.0
     for i in range(len(self.atoms)):
       for j in range(i+1, len(self.atoms)):
         # Note QM computed atomic charges at equilibrium structure should be used as per QMDFF
         # Currently the charge in class atom is used, which comes from atomic number
-        chgA = self.atoms[i].charge # Use i.QMcharge once this has meaningful value attached
-        chgB = self.atoms[j].charge # Use j.QMcharge once this has meaningful value attached
+        chgA = self.atoms[i].QMcharge 
+        chgB = self.atoms[j].QMcharge
 
         # Calculate the distance between atoms i and j
         coordA =[cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
@@ -2335,10 +2350,12 @@ class Molecule:
         elstat_AB = self.screen_ES(i, j)
         energy_AB = potElectrostatic(elstat_AB, chgA, chgB, distance)
         e_ES = e_ES + energy_AB
+#        print("Adding ES energy for atoms " + str([i, j]) + " with charges " + str([chgA, chgB]) + ", distance " + str(distance) + ", screening parameter " + str(elstat_AB) + ", giving energy = " + str(energy_AB))
     energy = energy + e_ES
     if verbosity >= 1:
       print("With electrostatic interactions, energy = " + str(energy))
-
+#    print("Omitting all dispersion interactions")
+    
     e_disp = 0.0
     for i in range(len(self.atoms)):
       for j in range(len(self.atoms)):
@@ -2357,7 +2374,7 @@ class Molecule:
         C6_A = C6[symA]
         C6_B = C6[symB] 
         C6_AB = (C6_A + C6_B)/2
-        C8_AB = C8_AB # To be completed - temporarily set equal to C6 for test run only
+        C8_AB = C6_AB # To be completed - temporarily set equal to C6 for test run only
         BJdamp_AB = BJdamping(i, j, symA, symB, dtyp) # Calculation of cutoff radii is incorporated in this function
         if dtyp == 1:
           R0_AB = VdWCutoffRadius(symA, symB)
@@ -2371,7 +2388,7 @@ class Molecule:
 
     # Calculation of polarisation energy (for solute-solvent) to go here in future
     # Left out for version 1 as optional, only important as intermolecular interactions
-    
+        
     if verbosity >=1:
       print("Total energy: " + str(energy))
     return energy
@@ -2408,7 +2425,7 @@ class Molecule:
       distance += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
       distance += (cartCoordinates[3*i.atom1 + 2] - cartCoordinates[3*i.atom2 + 2]) ** 2
       distance=math.sqrt(distance)
-      print("Adding energy for bond " + str([i.atom1, i.atom2]) + ", distance = " + str(distance) + " energy = " + str(i.energy(distance)) + " to total")
+#      print("Adding energy for bond " + str([i.atom1, i.atom2]) + ", distance = " + str(distance) + " energy = " + str(i.energy(distance)) + " to total")
       energy = energy + i.energy(distance)
       i.setk(k_str0) # Restore the original value of k_str so this stretching potential is not permanently modified by the calculation
     if verbosity >= 1:
@@ -2543,7 +2560,12 @@ class Molecule:
 #      print("Total energy:") # REMOVE ONCE FIXED
 #    return energy # REMOVE ONCE FIXED
 
-
+#    print("Omitting hydrogen bond interactions") # REMOVE ONCE FIXED
+#    print("Omitting all non-covalent interactions except hydrogen bonding")
+#    print("Omitting all non-covalent interactions expcept halogen bonding")   
+#    print("Omitting all non-covalent interactions except Pauli repulsion")   
+#    print("Omitting all non-covalent interactions except electrostatics")
+#    print("Omitting all non-covalent interactions except dispersion")
      
     e_hbnd = 0.0
     for i in self.hatoms:
@@ -2592,7 +2614,8 @@ class Molecule:
     energy = energy + e_hbnd
     if verbosity >= 1:
       print("With hydrogen bonding, energy = " + str(energy))
-
+#    print("Omitting halogen bonding interactions")
+    
     e_xbnd = 0.0
     for i in self.halogens:
       atX = [cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
@@ -2658,7 +2681,8 @@ class Molecule:
     energy = energy + e_xbnd
     if verbosity >= 1:
       print("With halogen bonding, energy = " + str(energy))
-
+#    print("Omitting all Pauli repulsion interactions")
+    
     e_Pauli = 0.0
     for i in range(len(self.atoms)):
       for j in range(i+1, len(self.atoms)):
@@ -2683,14 +2707,15 @@ class Molecule:
     energy = energy + e_Pauli
     if verbosity >= 1:
       print("With Pauli repulsion, energy = " + str(energy))
-
+#    print("Omitting all electrostatic interactions")
+    
     e_ES = 0.0
     for i in range(len(self.atoms)):
       for j in range(i+1, len(self.atoms)):
         # Note QM computed atomic charges at equilibrium structure should be used as per QMDFF
         # Currently the charge in class atom is used, which comes from atomic number
-        chgA = self.atoms[i].charge # Use i.QMcharge once this has meaningful value attached
-        chgB = self.atoms[j].charge # Use j.QMcharge once this has meaningful value attached
+        chgA = self.atoms[i].QMcharge 
+        chgB = self.atoms[j].QMcharge
 
         # Calculate the distance between atoms i and j
         coordA =[cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
@@ -2704,10 +2729,12 @@ class Molecule:
         elstat_AB = self.screen_ES(i, j)
         energy_AB = potElectrostatic(elstat_AB, chgA, chgB, distance)
         e_ES = e_ES + energy_AB
+#        print("Adding ES energy for atoms " + str([i, j]) + " with charges " + str([chgA, chgB]) + ", distance " + str(distance) + ", screening parameter " + str(elstat_AB) + ", giving energy = " + str(energy_AB))
     energy = energy + e_ES
     if verbosity >= 1:
       print("With electrostatic interactions, energy = " + str(energy))
-
+#    print("Omitting all dispersion interactions")
+    
     e_disp = 0.0
     for i in range(len(self.atoms)):
       for j in range(len(self.atoms)):
@@ -2726,7 +2753,7 @@ class Molecule:
         C6_A = C6[symA]
         C6_B = C6[symB] 
         C6_AB = (C6_A + C6_B)/2
-        C8_AB = C8_AB # To be completed - temporarily set equal to C6 for test run only
+        C8_AB = C6_AB # To be completed - temporarily set equal to C6 for test run only
         BJdamp_AB = BJdamping(i, j, symA, symB, dtyp) # Calculation of cutoff radii incorporated here 
         if dtyp == 1:
           R0_AB = VdWCutoffRadius(symA, symB)
@@ -2740,7 +2767,7 @@ class Molecule:
 
     # Calculation of polarisation energy (for solute-solvent) to go here in future
     # Left out for version 1 as optional, only important as intermolecular interactions
-
+    
     if verbosity >=1:
       print("Total energy:")
     return(energy)
@@ -2784,12 +2811,12 @@ class Molecule:
     """
     # Take the QM calculated Hessian stored as an attribute of the molecule
     H_QM = self.H_QM
-    print("QM Hessian used for Hessian difference:") # REMOVE ONCE FIXED
-    print(H_QM) # REMOVE ONCE FIXED
+#    print("QM Hessian used for Hessian difference:") # REMOVE ONCE FIXED
+#    print(H_QM) # REMOVE ONCE FIXED
     # Calculate the Force Field Hessian for the given force constants
-    print("Calculated FF Hessian:")
+#    print("Calculated FF Hessian:")
     H_FF = self.kdepHessian(ForceConstants) # Temporary print
-    print(H_FF)
+#    print(H_FF)
 
     sqdev = 0.0
     # Given H_QM and H_FF as arrays of equal size and shape, iterate over the individual entries of each
@@ -2968,7 +2995,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
         QM_energies.append(line)
     i = QM_energies[len(QM_energies) - 1]
     readBuffer = i.split()
-    print(readBuffer) # REMOVE AFTER TESTING
+#    print(readBuffer) # REMOVE AFTER TESTING
     QMenergy = float(readBuffer[4])
     molecule.setQMenergy(QMenergy)
     if verbosity >= 1:
@@ -3662,7 +3689,8 @@ def TSbySEAM(reactant, product, verbosity = 1):
 ProgramHeader()
 
 # Determine the name of the file to be read
-infile = iofiles(sys.argv[1:])
+infile = iofiles(sys.argv[1:]) 
+#infile2 = str(sys.argv[3]) # Assuming command line  python3 wellfareFF.py -i file.log file2.log 
 
 # print("Number of Atoms: ", reactant_mol.numatoms(), "Multiplicity: ", reactant_mol.mult)
 
@@ -3720,36 +3748,66 @@ reactant_mol = Molecule("Reactant",0)
 extractCoordinates(infile, reactant_mol, verbosity = 2)
 fitForceConstants(reactant_mol, verbosity = 2)
 
-#product_mol = Molecule("Product",0)
-#extractCoordinates("g09-dielsalder-p.log", product_mol, verbosity = 2)
-#fitForceConstants(product_mol, verbosity = 2)
-
-print("\nCartesian Coordinates (as one list):")
+print("\nCartesian Coordinates of Reactant (as one list):")
 print(reactant_mol.cartesianCoordinates())
 
-print("\nForce Field Energy:")
+print("\nForce Field Energy of Reactant:")
 print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity = 1))
 
-#print("\nDistort Geometry and print energy again:")
-coordinates2optimiseR = reactant_mol.cartesianCoordinates()
+print("\nGeometry Optimizer (Reactant):")
+initialcoords2optimiseR = reactant_mol.cartesianCoordinates()
+xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, initialcoords2optimiseR, gtol=0.00005)
+print("\Optimized Geometry coordinates (Reactant):")
+print(xopt)
+
+reactant_mol.setGeometry(xopt)
+print("\nOptimized Geometry in Gaussian format (Reactant):")
+print(reactant_mol.gaussString())
+
+
+#product_mol = Molecule("Product",0)
+#extractCoordinates(infile2, product_mol, verbosity = 2)
+#fitForceConstants(product_mol, verbosity = 2)
+
+#print("\nCartesian Coordinates of Product (as one list):")
+#print(product_mol.cartesianCoordinates())
+
+#print("\nForce Field Energy of Product:")
+#print(product_mol.FFEnergy(product_mol.cartesianCoordinates(), verbosity = 1))
+
+#print("\nGeometry Optimizer (Product):")
+#initialcoords2optimiseP = product_mol.cartesianCoordinates()
+#xopt = scipy.optimize.fmin_bfgs(product_mol.FFEnergy, initialcoords2optimiseP, gtol=0.00005)
+#print("\Optimized Geometry coordinates (Product):")
+#print(xopt)
+
+#product_mol.setGeometry(xopt)
+#print("\nOptimized Geometry in Gaussian format (Product):")
+#print(product_mol.gaussString())
+
+
+#print("\nDistort Geometry by interpolation and print energy again:")
+#coordinates2optimiseR = reactant_mol.cartesianCoordinates()
 #coordinates2optimiseP = product_mol.cartesianCoordinates()
 
 #coordinates2optimiseR = (numpy.array(coordinates2optimiseR)+(numpy.array(coordinates2optimiseP))/2.0)
 
-print(reactant_mol.FFEnergy(coordinates2optimiseR, verbosity = 1))
+#print(reactant_mol.FFEnergy(coordinates2optimiseR, verbosity = 1))
 
-print("\nGeometry Optimizer:")
-xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
-print("\nOptimized Geometry coordinates:")
-print(xopt)
-
-reactant_mol.setGeometry(xopt)
-print("\nOptimized Geometry in Gaussian format:")
-print(reactant_mol.gaussString())
+#print("\nGeometry Optimizer:")
+#xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
+#print("\nOptimized Geometry coordinates:")
+#print(xopt)
 
 #print("\nBond Dissociation:")
 #dissociateBond(reactant_mol, 0, 1, 10**-3, 14)
 
 #TSbySEAM(reactant_mol, product_mol, verbosity = 1)
+
+# Test the screening procedure used to determine appropriate values of elstat_AB
+#print("\nTesting electrostatic topological screening parameter procedure\n")
+#for i in range(len(reactant_mol.atoms)):
+#  for j in range(len(reactant_mol.atoms)):
+#    reactant_mol.screen_ES(i, j)
 
 ProgramFooter()
