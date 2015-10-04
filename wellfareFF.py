@@ -133,7 +133,7 @@ def AMU2au(amu):
 def au2AMU(au):
   return au/1822.88839
 
-# Conversion of length in Angstroms to  to
+# Conversion of length in Angstroms to
 # atomic units (Bohrs)
 def Ang2Bohr(ang):
     return ang*1.889725989
@@ -142,7 +142,8 @@ def Ang2Bohr(ang):
 def Bohr2Ang(bohr):
     return bohr/1.889725989
 
-# Conversion of energy in Joules to atomic units (Hartrees)
+# Conversion of energy in Joules to
+# atomic units (Hartrees)
 def J2au(J):
   return J/(4.35974394 * (10 ** -18))
 
@@ -150,7 +151,8 @@ def J2au(J):
 def au2J(au):
   return au * (4.35974393 * (10 ** -18))
 
-# Conversion of energy in kcal/mol to atomic units (Hartrees)
+# Conversion of energy in kcal/mol to 
+# atomic units (Hartrees)
 def kcal_mol2au(kcm):
   return kcm/627.503
 
@@ -158,6 +160,7 @@ def kcal_mol2au(kcm):
 def au2kcal_mol(au):
   return au * 627.503
 
+# Define dictionary to convert atomic symbols to atomic numbers
 SymbolToNumber = {
 "H" :1, "He" :2, "Li" :3, "Be" :4, "B" :5, "C" :6, "N" :7, "O" :8, "F" :9,
 "Ne" :10, "Na" :11, "Mg" :12, "Al" :13, "Si" :14, "P" :15, "S"  :16, "Cl" :17,
@@ -180,6 +183,7 @@ SymbolToNumber = {
 # Invert the above: atomic numbers to atomic symbols
 NumberToSymbol = {v: k for k, v in SymbolToNumber.items()}
 
+# Define dictionary to convert atomic symbols to atomic masses
 SymbolToMass = {
 "H" : 1.00794, "He": 4.002602, "Li": 6.941, "Be": 9.012182, "B": 10.811,
 "C": 12.0107, "N": 14.0067, "O": 15.9994, "F": 18.9984032, "Ne": 20.1797,
@@ -274,18 +278,21 @@ SymbolToEN = {
 "Mt" : 1.30, "Ds" : 1.30, "Rg" : 1.30, "Cn" : 1.30, "Uut" : 1.30,"Uuq" : 1.30,
 "Uup" : 1.30, "Uuh" : 1.30, "Uus" : 1.30, "Uuo" : 1.30}
 
-# Define dictionary to convert atomic symbods to valence electron number
+# Define dictionary to convert atomic symbols to valence electron number
 SymbolToValenceE = {
 "H"  : 1, "He" : 2, "Li" : 1, "Be" : 2, "B"  : 3, "C"  : 4,
 "N"  : 5, "O"  : 6, "F"  : 7, "Ne" : 8, "Na" : 1, "Mg" : 2,
 "Al" : 3, "Si" : 4, "P"  : 5, "S"  : 6, "Cl" : 7, "Ar" : 8,
 "K"  : 1, "Ca" : 2, "Sc" : 3, "Ti" : 4, "V"  : 5, "Cr" : 6,
 "Mn" : 7, "Fe" : 8, "Co" : 9, "Ni" : 10, "Cu" : 11, "Zn" : 12}
-# Note that this will need to be completed later
+# Note: this dictionary is currently incomplete, will need to be completed later
 
 # ---------------------------------------------------
 # Define global empirical parameters for force field
 # ---------------------------------------------------
+
+# Unless otherwise stated, the values for these parameters are those used in Grimme's QMDFF
+# taken from the 2014 paper DOI: 10.1021/ct500573f
 
 # Define a dictionary for the element specific parameter k_a
 k_a = {
@@ -632,7 +639,7 @@ def BJdamping(a, b, symA, symB, typ = 1):
     if typ == 1:
       R_0AB = VdWCutoffRadius(symA, symB)
     elif typ == 2:
-      C6_AB = (C6[a] + C6[b])/2 # Check this is correct for C6
+      C6_AB = (C6[a] + C6[b])/2
       C8_AB = 1.0 # 1 used as a placeholder until C8 values can be added as a dictionary
       R_0AB = RadiusFromCn(C6_AB, C8_AB)
     damp = a1*R_0AB + a2
@@ -643,7 +650,7 @@ def potLondonDisp(rep_disp_AB, C6_AB, C8_AB, BJdamp_AB, r_AB):
     """
     Function for the London dispersion energy under the D3 scheme employing Becke-Johnson rational damping via BJdamp_AB
     """
-    # Calculation of rep_disp_AB, and correct values for the other arguments in this function, to be worked out
+    # Not currently usable, pending C8 values to be included 
     sixterm = C6_AB/(r_AB**6 + BJdamp_AB**6)
     eightterm = C8_AB/(r_AB**8 + BJdamp_AB**8)
     u = rep_disp_AB*(sixterm + s8*eightterm)
@@ -654,7 +661,6 @@ def potElectrostatic(elstat_AB, chg_A, chg_B, r_AB):
     """
     Function for the electrostatic potential between atoms A and B
     """
-    # Determination of the screening parameter elstat_AB still to be implemented
     u = elstat_AB*(chg_A*chg_B/r_AB)
 
     return u
@@ -861,7 +867,9 @@ class FFBend:
     self.k = newk
   
   def energy(self, a):
-    """ Returns the energy of this bending potential at angle a"""
+    """ 
+    Returns the energy of this bending potential at angle a
+    """
     
     energy = 0.0
     if self.typ == 1:
@@ -942,7 +950,9 @@ class FFTorsion:
     return s+r
   
   def energy(self, theta):
-    """ Returns the energy of this torsion potential at angle theta"""
+    """
+    Returns the energy of this torsion potential at angle theta
+    """
     
     energy = 0.0
     if self.typ == 1:
@@ -974,8 +984,7 @@ class FFInversion:
         self.k_inv = arg[0]
     elif typ == 2:
         self.typ = 2
-        self.k_inv = arg[0] # Will need to check there is an appropriate force constant locatable for use here, eventually will require fitting to Hessian
-          # Damping constant needs to be checked - set up below on the assumption that a product of distance dependent damping functions for the three bonds will do
+        self.k_inv = arg[0] 
         r_12 = arg[5]
         r_13 = arg[6]
         r_14 = arg[7]
@@ -1027,7 +1036,9 @@ class FFInversion:
     self.k_inv = newk
 
   def energy(self, phi):
-    """ Returns the energy of this inversion potential at out of plane angle phi"""
+    """ 
+    Returns the energy of this inversion potential at out of plane angle phi
+    """
 
     energy = 0.0
     if self.typ == 1:
@@ -1053,7 +1064,7 @@ class FFHBond:
     r_ab, r_bc, r_ab
     """
 
-# Including type may not be necessary, has been done here just for consistency
+    # Including type may not be necessary, has been done here just for consistency
 
     self.atomA = a
     self.atomH = b
@@ -1105,7 +1116,9 @@ class FFHBond:
     return s+r
 
   def energy(self):
-    """ Returns the energy for this hydrogen bonding potential """
+    """
+    Returns the energy for this hydrogen bonding potential
+    """
 
     c_hbnd_AB = HBondStrengthFactor(self.symA, self.chgA, self.r_AH, self.symB, self.chgB, self.r_BH)
 
@@ -1140,7 +1153,7 @@ class Atom:
     self.charge = SymbolToNumber[sym]
     self.mass = SymbolToMass[sym]
     self.coord = [x, y, z]
-    self.QMcharge = q # Extracting q from input file yet to be implemented
+    self.QMcharge = q 
   
   def __str__(self):
     """ (Atom) -> str
@@ -1419,6 +1432,7 @@ class Molecule:
     """
 
     # Calculate the vectors lying along bonds, and their cross products
+    # These cross-product vectors define the two planes for the dihedral
     atom_e1 = self.atoms[i]
     atom_b1 = self.atoms[j]
     atom_b2 = self.atoms[k]
@@ -1829,7 +1843,7 @@ class Molecule:
     else:
       bonds_a = []
       bonds_b = []
-      # Find bonds from atom a to any other atom, and from atom b to any other atom
+      # List the bonds from atom a to any other atom, and from atom b to any other atom
       for bond in self.bonds:
         if bond[0] == a:
           bonds_a.append(bond)
@@ -2056,9 +2070,11 @@ class Molecule:
     if verbosity >= 1:
       print("With QM energy of equilibrium structure, energy = " + str(energy))
 
-  #  if verbosity >= 1: # REMOVE ONCE FIXED
-  #    print("Omitting stretching energy") # REMOVE ONCE FIXED
+  #  if verbosity >= 1: # REWORK with command line input for potentials used 
+  #    print("Omitting stretching energy") # REWORK with command line input for potentials used 
    
+    # Iterate over each Force Field stretch and calculate its energy at the given coordinates
+    # Then add that contribution to the total energy
     for i in self.stretch:
       distance=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
       distance += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
@@ -2069,6 +2085,8 @@ class Molecule:
     if verbosity >= 1:
       print("With bond stretches, energy = " + str(energy))
 
+    # Iterate over each Force Field 1,3-stretch and calculate its energy at the given coordinates
+    # then add that contribution to the total energy
     for i in self.str13:
       distance=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
       distance += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
@@ -2077,8 +2095,11 @@ class Molecule:
       energy = energy + i.energy(distance)
     if verbosity >= 1:
       print("With 1,3-stretches, energy = " + str(energy))
-    
+
+    # Iterate over each Force Field bend and calculate its energy at the given coordinates
+    # then add that contribution to the total energy                                           
     for i in self.bend:
+      # Calculate the distance between each pair of atoms in the three describing this angle
       d_bond_1=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
       d_bond_1 += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
       d_bond_1 += (cartCoordinates[3*i.atom1 + 2] - cartCoordinates[3*i.atom2 + 2]) ** 2
@@ -2099,12 +2120,17 @@ class Molecule:
       denominator = 2*d_bond_1*d_bond_2
       argument = numerator/denominator
       theta = numpy.arccos(argument)
+
+      # Calculate the energy at this bond angle, and add to the total
       energy = energy + i.energy(theta)
     if verbosity >=1:
       print("With bends, energy = " + str(energy))
 
+    # Iterate over the Force Field torsions and calculate their energy at the given coordinates
+    # Then add that contribution to the total energy
     for i in self.tors:
       # Calculate the vectors lying along bonds, and their cross products
+      # These cross products define the two planes for the dihedral angle
       atom_e1 = [cartCoordinates[3*i.atom1], cartCoordinates[3*i.atom1+1], cartCoordinates[3*i.atom1+2]]
       atom_b1 = [cartCoordinates[3*i.atom2], cartCoordinates[3*i.atom2+1], cartCoordinates[3*i.atom2+2]]
       atom_b2 = [cartCoordinates[3*i.atom3], cartCoordinates[3*i.atom3+1], cartCoordinates[3*i.atom3+2]]
@@ -2128,10 +2154,13 @@ class Molecule:
       vn1_coord_n2 = numpy.dot(vnormal_1, basis_vn2)
       vn1_coord_vc = numpy.dot(vnormal_1, basis_cv)
       psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
+      # Calculate the energy at this dihedral angle, and add to the total
       energy = energy + i.energy(psi)
     if verbosity >= 1:
       print("With torsion, energy = " + str(energy))
 
+    # Iterate over the force field inversions and calculate their energy at the given coordinates
+    # Then add that contribution to the total energy
     for i in self.inv: 
       # Calculate the vectors along bonds, and construct a vector plane_norm orthogonal to the plane of end ato
       atom_c = [cartCoordinates[3*i.atom1], cartCoordinates[3*i.atom1+1], cartCoordinates[3*i.atom1+2]]
@@ -2145,7 +2174,7 @@ class Molecule:
       inplane_13 = [atom_e3[i] - atom_e1[i] for i in range(3)]
       plane_norm = numpy.cross(inplane_12, inplane_13)
 
-      # Construct vectors between end atoms and the projection of the central atom on the end-atom pla
+      # Construct vectors between end atoms and the projection of the central atom on the end-atom plane
       cross_1 = numpy.cross(bond_1, plane_norm)
       cross_2 = numpy.cross(bond_2, plane_norm)
       cross_3 = numpy.cross(bond_2, plane_norm)
@@ -2174,14 +2203,14 @@ class Molecule:
       # Take the numerical average of the three out of plane angles
       # Note - other schemes for obtaining a single out of plane angle could be investigated
       phi = (phi1 + phi2 + phi3)/3
-      
+      # Calculate the energy for this out of plane angle and add to the total
       energy = energy + i.energy(phi)
     if verbosity >= 1:
       print("With inversion, energy = " + str(energy))
     # Don't forget to add non-bonded interactions here
 
-#    print("Omitting all non-covalent interactions") # REMOVE ONCE FIXED
-#    print("Omitting hydrogen bonding interactions") # REMOVE ONCE FIXED
+#    print("Omitting all non-covalent interactions") # REWORK with command line input for potentials used
+#    print("Omitting hydrogen bonding interactions") # REWORK with command line input for potentials used 
 #    print("Omitting all non-covalent interactions except hydrogen bonding")
 #    print("Omitting all non-covalent interactions expcept halogen bonding")
 #    print("Omitting all non-covalent interactions except Pauli repulsion")         
@@ -2189,18 +2218,22 @@ class Molecule:
 #    print("Omitting all non-covalent interactions except dispersion")
      
     e_hbnd = 0.0
+    # Iterate over the hydrogen atoms found in the molecule for possible hydrogen bonding interactions
     for i in self.hatoms:
       atH = [cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
+      # Iterate over the high electronegativity atoms found in the molecule for possible bonding partners
       for j in self.highENatoms:
          atA = [cartCoordinates[3*j], cartCoordinates[3*j + 1], cartCoordinates[3*j + 2]]
          # Calculate distance between hydrogen i and electronegative atom j
-         # Determine whether they are (likely) joined by a covalent bond
+         # Determine whether they are (likely) joined by a covalent bond, based on covalent radii
          dist_HA = (atH[0] - atA[0])**2
          dist_HA += (atH[1] - atA[1])**2
          dist_HA += (atH[2] - atA[2])**2
          dist_HA = math.sqrt(dist_HA)
          bond_dist_HA = SymbolToRadius[self.atoms[i].symbol] + SymbolToRadius[self.atoms[j].symbol]
+         # If a bond between the hydrogen and electronegative atom is found, continue looking for a hydrogen bonding partner
          if dist_HA <= bond_dist_HA:
+           # Iterate over the high electronegativity atoms found in the molecule for possible hydrogen bonding partners
            for k in self.highENatoms:
              atB = [cartCoordinates[3*j], cartCoordinates[3*j + 1], cartCoordinates[3*j + 2]]             
              # Calculate distance between hydrogen i and electronegative atom k
@@ -2217,7 +2250,7 @@ class Molecule:
                 dist_AB += (atA[2] - atB[2])**2
                 dist_AB = math.sqrt(dist_AB)
                 
-                # Use the calculated distances and the cosine rule to calculate AHB andgle theta
+                # Use the calculated distances and the cosine rule to calculate AHB angle theta
                 numerator = dist_HA**2 + dist_HB**2 - dist_AB**2
                 denominator = 2*dist_HA*dist_HB
                 argument = numerator/denominator
@@ -2238,6 +2271,7 @@ class Molecule:
 #    print("Omitting halogen bonding interactions")
     
     e_xbnd = 0.0
+    # Iterate over the halogen atoms found in the molecule for possible halogen bonding interactions
     for i in self.halogens:
       atX = [cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
       # Locate bonding partner(s), Y, for X by searching through the list of bonds in the molecule
@@ -2305,6 +2339,8 @@ class Molecule:
 #    print("Omitting all Pauli repulsion interactions")
     
     e_Pauli = 0.0
+    # Iterate over all pairs i, j of atoms in the molecule, and calculate their Pauli repulsion potential
+    # Then add this contribution to the total energy
     for i in range(len(self.atoms)):
       for j in range(i+1, len(self.atoms)):
         symA = self.atoms[i].symbol
@@ -2331,10 +2367,11 @@ class Molecule:
 #    print("Omitting all electrostatic interactions")
     
     e_ES = 0.0
+    # Iterate over all pairs i, j of atoms in the molecule, and calculate their electrostatic potential
+    # Then add this contribution to the total energy
     for i in range(len(self.atoms)):
       for j in range(i+1, len(self.atoms)):
-        # Note QM computed atomic charges at equilibrium structure should be used as per QMDFF
-        # Currently the charge in class atom is used, which comes from atomic number
+        # Take the quantum mechanically calculated charge on each of the atoms for use in calculation
         chgA = self.atoms[i].QMcharge 
         chgB = self.atoms[j].QMcharge
 
@@ -2357,6 +2394,8 @@ class Molecule:
 #    print("Omitting all dispersion interactions")
     
     e_disp = 0.0
+    # Iterate over all pairs i, j of atoms in the molecule, and calculate their dispersion potential
+    # Then add this contribution to the total energy
     for i in range(len(self.atoms)):
       for j in range(len(self.atoms)):
         symA = self.atoms[i].symbol
@@ -2392,7 +2431,7 @@ class Molecule:
     if verbosity >=1:
       print("Total energy: " + str(energy))
     return energy
-
+    
   def kdepFFEnergy(self, cartCoordinates, ForceConstants, verbosity = 0, dtyp = 1):
     """ (Molecule) -> number (Force Field energy)
 
@@ -2414,9 +2453,11 @@ class Molecule:
     if verbosity >= 1:
       print("With QM energy of equilibrium structure, energy = " + str(energy))
 
-#    if verbosity >= 1: # REMOVE ONCE FIXED
-#      print("Omitting stretching energy") # REMOVE ONCE FIXED
-    
+#    if verbosity >= 1: # REWORK with command line input for potentials used
+#      print("Omitting stretching energy") # REWORK with command line input for potentials used  
+
+    # Iterate over each Force Field stretch and calculate its energy at the given force constants
+    # Then add that contribution to the total energy                                              
     for j in range(len(self.stretch)):
       i = self.stretch[j]
       k_str0 = i.k_str # Store the value of k_str originally associated with this stretching potential
@@ -2430,7 +2471,9 @@ class Molecule:
       i.setk(k_str0) # Restore the original value of k_str so this stretching potential is not permanently modified by the calculation
     if verbosity >= 1:
       print("With bond stretches, energy = " + str(energy))
-    
+
+    # Iterate over each Force Field 1,3-stretch and calculate its energy at the given force constants 
+    # then add that contribution to the total energy                                      
     for j in range(len(self.str13)):
       i = self.str13[j]
       k_str0 = i.k_str # Store the value of k_str originally associated with this 1,3-stretching potential
@@ -2444,10 +2487,13 @@ class Molecule:
     if verbosity >= 1:
       print("With 1,3-stretches, energy = " + str(energy))
 
+    # Iterate over each Force Field bend and calculate its energy at the given force constants 
+    # then add that contribution to the total energy                           
     for j in range(len(self.bend)):
       i = self.bend[j]
       k_bnd0 = i.k_bnd # Store the value of k_bnd originally associated with this bending potential
       i.setk(ForceConstants[len(self.stretch) + len(self.str13) + j]) # Se k_bnd equal to the value specified in the force constant list for this bend 
+      # Calculate the distance between each pair of atoms in the set of three describing this bond angle
       d_bond_1=(cartCoordinates[3*i.atom1]-cartCoordinates[3*i.atom2])**2
       d_bond_1 += (cartCoordinates[3*i.atom1 + 1] - cartCoordinates[3*i.atom2 + 1]) ** 2
       d_bond_1 += (cartCoordinates[3*i.atom1 + 2] - cartCoordinates[3*i.atom2 + 2]) ** 2
@@ -2473,6 +2519,8 @@ class Molecule:
     if verbosity >=1:
       print("With bends, energy = " + str(energy))
 
+    # Iterate over the Force Field torsions and calculate their energy at the given force constants
+    # Then add that contribution to the total energy
     for i in self.tors:
       # Calculate the vectors lying along bonds, and their cross products
       atom_e1 = [cartCoordinates[3*i.atom1], cartCoordinates[3*i.atom1+1], cartCoordinates[3*i.atom1+2]]
@@ -2498,10 +2546,13 @@ class Molecule:
       vn1_coord_n2 = numpy.dot(vnormal_1, basis_vn2)
       vn1_coord_vc = numpy.dot(vnormal_1, basis_cv)
       psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
+      # Calculate the energy at this dihedral angle and add it to the total
       energy = energy + i.energy(psi)
     if verbosity >= 1:
       print("With torsion, energy = " + str(energy))
 
+    # Iterate over the force field inversions and calculate their energy at the given force constants 
+    # Then add that contribution to the total energy
     for j in range(len(self.inv)):
       i = self.inv[j]
       k_inv0 = i.k_inv # Store the force constant k originally associated with this inversion potential 
@@ -2547,39 +2598,43 @@ class Molecule:
       # Take the numerical average of the three out of plane angles
       # Note - other schemes for obtaining a single out of plane angle could be investigated
       phi = (phi1 + phi2 + phi3)/3
-      
+      # Calculate the energy at this out of plane angle and add it to the total  
       energy = energy + i.energy(phi)
       i.setk(k_inv0) # Restore the original value of k_inv so that this inversion potential is not permanently modified by the energy caculation
     if verbosity >= 1:
       print("With inversion, energy = " + str(energy))
 
-#    if verbosity >= 1: # REMOVE ONCE FIXED
-#      print("Omitting all non-covalent interactions") # REMOVE ONCE FIXED
+#    if verbosity >= 1: # REWORK with command line input for potentials used 
+#      print("Omitting all non-covalent interactions") # REWORK with command line input for potentials used 
 
-#    if verbosity >=1: # REMOVE ONCE FIXED
-#      print("Total energy:") # REMOVE ONCE FIXED
-#    return energy # REMOVE ONCE FIXED
+#    if verbosity >=1: # REWORK with command line input for potentials used 
+#      print("Total energy:") # REWORK with command line input for potentials used 
+#    return energy # REWORK with command line input for potentials used 
 
-#    print("Omitting hydrogen bond interactions") # REMOVE ONCE FIXED
+#    print("Omitting hydrogen bond interactions") # REWORK with command line input for potentials used 
 #    print("Omitting all non-covalent interactions except hydrogen bonding")
 #    print("Omitting all non-covalent interactions expcept halogen bonding")   
 #    print("Omitting all non-covalent interactions except Pauli repulsion")   
 #    print("Omitting all non-covalent interactions except electrostatics")
 #    print("Omitting all non-covalent interactions except dispersion")
-     
+         
     e_hbnd = 0.0
+    # Iterate over the hydrogen atoms found in the molecule for possible hydrogen bonding interactions
     for i in self.hatoms:
       atH = [cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
+      # Iterate over the high electronegativity atoms found in the molecule for possible bonding partners
       for j in self.highENatoms:
          atA = [cartCoordinates[3*j], cartCoordinates[3*j + 1], cartCoordinates[3*j + 2]]
          # Calculate distance between hydrogen i and electronegative atom j
-         # Determine whether they are (likely) joined by a covalent bond
+         # Determine whether they are (likely) joined by a covalent bond, based on covalent radii
          dist_HA = (atH[0] - atA[0])**2
          dist_HA += (atH[1] - atA[1])**2
          dist_HA += (atH[2] - atA[2])**2
          dist_HA = math.sqrt(dist_HA)
          bond_dist_HA = SymbolToRadius[self.atoms[i].symbol] + SymbolToRadius[self.atoms[j].symbol]
+         # If a bond between the hydrogen and electronegative atom is found, continue looking for a hydrogen bonding partner
          if dist_HA <= bond_dist_HA:
+           # Iterate over the high electronegativity atoms found in the molecule for possible hydrogen bonding partners
            for k in self.highENatoms:
              atB = [cartCoordinates[3*j], cartCoordinates[3*j + 1], cartCoordinates[3*j + 2]]             
              # Calculate distance between hydrogen i and electronegative atom k
@@ -2617,6 +2672,7 @@ class Molecule:
 #    print("Omitting halogen bonding interactions")
     
     e_xbnd = 0.0
+    # Iterate over the halogen atoms found in the molecule for possible halogen bonding interactions
     for i in self.halogens:
       atX = [cartCoordinates[3*i], cartCoordinates[3*i + 1], cartCoordinates[3*i + 2]]
       # Locate bonding partner(s), Y, for X by searching through the list of bonds in the molecule
@@ -2684,6 +2740,8 @@ class Molecule:
 #    print("Omitting all Pauli repulsion interactions")
     
     e_Pauli = 0.0
+    # Iterate over all pairs i, j of atoms in the molecule, and calculate their Pauli repulsion potential
+    # Then add this contribution to the total energy
     for i in range(len(self.atoms)):
       for j in range(i+1, len(self.atoms)):
         symA = self.atoms[i].symbol
@@ -2710,6 +2768,8 @@ class Molecule:
 #    print("Omitting all electrostatic interactions")
     
     e_ES = 0.0
+    # Itrate over all pairs i, j of atoms in the molecule, and calculate their electrostatic potential
+    # then add this contribution to the total energy
     for i in range(len(self.atoms)):
       for j in range(i+1, len(self.atoms)):
         # Note QM computed atomic charges at equilibrium structure should be used as per QMDFF
@@ -2736,6 +2796,8 @@ class Molecule:
 #    print("Omitting all dispersion interactions")
     
     e_disp = 0.0
+    # Iterate over all pairs i, j of atoms in the molecule, and calculate their dispersion potential
+    # Then add this contribution to the total energy
     for i in range(len(self.atoms)):
       for j in range(len(self.atoms)):
         symA = self.atoms[i].symbol
@@ -2894,7 +2956,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
         readBuffer = f.__next__() # Only one line to skip, but check this works with no for loop
         while True:
           readBuffer = f.__next__()
-          if readBuffer.find("Sum of Mulliken charges") == -1: # Check that finding less than the full line works - if not need to include the value of the sum
+          if readBuffer.find("Sum of Mulliken charges") == -1:
             charges.append(readBuffer)
             if verbosity >= 3:
               readBuffer = readBuffer.split()
@@ -2946,7 +3008,7 @@ def extractCoordinates(filename, molecule, verbosity = 0, distfactor = 1.3, bond
         readBuffer = f.__next__() # Only one line to skip, but check this works with no for loop
         while True:
           readBuffer = f.__next__()
-          if readBuffer.find("Sum of atomic charges:") == -1: # Check whether full line needed (as per comment in Gaussian09 section)
+          if readBuffer.find("Sum of atomic charges:") == -1:
             charges.append(readBuffer)
             if verbosity >= 3:
               readBuffer = readBuffer.split()
@@ -3448,12 +3510,18 @@ def fitForceConstants(molecule, verbosity = 0):
     print("\nFitting force constants for WellFARe molecule: ", molecule.name)
   # Construct a list of the force constants initially assigned to the molecule
   ForceConstants = []
+  # First add stretching force constants to the list
   for i in range(len(molecule.stretch)):
     ForceConstants.append(molecule.stretch[i].k_str)
+  # Then add the force constants for 1,3-stretches
   for i in range(len(molecule.str13)):
     ForceConstants.append(molecule.str13[i].k_str)
+  # Next add the force constants for bends
   for i in range(len(molecule.bend)):
     ForceConstants.append(molecule.bend[i].k)
+# Eventually force constants for dihedrals will be added if the simple potential is chosen
+# This may be best done by appending them at the end (or else k-dependent energy function will need changing)
+  # Finally add the force constants for inversion
   for i in range(len(molecule.inv)):
       ForceConstants.append(molecule.inv[i].k_inv)
   InitialFC = ForceConstants
@@ -3486,6 +3554,7 @@ def fitForceConstants(molecule, verbosity = 0):
     molecule.str13[i].setk(xopt[len(molecule.stretch) + i])
   for i in range(len(molecule.bend)):
     molecule.bend[i].setk(xopt[len(molecule.stretch) + len(molecule.str13) + i])
+# Eventually torsion force constants will also be included here in the appropriate case
   for i in range(len(molecule.inv)):
     molecule.inv[i].setk(xopt[len(molecule.stretch) + len(molecule.str13) + len(molecule.bend) + i])
 
@@ -3648,12 +3717,15 @@ def TSbySEAM(reactant, product, verbosity = 1):
   else:
     print("Molecules provided to SEAM method have incompatible coordinates (length mismatch)")
     ProgramError() # Consider arranging such that the function does not execute further in this case
+  print("\nInitial Guess for SEAM (Gaussian Format):")
+  print(reactant.gaussStringatX(guessCoords))
+  print("\nAssigning Lagrange multiplier")
   X = numpy.zeros(len(guessCoords) + 1) 
   for i in range(len(guessCoords)):
     X[i] = guessCoords[i]
   X[len(guessCoords)] = guessL
   if verbosity >= 1:
-    print("Starting SEAM with initial coordinates + multiplier:")
+    print("\nStarting SEAM with initial coordinates + multiplier:")
     print(X)
 
   # Starting from X, optimise to a stationary point of the objective function
@@ -3690,7 +3762,7 @@ ProgramHeader()
 
 # Determine the name of the file to be read
 infile = iofiles(sys.argv[1:]) 
-#infile2 = str(sys.argv[3]) # Assuming command line  python3 wellfareFF.py -i file.log file2.log 
+infile2 = str(sys.argv[3]) # Assuming command line  python3 wellfareFF.py -i file.log file2.log 
 
 # print("Number of Atoms: ", reactant_mol.numatoms(), "Multiplicity: ", reactant_mol.mult)
 
@@ -3751,6 +3823,9 @@ fitForceConstants(reactant_mol, verbosity = 2)
 print("\nCartesian Coordinates of Reactant (as one list):")
 print(reactant_mol.cartesianCoordinates())
 
+print("\nInitial Coordinates of Reactant (Gaussian format):")
+print(reactant_mol.gaussString())
+
 print("\nForce Field Energy of Reactant:")
 print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity = 1))
 
@@ -3765,34 +3840,37 @@ print("\nOptimized Geometry in Gaussian format (Reactant):")
 print(reactant_mol.gaussString())
 
 
-#product_mol = Molecule("Product",0)
-#extractCoordinates(infile2, product_mol, verbosity = 2)
-#fitForceConstants(product_mol, verbosity = 2)
+product_mol = Molecule("Product",0)
+extractCoordinates(infile2, product_mol, verbosity = 2)
+fitForceConstants(product_mol, verbosity = 2)
 
-#print("\nCartesian Coordinates of Product (as one list):")
-#print(product_mol.cartesianCoordinates())
+print("\nCartesian Coordinates of Product (as one list):")
+print(product_mol.cartesianCoordinates())
 
-#print("\nForce Field Energy of Product:")
-#print(product_mol.FFEnergy(product_mol.cartesianCoordinates(), verbosity = 1))
+print("\nInitial Coordinates of Product (Gaussian format):")
+print(product_mol.gaussString())
 
-#print("\nGeometry Optimizer (Product):")
-#initialcoords2optimiseP = product_mol.cartesianCoordinates()
-#xopt = scipy.optimize.fmin_bfgs(product_mol.FFEnergy, initialcoords2optimiseP, gtol=0.00005)
-#print("\Optimized Geometry coordinates (Product):")
-#print(xopt)
+print("\nForce Field Energy of Product:")
+print(product_mol.FFEnergy(product_mol.cartesianCoordinates(), verbosity = 1))
 
-#product_mol.setGeometry(xopt)
-#print("\nOptimized Geometry in Gaussian format (Product):")
-#print(product_mol.gaussString())
+print("\nGeometry Optimizer (Product):")
+initialcoords2optimiseP = product_mol.cartesianCoordinates()
+xopt = scipy.optimize.fmin_bfgs(product_mol.FFEnergy, initialcoords2optimiseP, gtol=0.00005)
+print("\Optimized Geometry coordinates (Product):")
+print(xopt)
+
+product_mol.setGeometry(xopt)
+print("\nOptimized Geometry in Gaussian format (Product):")
+print(product_mol.gaussString())
 
 
-#print("\nDistort Geometry by interpolation and print energy again:")
-#coordinates2optimiseR = reactant_mol.cartesianCoordinates()
-#coordinates2optimiseP = product_mol.cartesianCoordinates()
+print("\nDistort Geometry by interpolation and print energy again:")
+coordinates2optimiseR = reactant_mol.cartesianCoordinates()
+coordinates2optimiseP = product_mol.cartesianCoordinates()
 
-#coordinates2optimiseR = (numpy.array(coordinates2optimiseR)+(numpy.array(coordinates2optimiseP))/2.0)
+coordinates2optimiseR = (numpy.array(coordinates2optimiseR)+(numpy.array(coordinates2optimiseP))/2.0)
 
-#print(reactant_mol.FFEnergy(coordinates2optimiseR, verbosity = 1))
+print(reactant_mol.FFEnergy(coordinates2optimiseR, verbosity = 1))
 
 #print("\nGeometry Optimizer:")
 #xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
@@ -3802,7 +3880,7 @@ print(reactant_mol.gaussString())
 #print("\nBond Dissociation:")
 #dissociateBond(reactant_mol, 0, 1, 10**-3, 14)
 
-#TSbySEAM(reactant_mol, product_mol, verbosity = 1)
+TSbySEAM(reactant_mol, product_mol, verbosity = 1)
 
 # Test the screening procedure used to determine appropriate values of elstat_AB
 #print("\nTesting electrostatic topological screening parameter procedure\n")
