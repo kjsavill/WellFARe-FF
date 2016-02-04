@@ -4056,6 +4056,18 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         if fc < 0.002:
             ProgramWarning()
             print(" This force constant is smaller than 0.002")
+
+        # Setup list of angles at which the torsion potential has to be calculated for the fitting procedure
+        torsionfit_angles = numpy.zeros(20)
+        for j in range(0,20):
+            torsionfit_angles[j] = math.degrees(molecule.dihedralangle(i)) + (j * 18.0)
+            if torsionfit_angles[j] > 180.0:
+                torsionfit_angles[j] =  torsionfit_angles[j] - 360.0
+        torsionfit_energies = numpy.zeros(20)
+
+
+
+        # Once the torsion potential has been determined, add the torsion term to the Force Field
         if verbosity >= 2:
             print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(
                 molecule.atoms[molecule.dihedrals[i][0]].symbol, molecule.dihedrals[i][0],
@@ -4555,13 +4567,10 @@ ProgramHeader()
 
 reactant_mol = Molecule("Reactant", 0)
 extractCoordinates(args.reactant, reactant_mol, verbosity=args.verbosity, bondcutoff=args.bondcutoff)
-fitForceConstants(reactant_mol, verbosity=args.verbosity)
-
-print("\nCartesian Coordinates of Reactant (as one list):")
-print(reactant_mol.cartesianCoordinates())
+#fitForceConstants(reactant_mol, verbosity=args.verbosity)
 
 print("\nForce Field Energy of molecule:", reactant_mol.name)
-print("Here we go:", reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity=args.verbosity))
+print("\nHere we go:", reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity=args.verbosity))
 
 print("\nOptimising geometry of molecule:", reactant_mol.name)
 initialcoords2optimiseR = reactant_mol.cartesianCoordinates()
