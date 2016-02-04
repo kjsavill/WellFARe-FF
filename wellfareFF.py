@@ -92,7 +92,7 @@ found = module_loader is not None
 if not found:
     ProgramError("Module numpy is required")
     ProgramAbort()
-import numpy
+import numpy as np
 
 # Check for scipy, exit immediately if not available
 module_loader = find_spec('scipy')
@@ -503,7 +503,7 @@ def potSimpleCosine(theta, theta0, k):
     Extremely simplified cosine potential for torsions
     """
 
-    u = k * (1 + numpy.cos(math.radians(180) + theta - theta0))
+    u = k * (1 + np.cos(math.radians(180) + theta - theta0))
 
     return u
 
@@ -1428,7 +1428,7 @@ class Molecule:
         self.hatoms = []
         self.highENatoms = []
         self.halogens = []
-        self.H_QM = numpy.zeros((3, 3))  # Array size arbitrary, just a placeholder for type 
+        self.H_QM = np.zeros((3, 3))  # Array size arbitrary, just a placeholder for type 
 
     def addAtom(self, a):
         """ (Molecule, Atom) -> NoneType
@@ -1562,7 +1562,7 @@ class Molecule:
         numerator = d_bond_1 ** 2 + d_bond_2 ** 2 - d_non_bond ** 2
         denominator = 2 * d_bond_1 * d_bond_2
         argument = numerator / denominator
-        theta = numpy.arccos(argument)
+        theta = np.arccos(argument)
 
         return theta
 
@@ -1581,7 +1581,7 @@ class Molecule:
         numerator = d_bond_1 ** 2 + d_bond_2 ** 2 - d_non_bond ** 2
         denominator = 2 * d_bond_1 * d_bond_2
         argument = numerator / denominator
-        theta = numpy.arccos(argument)
+        theta = np.arccos(argument)
 
         return theta
 
@@ -1600,21 +1600,21 @@ class Molecule:
         end_1 = [atom_e1.coord[i] - atom_b1.coord[i] for i in range(3)]
         bridge = [atom_b1.coord[i] - atom_b2.coord[i] for i in range(3)]
         end_2 = [atom_b2.coord[i] - atom_e2.coord[i] for i in range(3)]
-        vnormal_1 = numpy.cross(end_1, bridge)
-        vnormal_2 = numpy.cross(bridge, end_2)
+        vnormal_1 = np.cross(end_1, bridge)
+        vnormal_2 = np.cross(bridge, end_2)
 
         # Construct a set of orthogonal basis vectors to define a frame with vnormal_2 as the x axis
-        vcross = numpy.cross(vnormal_2, bridge)
-        norm_vn2 = numpy.linalg.norm(vnormal_2)
-        norm_b = numpy.linalg.norm(bridge)
-        norm_vc = numpy.linalg.norm(vcross)
+        vcross = np.cross(vnormal_2, bridge)
+        norm_vn2 = np.linalg.norm(vnormal_2)
+        norm_b = np.linalg.norm(bridge)
+        norm_vc = np.linalg.norm(vcross)
         basis_vn2 = [vnormal_2[i] / norm_vn2 for i in range(3)]
         basis_b = [bridge[i] / norm_b for i in range(3)]
         basis_cv = [vcross[i] / norm_vc for i in range(3)]
 
         # Find the signed angle between vnormal_1 and vnormal_2 in the new frame
-        vn1_coord_n2 = numpy.dot(vnormal_1, basis_vn2)
-        vn1_coord_vc = numpy.dot(vnormal_1, basis_cv)
+        vn1_coord_n2 = np.dot(vnormal_1, basis_vn2)
+        vn1_coord_vc = np.dot(vnormal_1, basis_cv)
         psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
 
         return psi
@@ -1633,21 +1633,21 @@ class Molecule:
         end_1 = [atom_e1.coord[i] - atom_b1.coord[i] for i in range(3)]
         bridge = [atom_b1.coord[i] - atom_b2.coord[i] for i in range(3)]
         end_2 = [atom_b2.coord[i] - atom_e2.coord[i] for i in range(3)]
-        vnormal_1 = numpy.cross(end_1, bridge)
-        vnormal_2 = numpy.cross(bridge, end_2)
+        vnormal_1 = np.cross(end_1, bridge)
+        vnormal_2 = np.cross(bridge, end_2)
 
         # Construct a set of orthogonal basis vectors to define a frame with vnormal_2 as the x axis
-        vcross = numpy.cross(vnormal_2, bridge)
-        norm_vn2 = numpy.linalg.norm(vnormal_2)
-        norm_b = numpy.linalg.norm(bridge)
-        norm_vc = numpy.linalg.norm(vcross)
+        vcross = np.cross(vnormal_2, bridge)
+        norm_vn2 = np.linalg.norm(vnormal_2)
+        norm_b = np.linalg.norm(bridge)
+        norm_vc = np.linalg.norm(vcross)
         basis_vn2 = [vnormal_2[i] / norm_vn2 for i in range(3)]
         basis_b = [bridge[i] / norm_b for i in range(3)]
         basis_cv = [vcross[i] / norm_vc for i in range(3)]
 
         # Find the signed angle between vnormal_1 and vnormal_2 in the new frame
-        vn1_coord_n2 = numpy.dot(vnormal_1, basis_vn2)
-        vn1_coord_vc = numpy.dot(vnormal_1, basis_cv)
+        vn1_coord_n2 = np.dot(vnormal_1, basis_vn2)
+        vn1_coord_vc = np.dot(vnormal_1, basis_cv)
         psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
 
         return psi
@@ -1669,33 +1669,33 @@ class Molecule:
         bond_3 = [atom_e3.coord[i] - atom_c.coord[i] for i in range(3)]
         inplane_12 = [atom_e2.coord[i] - atom_e1.coord[i] for i in range(3)]
         inplane_13 = [atom_e3.coord[i] - atom_e1.coord[i] for i in range(3)]
-        plane_norm = numpy.cross(inplane_12, inplane_13)
+        plane_norm = np.cross(inplane_12, inplane_13)
 
         # Construct vectors between end atoms and the projection of the central atom on the end-atom plane
-        cross_1 = numpy.cross(bond_1, plane_norm)
-        cross_2 = numpy.cross(bond_2, plane_norm)
-        cross_3 = numpy.cross(bond_2, plane_norm)
-        inplane_1 = numpy.cross(plane_norm, cross_1) / numpy.dot(plane_norm, plane_norm)
-        inplane_2 = numpy.cross(plane_norm, cross_2) / numpy.dot(plane_norm, plane_norm)
-        inplane_3 = numpy.cross(plane_norm, cross_3) / numpy.dot(plane_norm, plane_norm)
+        cross_1 = np.cross(bond_1, plane_norm)
+        cross_2 = np.cross(bond_2, plane_norm)
+        cross_3 = np.cross(bond_2, plane_norm)
+        inplane_1 = np.cross(plane_norm, cross_1) / np.dot(plane_norm, plane_norm)
+        inplane_2 = np.cross(plane_norm, cross_2) / np.dot(plane_norm, plane_norm)
+        inplane_3 = np.cross(plane_norm, cross_3) / np.dot(plane_norm, plane_norm)
 
         # Calculate the out of plane angle for each of the three bonds
-        cos_phi1 = numpy.dot(bond_1, inplane_1) / (numpy.linalg.norm(bond_1) * numpy.linalg.norm(inplane_1))
-        cos_phi2 = numpy.dot(bond_2, inplane_2) / (numpy.linalg.norm(bond_2) * numpy.linalg.norm(inplane_2))
-        cos_phi3 = numpy.dot(bond_3, inplane_3) / (numpy.linalg.norm(bond_3) * numpy.linalg.norm(inplane_3))
+        cos_phi1 = np.dot(bond_1, inplane_1) / (np.linalg.norm(bond_1) * np.linalg.norm(inplane_1))
+        cos_phi2 = np.dot(bond_2, inplane_2) / (np.linalg.norm(bond_2) * np.linalg.norm(inplane_2))
+        cos_phi3 = np.dot(bond_3, inplane_3) / (np.linalg.norm(bond_3) * np.linalg.norm(inplane_3))
 
         if (1.0 - (10 ** -15)) <= cos_phi1 and cos_phi1 <= (1.0 + (10 ** -15)):
             phi1 = 0.0
         else:
-            phi1 = numpy.arccos(cos_phi1)
+            phi1 = np.arccos(cos_phi1)
         if (1.0 - (10 ** -15)) <= cos_phi2 and cos_phi2 <= (1.0 + (10 ** -15)):
             phi2 = 0.0
         else:
-            phi2 = numpy.arccos(cos_phi2)
+            phi2 = np.arccos(cos_phi2)
         if (1.0 - (10 ** -15)) <= cos_phi3 and cos_phi3 <= (1.0 + (10 ** -15)):
             phi3 = 0.0
         else:
-            phi3 = numpy.arccos(cos_phi3)
+            phi3 = np.arccos(cos_phi3)
 
         # Take the numerical average of the three out of plane angles
         # Note - other schemes for obtaining a single out of plane angle could be investigated
@@ -1758,13 +1758,13 @@ class Molecule:
         inertiaTensor.append([Ixx, Ixy, Ixz])
         inertiaTensor.append([Iyx, Iyy, Iyz])
         inertiaTensor.append([Izx, Izy, Izz])
-        inertiaTensor = numpy.matrix(inertiaTensor)
+        inertiaTensor = np.matrix(inertiaTensor)
 
         # Diagonalise inertia tensor
-        inertiaMoments, inertialAxes = numpy.linalg.eig(inertiaTensor)
+        inertiaMoments, inertialAxes = np.linalg.eig(inertiaTensor)
 
         # Orthogonalise eigenvectors (only sometimes necessary)...
-        inertialAxes, r = numpy.linalg.qr(inertialAxes)
+        inertialAxes, r = np.linalg.qr(inertialAxes)
 
         # Sort moments from highest to lowest
         idx = inertiaMoments.argsort()[::-1]
@@ -1774,9 +1774,9 @@ class Molecule:
         # Transform molecular coordinates into new frame of principal axes of inertia
         for i in self.atoms:
             vector = [i.coord[0], i.coord[1], i.coord[2]]
-            vector = numpy.matrix(vector)
-            vector = numpy.matrix.transpose(inertialAxes).dot(numpy.matrix.transpose(vector))
-            vector = numpy.array(vector).flatten().tolist()
+            vector = np.matrix(vector)
+            vector = np.matrix.transpose(inertialAxes).dot(np.matrix.transpose(vector))
+            vector = np.array(vector).flatten().tolist()
             i.coord[0] = vector[0]
             i.coord[1] = vector[1]
             i.coord[2] = vector[2]
@@ -2321,7 +2321,7 @@ class Molecule:
             numerator = d_bond_1 ** 2 + d_bond_2 ** 2 - d_non_bond ** 2
             denominator = 2 * d_bond_1 * d_bond_2
             argument = numerator / denominator
-            theta = numpy.arccos(argument)
+            theta = np.arccos(argument)
             energy = energy + i.energy(theta)
         if verbosity >= 1:
             print(" + angle bends                       = {:> 16.8f}".format(energy))
@@ -2335,21 +2335,21 @@ class Molecule:
             end_1 = [atom_e1[i] - atom_b1[i] for i in range(3)]
             bridge = [atom_b1[i] - atom_b2[i] for i in range(3)]
             end_2 = [atom_b2[i] - atom_e2[i] for i in range(3)]
-            vnormal_1 = numpy.cross(end_1, bridge)
-            vnormal_2 = numpy.cross(bridge, end_2)
+            vnormal_1 = np.cross(end_1, bridge)
+            vnormal_2 = np.cross(bridge, end_2)
 
             # Construct a set of orthogonal basis vectors to define a frame with vnormal_2 as the x axis
-            vcross = numpy.cross(vnormal_2, bridge)
-            norm_vn2 = numpy.linalg.norm(vnormal_2)
-            norm_b = numpy.linalg.norm(bridge)
-            norm_vc = numpy.linalg.norm(vcross)
+            vcross = np.cross(vnormal_2, bridge)
+            norm_vn2 = np.linalg.norm(vnormal_2)
+            norm_b = np.linalg.norm(bridge)
+            norm_vc = np.linalg.norm(vcross)
             basis_vn2 = [vnormal_2[i] / norm_vn2 for i in range(3)]
             basis_b = [bridge[i] / norm_b for i in range(3)]
             basis_cv = [vcross[i] / norm_vc for i in range(3)]
 
             # Find the signed angle between vnormal_1 and vnormal_2 in the new frame
-            vn1_coord_n2 = numpy.dot(vnormal_1, basis_vn2)
-            vn1_coord_vc = numpy.dot(vnormal_1, basis_cv)
+            vn1_coord_n2 = np.dot(vnormal_1, basis_vn2)
+            vn1_coord_vc = np.dot(vnormal_1, basis_cv)
             psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
             energy = energy + i.energy(psi)
         if verbosity >= 1:
@@ -2366,33 +2366,33 @@ class Molecule:
             bond_3 = [atom_e3[i] - atom_c[i] for i in range(3)]
             inplane_12 = [atom_e2[i] - atom_e1[i] for i in range(3)]
             inplane_13 = [atom_e3[i] - atom_e1[i] for i in range(3)]
-            plane_norm = numpy.cross(inplane_12, inplane_13)
+            plane_norm = np.cross(inplane_12, inplane_13)
 
             # Construct vectors between end atoms and the projection of the central atom on the end-atom pla
-            cross_1 = numpy.cross(bond_1, plane_norm)
-            cross_2 = numpy.cross(bond_2, plane_norm)
-            cross_3 = numpy.cross(bond_2, plane_norm)
-            inplane_1 = numpy.cross(plane_norm, cross_1) / numpy.dot(plane_norm, plane_norm)
-            inplane_2 = numpy.cross(plane_norm, cross_2) / numpy.dot(plane_norm, plane_norm)
-            inplane_3 = numpy.cross(plane_norm, cross_3) / numpy.dot(plane_norm, plane_norm)
+            cross_1 = np.cross(bond_1, plane_norm)
+            cross_2 = np.cross(bond_2, plane_norm)
+            cross_3 = np.cross(bond_2, plane_norm)
+            inplane_1 = np.cross(plane_norm, cross_1) / np.dot(plane_norm, plane_norm)
+            inplane_2 = np.cross(plane_norm, cross_2) / np.dot(plane_norm, plane_norm)
+            inplane_3 = np.cross(plane_norm, cross_3) / np.dot(plane_norm, plane_norm)
 
             # Calculate the out of plane angle for each of the three bonds
-            cos_phi1 = numpy.dot(bond_1, inplane_1) / (numpy.linalg.norm(bond_1) * numpy.linalg.norm(inplane_1))
-            cos_phi2 = numpy.dot(bond_2, inplane_2) / (numpy.linalg.norm(bond_2) * numpy.linalg.norm(inplane_2))
-            cos_phi3 = numpy.dot(bond_3, inplane_3) / (numpy.linalg.norm(bond_3) * numpy.linalg.norm(inplane_3))
+            cos_phi1 = np.dot(bond_1, inplane_1) / (np.linalg.norm(bond_1) * np.linalg.norm(inplane_1))
+            cos_phi2 = np.dot(bond_2, inplane_2) / (np.linalg.norm(bond_2) * np.linalg.norm(inplane_2))
+            cos_phi3 = np.dot(bond_3, inplane_3) / (np.linalg.norm(bond_3) * np.linalg.norm(inplane_3))
 
             if (1.0 - (10 ** -15)) <= cos_phi1 and cos_phi1 <= (1.0 + (10 ** -15)):
                 phi1 = 0.0
             else:
-                phi1 = numpy.arccos(cos_phi1)
+                phi1 = np.arccos(cos_phi1)
             if (1.0 - (10 ** -15)) <= cos_phi2 and cos_phi2 <= (1.0 + (10 ** -15)):
                 phi2 = 0.0
             else:
-                phi2 = numpy.arccos(cos_phi2)
+                phi2 = np.arccos(cos_phi2)
             if (1.0 - (10 ** -15)) <= cos_phi3 and cos_phi3 <= (1.0 + (10 ** -15)):
                 phi3 = 0.0
             else:
-                phi3 = numpy.arccos(cos_phi3)
+                phi3 = np.arccos(cos_phi3)
 
             # Take the numerical average of the three out of plane angles
             # Note - other schemes for obtaining a single out of plane angle could be investigated
@@ -2445,7 +2445,7 @@ class Molecule:
                             numerator = dist_HA ** 2 + dist_HB ** 2 - dist_AB ** 2
                             denominator = 2 * dist_HA * dist_HB
                             argument = numerator / denominator
-                            theta = numpy.arccos(argument)
+                            theta = np.arccos(argument)
 
                             # Calculate the relevant constants for a hydrogen bonding potential
                             c_hbnd_AB = HBondStrengthFactor(j.symbol, j.charge, dist_HA, k.symbol, k.charge, dist_HB)
@@ -2515,7 +2515,7 @@ class Molecule:
                         numerator = r_XD ** 2 + r_XY ** 2 - r_DY ** 2
                         denominator = 2 * r_XD * r_XY
                         argument = numerator / denominator
-                        theta = numpy.arccos(argument)
+                        theta = np.arccos(argument)
 
                         # Calculate the relevant constants for a halogen bonding potential
                         f_dmp_theta = AngleDamping(theta)
@@ -2700,7 +2700,7 @@ class Molecule:
             numerator = d_bond_1 ** 2 + d_bond_2 ** 2 - d_non_bond ** 2
             denominator = 2 * d_bond_1 * d_bond_2
             argument = numerator / denominator
-            theta = numpy.arccos(argument)
+            theta = np.arccos(argument)
             energy = energy + i.energy(theta)
             i.setk(
                 k_bnd0)  # Restore the original value of the bending force constant so that this potentially is not permanently changed by the energy calculation
@@ -2716,21 +2716,21 @@ class Molecule:
             end_1 = [atom_e1[i] - atom_b1[i] for i in range(3)]
             bridge = [atom_b1[i] - atom_b2[i] for i in range(3)]
             end_2 = [atom_b2[i] - atom_e2[i] for i in range(3)]
-            vnormal_1 = numpy.cross(end_1, bridge)
-            vnormal_2 = numpy.cross(bridge, end_2)
+            vnormal_1 = np.cross(end_1, bridge)
+            vnormal_2 = np.cross(bridge, end_2)
 
             # Construct a set of orthogonal basis vectors to define a frame with vnormal_2 as the x axis
-            vcross = numpy.cross(vnormal_2, bridge)
-            norm_vn2 = numpy.linalg.norm(vnormal_2)
-            norm_b = numpy.linalg.norm(bridge)
-            norm_vc = numpy.linalg.norm(vcross)
+            vcross = np.cross(vnormal_2, bridge)
+            norm_vn2 = np.linalg.norm(vnormal_2)
+            norm_b = np.linalg.norm(bridge)
+            norm_vc = np.linalg.norm(vcross)
             basis_vn2 = [vnormal_2[i] / norm_vn2 for i in range(3)]
             basis_b = [bridge[i] / norm_b for i in range(3)]
             basis_cv = [vcross[i] / norm_vc for i in range(3)]
 
             # Find the signed angle between vnormal_1 and vnormal_2 in the new frame
-            vn1_coord_n2 = numpy.dot(vnormal_1, basis_vn2)
-            vn1_coord_vc = numpy.dot(vnormal_1, basis_cv)
+            vn1_coord_n2 = np.dot(vnormal_1, basis_vn2)
+            vn1_coord_vc = np.dot(vnormal_1, basis_cv)
             psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
             energy = energy + i.energy(psi)
         if verbosity >= 1:
@@ -2751,33 +2751,33 @@ class Molecule:
             bond_3 = [atom_e3[i] - atom_c[i] for i in range(3)]
             inplane_12 = [atom_e2[i] - atom_e1[i] for i in range(3)]
             inplane_13 = [atom_e3[i] - atom_e1[i] for i in range(3)]
-            plane_norm = numpy.cross(inplane_12, inplane_13)
+            plane_norm = np.cross(inplane_12, inplane_13)
 
             # Construct vectors between end atoms and the projection of the central atom on the end-atom pla
-            cross_1 = numpy.cross(bond_1, plane_norm)
-            cross_2 = numpy.cross(bond_2, plane_norm)
-            cross_3 = numpy.cross(bond_2, plane_norm)
-            inplane_1 = numpy.cross(plane_norm, cross_1) / numpy.dot(plane_norm, plane_norm)
-            inplane_2 = numpy.cross(plane_norm, cross_2) / numpy.dot(plane_norm, plane_norm)
-            inplane_3 = numpy.cross(plane_norm, cross_3) / numpy.dot(plane_norm, plane_norm)
+            cross_1 = np.cross(bond_1, plane_norm)
+            cross_2 = np.cross(bond_2, plane_norm)
+            cross_3 = np.cross(bond_2, plane_norm)
+            inplane_1 = np.cross(plane_norm, cross_1) / np.dot(plane_norm, plane_norm)
+            inplane_2 = np.cross(plane_norm, cross_2) / np.dot(plane_norm, plane_norm)
+            inplane_3 = np.cross(plane_norm, cross_3) / np.dot(plane_norm, plane_norm)
 
             # Calculate the out of plane angle for each of the three bonds
-            cos_phi1 = numpy.dot(bond_1, inplane_1) / (numpy.linalg.norm(bond_1) * numpy.linalg.norm(inplane_1))
-            cos_phi2 = numpy.dot(bond_2, inplane_2) / (numpy.linalg.norm(bond_2) * numpy.linalg.norm(inplane_2))
-            cos_phi3 = numpy.dot(bond_3, inplane_3) / (numpy.linalg.norm(bond_3) * numpy.linalg.norm(inplane_3))
+            cos_phi1 = np.dot(bond_1, inplane_1) / (np.linalg.norm(bond_1) * np.linalg.norm(inplane_1))
+            cos_phi2 = np.dot(bond_2, inplane_2) / (np.linalg.norm(bond_2) * np.linalg.norm(inplane_2))
+            cos_phi3 = np.dot(bond_3, inplane_3) / (np.linalg.norm(bond_3) * np.linalg.norm(inplane_3))
 
             if (1.0 - (10 ** -15)) <= cos_phi1 and cos_phi1 <= (1.0 + (10 ** -15)):
                 phi1 = 0.0
             else:
-                phi1 = numpy.arccos(cos_phi1)
+                phi1 = np.arccos(cos_phi1)
             if (1.0 - (10 ** -15)) <= cos_phi2 and cos_phi2 <= (1.0 + (10 ** -15)):
                 phi2 = 0.0
             else:
-                phi2 = numpy.arccos(cos_phi2)
+                phi2 = np.arccos(cos_phi2)
             if (1.0 - (10 ** -15)) <= cos_phi3 and cos_phi3 <= (1.0 + (10 ** -15)):
                 phi3 = 0.0
             else:
-                phi3 = numpy.arccos(cos_phi3)
+                phi3 = np.arccos(cos_phi3)
 
             # Take the numerical average of the three out of plane angles
             # Note - other schemes for obtaining a single out of plane angle could be investigated
@@ -2837,7 +2837,7 @@ class Molecule:
                             numerator = dist_HA ** 2 + dist_HB ** 2 - dist_AB ** 2
                             denominator = 2 * dist_HA * dist_HB
                             argument = numerator / denominator
-                            theta = numpy.arccos(argument)
+                            theta = np.arccos(argument)
 
                             # Calculate the relevant constants for a hydrogen bonding potential
                             c_hbnd_AB = HBondStrengthFactor(j.symbol, j.charge, dist_HA, k.symbol, k.charge, dist_HB)
@@ -2907,7 +2907,7 @@ class Molecule:
                         numerator = r_XD ** 2 + r_XY ** 2 - r_DY ** 2
                         denominator = 2 * r_XD * r_XY
                         argument = numerator / denominator
-                        theta = numpy.arccos(argument)
+                        theta = np.arccos(argument)
 
                         # Calculate the relevant constants for a halogen bonding potential
                         f_dmp_theta = AngleDamping(theta)
@@ -3033,7 +3033,7 @@ class Molecule:
         # If not, may need to write out in full
         # Set up a zero matrix to become the Force Field Hessian
         n = len(coords)
-        H_FF = numpy.zeros((n, n))
+        H_FF = np.zeros((n, n))
         # For each coordinate, displace by epsilon and calculate the second derivatives using another finite difference approximation
         for i in range(n):
             x0 = coords[i]
@@ -3061,8 +3061,8 @@ class Molecule:
 
         sqdev = 0.0
         # Given H_QM and H_FF as arrays of equal size and shape, iterate over the individual entries of each
-        for i in range(int(numpy.sqrt(H_QM.size))):
-            for j in range(int(numpy.sqrt(H_QM.size))):
+        for i in range(int(np.sqrt(H_QM.size))):
+            for j in range(int(np.sqrt(H_QM.size))):
                 # Take the difference between entries and square it
                 diff = H_QM[i, j] - H_FF[i, j]
                 diff = diff ** 2
@@ -3071,7 +3071,7 @@ class Molecule:
 
         return sqdev
 
-    def HMOEnergy(self, cartCoordinates, K=1.75, charge=0, verbosity=0):
+    def HMOEnergy(self, K=1.75, charge=0, verbosity=3):
         """ (Molecule) -> number (extended Hueckel aka Tight Binding energy)
 
           Returns a number containing the molecular energy according to the current extended Hueckel aka Tight Binding
@@ -3157,6 +3157,7 @@ class Molecule:
                                                                       qn2symb(molbasis[j - 1][2], molbasis[j - 1][3])) +
                                   s[j][i:i + 65])
                 print("")
+
 
         # Create Hamiltonian matrix
         hamiltonian = np.zeros((len(molbasis), len(molbasis)))
@@ -3363,33 +3364,33 @@ class Molecule:
                         mullikenGrossAOPop[i] += mullikenNetAOandOvlPop[i][j] / 2.0
             # Print routine for the gross populations
             print("\nGross Mulliken AO populations")
-            for i in range(0, len(mullikenGrossAOPop)):
+            for i in range(0,len(mullikenGrossAOPop)):
                 print("{: >3}({: >3}){:>2}{}{:<2} {: .6f}".format(self.atoms[molbasis[i][0]].symbol,
-                                                                  molbasis[i][0], molbasis[i][1],
-                                                                  qn2symb(molbasis[i][2]),
-                                                                  qn2symb(molbasis[i][2], molbasis[i][3]),
-                                                                  mullikenGrossAOPop[i]))
+                                                                      molbasis[i][0], molbasis[i][1],
+                                                                      qn2symb(molbasis[i][2]),
+                                                                      qn2symb(molbasis[i][2], molbasis[i][3]), mullikenGrossAOPop[i]))
             print("")
             # Next calculate gross Mulliken atom populations
             mullikenGrossAtomPop = np.zeros(self.numatoms())
             for i in range(0, len(mullikenGrossAOPop)):
                 mullikenGrossAtomPop[molbasis[i][0]] += mullikenGrossAOPop[i]
             print("\nGross Mulliken atomic populations")
-            for i in range(0, len(mullikenGrossAtomPop)):
+            for i in range(0,len(mullikenGrossAtomPop)):
                 print("{: >3}({: >3}) {: .6f}".format(self.atoms[i].symbol,
-                                                      i, mullikenGrossAtomPop[i]))
+                                                                      i, mullikenGrossAtomPop[i]))
 
             print("")
             # Next determine Mulliken net atomic charges
             mullikenNetAtomCharge = np.zeros(self.numatoms())
             for i in range(0, len(mullikenNetAtomCharge)):
-                mullikenNetAtomCharge[i] += self.atoms[i].valele - mullikenGrossAtomPop[i]
+                mullikenNetAtomCharge[i] += self.atoms[i].valele-mullikenGrossAtomPop[i]
             print("\nNet Mulliken atomic charges")
-            for i in range(0, len(mullikenGrossAtomPop)):
+            for i in range(0,len(mullikenGrossAtomPop)):
                 print("{: >3}({: >3}) {: .6f}".format(self.atoms[i].symbol,
-                                                      i, mullikenNetAtomCharge[i]))
+                                                                      i, mullikenNetAtomCharge[i]))
 
             print("")
+
 
         # Return the previously calculated total EHT energy
         return energy
@@ -3586,14 +3587,14 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
 
     # BOND ORDER READING SECTION
     bo = []
-    bo = numpy.zeros((molecule.numatoms(), molecule.numatoms()))
+    bo = np.zeros((molecule.numatoms(), molecule.numatoms()))
     if program == "g09":
         f = open(filename, 'r')
         for line in f:
             if line.find("Atomic Valencies and Mayer Atomic Bond Orders:") != -1:
                 if verbosity >= 2:
                     print("\nAtomic Valencies and Mayer Atomic Bond Orders found, reading data")
-                bo = numpy.zeros((molecule.numatoms(), molecule.numatoms()))
+                bo = np.zeros((molecule.numatoms(), molecule.numatoms()))
                 while True:
                     readBuffer = f.__next__()
                     # Check if the whole line is integers only (Header line)
@@ -3612,8 +3613,8 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         f.close()
         if verbosity >= 3:
             print("\nBond Orders:")
-            numpy.set_printoptions(suppress=True)
-            numpy.set_printoptions(formatter={'float': '{: 0.3f}'.format})
+            np.set_printoptions(suppress=True)
+            np.set_printoptions(formatter={'float': '{: 0.3f}'.format})
             print(bo)
     if program == "orca":
         f = open(filename, 'r')
@@ -3621,7 +3622,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             if line.find("Mayer bond orders larger than 0.1") != -1:
                 if verbosity >= 2:
                     print("\nMayer bond orders larger than 0.1 found, reading data")
-                bo = numpy.zeros((molecule.numatoms(), molecule.numatoms()))
+                bo = np.zeros((molecule.numatoms(), molecule.numatoms()))
                 while True:
                     readBuffer = f.__next__()
                     # Check if the whole line isn't empty (in that case we're done)
@@ -3640,20 +3641,20 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         f.close()
         if verbosity >= 3:
             print("\nBond Orders:")
-            numpy.set_printoptions(suppress=True)
-            numpy.set_printoptions(formatter={'float': '{: 0.3f}'.format})
+            np.set_printoptions(suppress=True)
+            np.set_printoptions(formatter={'float': '{: 0.3f}'.format})
             print(bo)
 
     # FORCE CONSTANT READING SECTION
     H = []
-    H = numpy.zeros((3 * molecule.numatoms(), 3 * molecule.numatoms()))
+    H = np.zeros((3 * molecule.numatoms(), 3 * molecule.numatoms()))
     if program == "g09":
         f = open(filename, 'r')
         for line in f:
             if line.find("Force constants in Cartesian coordinates") != -1:
                 if verbosity >= 2:
                     print("\nForce constants in Cartesian coordinates, reading data")
-                H = numpy.zeros((3 * molecule.numatoms(), 3 * molecule.numatoms()))
+                H = np.zeros((3 * molecule.numatoms(), 3 * molecule.numatoms()))
                 while True:
                     readBuffer = f.__next__()
                     # Check if the whole line is integers only (Header line)
@@ -3672,13 +3673,13 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         molecule.setHessian(H)  # Store H as the QM calculated Hessian for this molecule  
         if verbosity >= 3:
             print("\nForce constants in Cartesian coordinates (Input orientation):")
-            # numpy.set_printoptions(suppress=True)
-            # numpy.set_printoptions(formatter={'float': '{: 0.3f}'.format})
+            # np.set_printoptions(suppress=True)
+            # np.set_printoptions(formatter={'float': '{: 0.3f}'.format})
             print(H)
         f.close()
 
     # Test if we actually have Mayer Bond orders
-    if numpy.count_nonzero(bo) != 0:
+    if np.count_nonzero(bo) != 0:
         if verbosity >= 1:
             print("\nAdding bonds to WellFARe molecule: ", molecule.name)
             print("(using bond orders with a cutoff of {: .2f}):".format(bondcutoff))
@@ -3903,21 +3904,21 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         print("\nAdding Force Field bond stretching terms to WellFARe molecule: ", molecule.name)
     for i in range(0, len(molecule.bonds)):
         # print(molecule.atoms[molecule.bonds[i][0]].coord[1])
-        a = numpy.array([molecule.atoms[molecule.bonds[i][0]].coord[0], molecule.atoms[molecule.bonds[i][0]].coord[1],
+        a = np.array([molecule.atoms[molecule.bonds[i][0]].coord[0], molecule.atoms[molecule.bonds[i][0]].coord[1],
                          molecule.atoms[molecule.bonds[i][0]].coord[2]])
-        b = numpy.array([molecule.atoms[molecule.bonds[i][1]].coord[0], molecule.atoms[molecule.bonds[i][1]].coord[1],
+        b = np.array([molecule.atoms[molecule.bonds[i][1]].coord[0], molecule.atoms[molecule.bonds[i][1]].coord[1],
                          molecule.atoms[molecule.bonds[i][1]].coord[2]])
         c1 = (a - b)
         c2 = (b - a)
-        c = numpy.zeros(molecule.numatoms() * 3)
+        c = np.zeros(molecule.numatoms() * 3)
         c[3 * molecule.bonds[i][0]] = c1[0]
         c[3 * molecule.bonds[i][0] + 1] = c1[1]
         c[3 * molecule.bonds[i][0] + 2] = c1[2]
         c[3 * molecule.bonds[i][1]] = c2[0]
         c[3 * molecule.bonds[i][1] + 1] = c2[1]
         c[3 * molecule.bonds[i][1] + 2] = c2[2]
-        c = c / numpy.linalg.norm(c)
-        fc = numpy.dot(numpy.dot(c, H), numpy.transpose(c))
+        c = c / np.linalg.norm(c)
+        fc = np.dot(np.dot(c, H), np.transpose(c))
         if fc < 0.002:
             ProgramWarning()
             print(" This force constant is smaller than 0.002")
@@ -3937,21 +3938,21 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
     # if verbosity >= 2:
     #     print("\nAdding Force Field 1,3-bond stretching terms to WellFARe molecule: ", molecule.name)
     # for i in range(0, len(molecule.angles)):
-    #     a = numpy.array([molecule.atoms[molecule.angles[i][0]].coord[0], molecule.atoms[molecule.angles[i][0]].coord[1],
+    #     a = np.array([molecule.atoms[molecule.angles[i][0]].coord[0], molecule.atoms[molecule.angles[i][0]].coord[1],
     #                      molecule.atoms[molecule.angles[i][0]].coord[2]])
-    #     b = numpy.array([molecule.atoms[molecule.angles[i][2]].coord[0], molecule.atoms[molecule.angles[i][2]].coord[1],
+    #     b = np.array([molecule.atoms[molecule.angles[i][2]].coord[0], molecule.atoms[molecule.angles[i][2]].coord[1],
     #                      molecule.atoms[molecule.angles[i][2]].coord[2]])
     #     c1 = (a - b)
     #     c2 = (b - a)
-    #     c = numpy.zeros(molecule.numatoms() * 3)
+    #     c = np.zeros(molecule.numatoms() * 3)
     #     c[3 * molecule.angles[i][0]] = c1[0]
     #     c[3 * molecule.angles[i][0] + 1] = c1[1]
     #     c[3 * molecule.angles[i][0] + 2] = c1[2]
     #     c[3 * molecule.angles[i][1]] = c2[0]
     #     c[3 * molecule.angles[i][1] + 1] = c2[1]
     #     c[3 * molecule.angles[i][1] + 2] = c2[2]
-    #     c = c / numpy.linalg.norm(c)
-    #     fc = numpy.dot(numpy.dot(c, H), numpy.transpose(c))
+    #     c = c / np.linalg.norm(c)
+    #     fc = np.dot(np.dot(c, H), np.transpose(c))
     #     if fc < 0.002:
     #         ProgramWarning()
     #         print(" This force constant is smaller than 0.002")
@@ -3968,18 +3969,18 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
     if verbosity >= 2:
         print("\nAdding Force Field angle bending terms to WellFARe molecule: ", molecule.name)
     for i in range(0, len(molecule.angles)):
-        a = numpy.array([molecule.atoms[molecule.angles[i][0]].coord[0], molecule.atoms[molecule.angles[i][0]].coord[1],
+        a = np.array([molecule.atoms[molecule.angles[i][0]].coord[0], molecule.atoms[molecule.angles[i][0]].coord[1],
                          molecule.atoms[molecule.angles[i][0]].coord[2]])
-        b = numpy.array([molecule.atoms[molecule.angles[i][1]].coord[0], molecule.atoms[molecule.angles[i][1]].coord[1],
+        b = np.array([molecule.atoms[molecule.angles[i][1]].coord[0], molecule.atoms[molecule.angles[i][1]].coord[1],
                          molecule.atoms[molecule.angles[i][1]].coord[2]])
-        c = numpy.array([molecule.atoms[molecule.angles[i][2]].coord[0], molecule.atoms[molecule.angles[i][2]].coord[1],
+        c = np.array([molecule.atoms[molecule.angles[i][2]].coord[0], molecule.atoms[molecule.angles[i][2]].coord[1],
                          molecule.atoms[molecule.angles[i][2]].coord[2]])
         aprime = a - b
         bprime = c - b
-        p = numpy.cross(aprime, bprime)
-        adprime = numpy.cross(p, aprime)
-        bdprime = numpy.cross(bprime, p)
-        c = numpy.zeros(molecule.numatoms() * 3)
+        p = np.cross(aprime, bprime)
+        adprime = np.cross(p, aprime)
+        bdprime = np.cross(bprime, p)
+        c = np.zeros(molecule.numatoms() * 3)
         c[3 * molecule.angles[i][0]] = adprime[0]
         c[3 * molecule.angles[i][0] + 1] = adprime[1]
         c[3 * molecule.angles[i][0] + 2] = adprime[2]
@@ -3987,13 +3988,13 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         c[3 * molecule.angles[i][2] + 1] = bdprime[1]
         c[3 * molecule.angles[i][2] + 2] = bdprime[2]
         # Temporary fix to avoid divide-by-zero errors follows, may be replaced by better check in future
-        if c.all() == numpy.zeros(molecule.numatoms() * 3).all():
+        if c.all() == np.zeros(molecule.numatoms() * 3).all():
             if verbosity >= 3:
                 print("Zero vector returned while extracting angle bend force constants, skipping normalisation")
                 print("(This is nothing to worry about)")
         else:
-            c = c / numpy.linalg.norm(c)
-        fc = numpy.dot(numpy.dot(c, H), numpy.transpose(c))
+            c = c / np.linalg.norm(c)
+        fc = np.dot(np.dot(c, H), np.transpose(c))
         if fc < 0.002:
             ProgramWarning()
             print(" This force constant is smaller than 0.002")
@@ -4016,56 +4017,76 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
     if verbosity >= 2:
         print("\nAdding Force Field torsion terms to WellFARe molecule: ", molecule.name)
     for i in range(0, len(molecule.dihedrals)):
-        a = numpy.array(
+        a = np.array(
             [molecule.atoms[molecule.dihedrals[i][0]].coord[0], molecule.atoms[molecule.dihedrals[i][0]].coord[1],
              molecule.atoms[molecule.dihedrals[i][0]].coord[2]])
-        b = numpy.array(
+        b = np.array(
             [molecule.atoms[molecule.dihedrals[i][1]].coord[0], molecule.atoms[molecule.dihedrals[i][1]].coord[1],
              molecule.atoms[molecule.dihedrals[i][1]].coord[2]])
-        c = numpy.array(
+        c = np.array(
             [molecule.atoms[molecule.dihedrals[i][2]].coord[0], molecule.atoms[molecule.dihedrals[i][2]].coord[1],
              molecule.atoms[molecule.dihedrals[i][2]].coord[2]])
-        d = numpy.array(
+        d = np.array(
             [molecule.atoms[molecule.dihedrals[i][3]].coord[0], molecule.atoms[molecule.dihedrals[i][3]].coord[1],
              molecule.atoms[molecule.dihedrals[i][3]].coord[2]])
         aprime = a - b
         dprime = d - c
         c1prime = c - b
         c2prime = b - c
-        p1 = numpy.cross(aprime, c1prime)
-        p2 = numpy.cross(dprime, c2prime)
-        c = numpy.zeros(molecule.numatoms() * 3)
+        p1 = np.cross(aprime, c1prime)
+        p2 = np.cross(dprime, c2prime)
+        c = np.zeros(molecule.numatoms() * 3)
         c[3 * molecule.dihedrals[i][0]] = p1[0]
         c[3 * molecule.dihedrals[i][0] + 1] = p1[1]
         c[3 * molecule.dihedrals[i][0] + 2] = p1[2]
         c[3 * molecule.dihedrals[i][2]] = p2[0]
         c[3 * molecule.dihedrals[i][2] + 1] = p2[1]
         c[3 * molecule.dihedrals[i][2] + 2] = p2[2]
-        if c.all() == numpy.zeros(molecule.numatoms() * 3).all():
+        if c.all() == np.zeros(molecule.numatoms() * 3).all():
             if verbosity >= 3:
                 # Avoids fc=nan error for cases where all three atoms lie in the plane of two coordinate axes
                 print("Zero vector returned while extracting force constants, skipping normalisation")
                 print("(This is nothing to worry about)")
         else:
-            c = c / numpy.linalg.norm(c)
+            c = c / np.linalg.norm(c)
         # Note that the above is just an initial fix for cases where there would otherwise be a divide-by-zero error
         # These arise where several atoms have 0 in one coordinate which propagates through cross-products and are a
         # side-effect of orienting molecule along principal axes from the centre of mass as bonds lie in a coordinate plane
         # Better fix may be possible/necessary - could translate molecule, for instance
-        fc = numpy.dot(numpy.dot(c, H), numpy.transpose(c))
+        fc = np.dot(np.dot(c, H), np.transpose(c))
         if fc < 0.002:
             ProgramWarning()
             print(" This force constant is smaller than 0.002")
 
         # Setup list of angles at which the torsion potential has to be calculated for the fitting procedure
         torsionfit_points = 20 # Number of points for the fit; '20' equals steps of 18 degrees
-        torsionfit_angles = numpy.zeros(torsionfit_points)
+        torsionfit_angles = np.zeros(torsionfit_points)
         for j in range(0,torsionfit_points):
             torsionfit_angles[j] = math.degrees(molecule.dihedralangle(i)) + (j * (360/torsionfit_points))
             if torsionfit_angles[j] > 180.0:
-                torsionfit_angles[j] =  torsionfit_angles[j] - 360.0
-            print(torsionfit_angles[j])
-        torsionfit_energies = numpy.zeros(torsionfit_points)
+                torsionfit_angles[j] -= 360.0
+
+        # Create two "molecules", one with all atoms to consider on the right side of the dihedral, one for the left.
+        print("\nCreating right and left sides:")
+        rightside = Molecule("Right side of the dihedral", 0)
+        rightside.addAtom(molecule.atoms[molecule.dihedrals[i][0]])
+        rightside.addAtom(molecule.atoms[molecule.dihedrals[i][1]])
+        print("Right:", rightside, "\n")
+        leftside = Molecule("Left side of the dihedral", 0)
+        leftside.addAtom(molecule.atoms[molecule.dihedrals[i][2]])
+        leftside.addAtom(molecule.atoms[molecule.dihedrals[i][3]])
+        print("Left:", leftside, "\n")
+        bothsides = Molecule("Both sides of the dihedral", 0)
+        for j in range(0,rightside.numatoms()):
+            bothsides.addAtom(rightside.atoms[j])
+        for j in range(0,leftside.numatoms()):
+            bothsides.addAtom(leftside.atoms[j])
+        print("Both:", bothsides, "\n")
+        print(bothsides.gaussString())
+        print(bothsides.HMOEnergy())
+
+        #torsionfit_energies = np.zeros(torsionfit_points)
+
 
 
 
@@ -4094,27 +4115,27 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
     #     print("\nAdding Force Field inversion terms to WellFARe molecule: ", molecule.name)
     # # (Extracting force constants to be implemented later)
     # for i in range(0, len(molecule.threefolds)):
-    #     a = numpy.array(
+    #     a = np.array(
     #         [molecule.atoms[molecule.threefolds[i][0]].coord[0], molecule.atoms[molecule.threefolds[i][0]].coord[1],
     #          molecule.atoms[molecule.threefolds[i][0]].coord[2]])
-    #     b = numpy.array(
+    #     b = np.array(
     #         [molecule.atoms[molecule.threefolds[i][1]].coord[0], molecule.atoms[molecule.threefolds[i][1]].coord[1],
     #          molecule.atoms[molecule.threefolds[i][1]].coord[2]])
-    #     c = numpy.array(
+    #     c = np.array(
     #         [molecule.atoms[molecule.threefolds[i][2]].coord[0], molecule.atoms[molecule.threefolds[i][2]].coord[1],
     #          molecule.atoms[molecule.threefolds[i][2]].coord[2]])
-    #     d = numpy.array(
+    #     d = np.array(
     #         [molecule.atoms[molecule.threefolds[i][3]].coord[0], molecule.atoms[molecule.threefolds[i][3]].coord[1],
     #          molecule.atoms[molecule.threefolds[i][3]].coord[2]])
     #     ba = a - b
     #     cb = b - c
     #     db = b - d
     #     dc = c - d
-    #     bprime = numpy.cross(-cb, -db)
-    #     cprime = numpy.cross(-dc, cb)
-    #     dprime = numpy.cross(db, dc)
-    #     aprime = numpy.cross(bprime, numpy.cross(-ba, bprime)) / numpy.dot(bprime, bprime)
-    #     c = numpy.zeros(molecule.numatoms() * 3)
+    #     bprime = np.cross(-cb, -db)
+    #     cprime = np.cross(-dc, cb)
+    #     dprime = np.cross(db, dc)
+    #     aprime = np.cross(bprime, np.cross(-ba, bprime)) / np.dot(bprime, bprime)
+    #     c = np.zeros(molecule.numatoms() * 3)
     #     c[3 * molecule.threefolds[i][0]] = aprime[0]
     #     c[3 * molecule.threefolds[i][0] + 1] = aprime[1]
     #     c[3 * molecule.threefolds[i][0] + 2] = aprime[2]
@@ -4128,11 +4149,11 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
     #     c[3 * molecule.threefolds[i][3] + 1] = dprime[1]
     #     c[3 * molecule.threefolds[i][3] + 2] = dprime[2]
     #     # Temporary fix to avoid divide-by-zero errors follows, may be replaced by better check in future
-    #     if c.all() == numpy.zeros(molecule.numatoms() * 3).all():
+    #     if c.all() == np.zeros(molecule.numatoms() * 3).all():
     #         print("Zero vector returned while extracting inversion force constants, skipping normalisation")
     #     else:
-    #         c = c / numpy.linalg.norm(c)
-    #     fc = numpy.dot(numpy.dot(c, H), numpy.transpose(c))
+    #         c = c / np.linalg.norm(c)
+    #     fc = np.dot(np.dot(c, H), np.transpose(c))
     #     if fc < 0.002:
     #         ProgramWarning()
     #         print(" This force constant is smaller than 0.002")
@@ -4352,7 +4373,7 @@ def dissociateBond(molecule, atom1, atom2, epsilon, cutoff, verbosity=1):
             print("Moving atom " + str(atom2))
     # Calculate the vector along which movement should occur
     dvector = [atM.coord[i] - atS.coord[i] for i in range(3)]
-    norm_dv = numpy.linalg.norm(dvector)
+    norm_dv = np.linalg.norm(dvector)
     unitdv = [dvector[i] / norm_dv for i in range(3)]
     movevector = [unitdv[i] * epsilon for i in range(3)]
 
@@ -4412,7 +4433,7 @@ def ObjFuncSEAM(X, reactant, product):
   Objective function employed in the SEAM method to find a minimum on the intersction of reactant and product potential energy surfaces
   Here reactant and product both belong to the class Molecule, and X is a list of cartesian coordinates with the Lagrange multiplier L appended
   """
-    cartCoordinates = numpy.zeros(len(X) - 1)
+    cartCoordinates = np.zeros(len(X) - 1)
     for i in range(len(X) - 1):
         cartCoordinates[i] = X[i]
     lm = X[len(X) - 1]
@@ -4429,11 +4450,11 @@ def dObjFuncSEAM(X, reactant, product):
     """
   Function to calculate the (first) derivate of the objective function for the SEAM method by finite differences
   """
-    dL = numpy.zeros(len(X))
+    dL = np.zeros(len(X))
     h = 1e-3  # Step size for use in numerical evaluation of gradient, can be tailored
 
     for i in range(len(X)):
-        dX = numpy.zeros(len(X))
+        dX = np.zeros(len(X))
         dX[i] = h
         dL[i] = (ObjFuncSEAM((X + dX), reactant, product) - ObjFuncSEAM((X - dX), reactant, product)) / (2 * h)
 
@@ -4451,13 +4472,13 @@ def TSbySEAM(reactant, product, verbosity=1):
     CoordsP = product.cartesianCoordinates()
     guessL = 0  # Initial guess for the Lagrange multiplier can be modified as desired
     if len(CoordsR) == len(CoordsP):
-        guessCoords = numpy.zeros(len(CoordsR))
+        guessCoords = np.zeros(len(CoordsR))
         for i in range(len(CoordsR)):
             guessCoords[i] = (CoordsR[i] + CoordsP[i]) / 2
     else:
         print("Molecules provided to SEAM method have incompatible coordinates (length mismatch)")
         ProgramError()  # Consider arranging such that the function does not execute further in this case
-    X = numpy.zeros(len(guessCoords) + 1)
+    X = np.zeros(len(guessCoords) + 1)
     for i in range(len(guessCoords)):
         X[i] = guessCoords[i]
     X[len(guessCoords)] = guessL
@@ -4475,7 +4496,7 @@ def TSbySEAM(reactant, product, verbosity=1):
         print(X_opt)
 
     # Calculate the energy at the transition state (should be equal using either force field)
-    TS = numpy.zeros(len(X_opt) - 1)
+    TS = np.zeros(len(X_opt) - 1)
     for i in range((len(X_opt) - 1)):
         TS[i] = X_opt[i]
     E_TS = reactant.FFEnergy(TS)
@@ -4607,7 +4628,7 @@ print(reactant_mol.gaussString())
 # coordinates2optimiseR = reactant_mol.cartesianCoordinates()
 # coordinates2optimiseP = product_mol.cartesianCoordinates()
 
-# coordinates2optimiseR = (numpy.array(coordinates2optimiseR)+(numpy.array(coordinates2optimiseP))/2.0)
+# coordinates2optimiseR = (np.array(coordinates2optimiseR)+(np.array(coordinates2optimiseP))/2.0)
 
 # print(reactant_mol.FFEnergy(coordinates2optimiseR, verbosity = 1))
 

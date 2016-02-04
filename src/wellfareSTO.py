@@ -253,6 +253,17 @@ def SlaterOverlapCartesian(n1, l1, m1, zeta1, x1, y1, z1, n2, l2, m2, zeta2, x2,
     #theta = np.arctan2(z, np.sqrt(xy)) # for elevation angle defined from XY-plane up
     phi = np.arctan2(y, x)
 
+    # Old non-working code for Cartesian to Spherical conversion: Don't use
+    # r = np.sqrt((x ** 2) + (y ** 2) + (z ** 2))
+    # if x == 0.0:
+    #     phi = 0.0
+    # else:
+    #     phi = np.arctan2(y, x)
+    # if r == 0.0:
+    #     theta = 0.0
+    # else:
+    #     theta = np.arccos(z / r)
+
     # print("\nx={: .3f} y={: .3f} z={: .3f}".format(x, y, z))
     # print("r={: .3f} theta={: .3f} phi={: .3f} (in degrees)".format(r, np.degrees(theta), np.degrees(phi)))
     # print("r={: .8f} theta={: .8f} phi={: .8f} (in radians)".format(r, theta, phi))
@@ -262,6 +273,27 @@ def SlaterOverlapCartesian(n1, l1, m1, zeta1, x1, y1, z1, n2, l2, m2, zeta2, x2,
 if __name__ == "__main__":
     print("---------1--------   ---------2--------  ------")
     print(" n,  l,  m, zeta  n,  l,  m, zeta, dist")
+    # print(" 3,  2,  1,  40,  3,  2,  1, 10, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap( 3,  2,  1,  40.0,  3,  2,  1, 10.0, 1.0, 0.0, 0.0), -4.42287766988261e-4))
+    # print(" 4,  2,  1, 112,  4,  3,  1, 12, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap( 4,  2,  1, 112.0,  4,  3,  1, 48.0, 1.0, 0.0, 0.0),  4.03505950326382e-17))
+    # print(" 5,  4,  4, 170,  5,  4,  4, 30, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap( 5,  4,  4, 170.0,  5,  4,  4, 30.0, 1.0, 0.0, 0.0),  1.56193164484179e-14))
+    # print(" 7,  3,  2, 255,  4,  3,  2, 45, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap( 7,  3,  2, 255.0,  4,  3,  2, 45.0, 1.0, 0.0, 0.0),  -1.7686105069788e-18))
+    # print(" 9,  5,  3,  54,  8,  4,  3, 36, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap( 9,  5,  3, 54,  8,  4,  3, 36, 1.0, 0.0, 0.0), -5.465102430228e-8))
+    # print("10,  7,  1,  72,  8,  2,  1, 48, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap(10,  7,  1,  72.0,  8,  2,  1, 48.0, 1.0, 0.0, 0.0), -1.84189026173198e-10))
+    # print("10,  9,  9,  24, 10,  9,  9,  6, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap(10,  9,  9,  24.0, 10,  9,  9,  6.0, 1.0, 0.0, 0.0),  6.2312231819e-4))
+    # print("13, 12, 12,25.25, 13, 12, 12,24.75, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap(13, 12, 12,  25.25, 13, 12, 12, 24.75, 1.0, 0.0, 0.0), 1.35310560392e-4))
+    # print("14, 13, 13,  21, 14, 13, 13,  9, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap(14, 13, 13,  21.0, 14, 13, 13,  9.0, 1.0, 0.0, 0.0),  4.5355131215652e-3))
+    # print("15, 14, 14,  15, 15, 14, 14, 15, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap(15, 14, 14,  15.0, 15, 14, 14, 15.0, 1.0, 0.0, 0.0),  3.74722497038009e-2))
+    # print("16, 15, 15, 35, 16, 15, 15, 35, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap(16, 15, 15,  35.0, 16, 15, 15, 35.0, 1.0, 0.0, 0.0),  1.21686562253236e-6))
+    # print("17,  8,  4, 55,  8,  7,  4, 45, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap(17,  8,  4,  55.0,  8,  7,  4, 45.0, 1.0, 0.0, 0.0), -1.00640061354258e-6))
+    # print("17, 16, 16, 12.5, 17, 16, 16, 37.5, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap(17, 16, 16,  12.5, 17, 16, 16, 37.5, 1.0, 0.0, 0.0),  3.06769565185575e-5))
+    # print("18, 12, 12,   8, 18, 12, 12, 32, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap(18, 12, 12,   8.0, 18, 12, 12, 32.0, 1.0, 0.0, 0.0),  6.63931813696651e-5))
+    # print("21, 10,  6,  45,  9,  8,  6, 45, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap(21, 10,  6,  45.0,  9,  8,  6, 45.0, 1.0, 0.0, 0.0),  5.38980685350612e-5))
+    # print("27,  8,  7,  28,  9,  8,  7, 42, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap(27,  8,  7,  28.0,  9,  8,  7, 42.0, 1.0, 0.0, 0.0), -1.744238075196959e-4))
+    # print("30, 10,  8,  35, 14, 10,  8, 35, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap(30, 10,  8,  35.0, 14, 10,  8, 35.0, 1.0, 0.0, 0.0),  1.35074709592800e-2))
+    # print("37,  8,  6,   4, 12, 10,  6, 16, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap(37,  8,  6,   4.0, 12, 10,  6, 16.0, 1.0, 0.0, 0.0),  3.98219849004259e-14))
+    # print("40,  4,  3,  24, 12,  4,  3,  6, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap(40,  4,  3,  24.0, 12,  4,  3,  6.0, 1.0, 0.0, 0.0),  9.48379265599810e-2))
+    # print("43, 10,  6,  36, 18,  8,  6, 84, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap(43, 10,  6,  36.0, 18,  8,  6, 84.0, 1.0, 0.0, 0.0), -1.15907687123104e-4))
+    # print("50,  4,  4,42.5, 50,  4,  4,7.5, 1.00: {: .15e} should: {: .15e}.".format(SlaterOverlap(50,  4,  4,  42.5, 50,  4,  4,  7.5, 1.0, 0.0, 0.0),  1.84395901037228e-12))
 
     print("C 2s overlap with each hydrogen 1s")
     print(" 2,  0,  0,  1.625,  1,  0,   0,  1.200, 2.0787: {: .8f} should: {: .8f}.".format(
