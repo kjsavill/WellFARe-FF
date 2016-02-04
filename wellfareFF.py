@@ -5,6 +5,7 @@ import time
 from importlib.util import find_spec
 from src import wellfareSTO
 
+
 def timestamp(s):
     print(s + time.strftime("%Y/%m/%d %X"))
 
@@ -393,7 +394,6 @@ C6 = {
 CSO_a1 = {
     "BLYP": 1.28, "BP86": 1.01, "PBE": 0.24, "TPSS": 0.72,
     "B3LYP": 0.86, "PBE0": 0.20, "PW6B95": -0.15, "B2PLYP": 0.24}
-
 
 # Define dictionary to convert atomic symbols to number of valence electrons
 SymbolToValE = {
@@ -1261,6 +1261,7 @@ class STO:
 
         return '({0}, {1}, {2}, {3})'.format(self.n, self.l, self.exp, self.ie)
 
+
 #############################################################################################################
 # Atom class and class methods to be defined below
 #############################################################################################################
@@ -1514,7 +1515,8 @@ class Molecule:
     Move all atoms in the molecule to give the geometry defined by the input coordinates
     """
         n = int(len(self.atoms))
-        print(str(n))
+        # Print number of atoms
+        # print(str(n))
         if len(cartCoordinates) != 3 * n:
             ProgramWarning()
             print("Cannot update geometry of " + str(self.name) + ", supplied coordinates do not match number of atoms")
@@ -1538,9 +1540,9 @@ class Molecule:
 
         distance = (self.atoms[i].coord[0] - self.atoms[j].coord[0]) * (self.atoms[i].coord[0] - self.atoms[j].coord[0])
         distance = distance + (self.atoms[i].coord[1] - self.atoms[j].coord[1]) * (
-        self.atoms[i].coord[1] - self.atoms[j].coord[1])
+            self.atoms[i].coord[1] - self.atoms[j].coord[1])
         distance = distance + (self.atoms[i].coord[2] - self.atoms[j].coord[2]) * (
-        self.atoms[i].coord[2] - self.atoms[j].coord[2])
+            self.atoms[i].coord[2] - self.atoms[j].coord[2])
 
         return math.sqrt(distance)
 
@@ -1739,17 +1741,20 @@ class Molecule:
         Izz = 0.0
         for i in self.atoms:
             Ixx = Ixx + (
-            i.mass * ((Ang2Bohr(i.coord[1]) * Ang2Bohr(i.coord[1])) + (Ang2Bohr(i.coord[2]) * Ang2Bohr(i.coord[2]))))
+                i.mass * (
+                (Ang2Bohr(i.coord[1]) * Ang2Bohr(i.coord[1])) + (Ang2Bohr(i.coord[2]) * Ang2Bohr(i.coord[2]))))
             Ixy = Ixy - i.mass * Ang2Bohr(i.coord[0]) * Ang2Bohr(i.coord[1])
             Ixz = Ixz - i.mass * Ang2Bohr(i.coord[0]) * Ang2Bohr(i.coord[2])
             Iyx = Iyx - i.mass * Ang2Bohr(i.coord[1]) * Ang2Bohr(i.coord[0])
             Iyy = Iyy + (
-            i.mass * ((Ang2Bohr(i.coord[0]) * Ang2Bohr(i.coord[0])) + (Ang2Bohr(i.coord[2]) * Ang2Bohr(i.coord[2]))))
+                i.mass * (
+                (Ang2Bohr(i.coord[0]) * Ang2Bohr(i.coord[0])) + (Ang2Bohr(i.coord[2]) * Ang2Bohr(i.coord[2]))))
             Iyz = Iyz - i.mass * Ang2Bohr(i.coord[1]) * Ang2Bohr(i.coord[2])
             Izx = Izx - i.mass * Ang2Bohr(i.coord[2]) * Ang2Bohr(i.coord[0])
             Izy = Izy - i.mass * Ang2Bohr(i.coord[2]) * Ang2Bohr(i.coord[1])
             Izz = Izz + (
-            i.mass * ((Ang2Bohr(i.coord[0]) * Ang2Bohr(i.coord[0])) + (Ang2Bohr(i.coord[1]) * Ang2Bohr(i.coord[1]))))
+                i.mass * (
+                (Ang2Bohr(i.coord[0]) * Ang2Bohr(i.coord[0])) + (Ang2Bohr(i.coord[1]) * Ang2Bohr(i.coord[1]))))
         inertiaTensor.append([Ixx, Ixy, Ixz])
         inertiaTensor.append([Iyx, Iyy, Iyz])
         inertiaTensor.append([Izx, Izy, Izz])
@@ -1832,7 +1837,7 @@ class Molecule:
         # Append stretch to list if doesn't exist and is plausible
         if a >= 0 and b >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c != d:
             self.stretch.append(FFStretch(c, d, r0, typ, arg))
-        #    print("Adding FFStretch with bond " + str([a, b]) + " and fc = " + str(arg[0])) # REMOVE ONCE FIXED
+            #    print("Adding FFStretch with bond " + str([a, b]) + " and fc = " + str(arg[0])) # REMOVE ONCE FIXED
 
     def addFFStr13(self, a, b, r0, typ, arg):
         """ (Molecule) -> NoneType
@@ -1853,7 +1858,7 @@ class Molecule:
         # Append stretch to list if doesn't exist and is plausible
         if a >= 0 and b >= 0 and a <= len(self.atoms) and b <= len(self.atoms) and c != d:
             self.str13.append(FFStretch(c, d, r0, typ, arg))
-        #    print("Adding FFStretch with bond " + str([a, b]) + " and fc = " + str(arg[0])) # REMOVE ONCE FIXED
+            #    print("Adding FFStretch with bond " + str([a, b]) + " and fc = " + str(arg[0])) # REMOVE ONCE FIXED
 
     def delBond(self, a, b):
         """ (Molecule) -> NoneType
@@ -1930,7 +1935,7 @@ class Molecule:
         # better sanity checks)
         if exists == False and a >= 0 and b >= 0 and c >= 0 and d >= 0 and a <= len(self.atoms) and b <= len(
                 self.atoms) and c <= len(self.atoms) and d <= len(
-                self.atoms) and a != b and a != c and a != d and b != c and b != d and c != d:
+            self.atoms) and a != b and a != c and a != d and b != c and b != d and c != d:
             self.dihedrals.append([a, b, c, d])
 
     def addFFTorsion(self, a, b, c, d, theta0, typ, arg):
@@ -1965,7 +1970,7 @@ class Molecule:
         # Check currently based upon those for angles and dihedrals, for lack of a better alternative
         if exists == False and a >= 0 and b >= 0 and c >= 0 and d >= 0 and a <= len(self.atoms) and b <= len(
                 self.atoms) and c <= len(self.atoms) and d <= len(
-                self.atoms) and a != b and a != c and a != d and b != c and b != d and c != d:
+            self.atoms) and a != b and a != c and a != d and b != c and b != d and c != d:
             self.threefolds.append([a, b, c, d])
 
     def addFFInversion(self, a, b, c, d, phi0, typ, arg):
@@ -2056,8 +2061,8 @@ class Molecule:
                 elif bond[1] == b:
                     bonds_b.append(bond)
                     # Check whether there is a common third atom bonded to both a and b, stopping if one such atom is found 
-                #      print("Bonds from atom " + str(a) +": " + str(bonds_a)) # REMOVE ONCE FIXED
-                #      print("Bonds from atom " + str(b) +": " + str(bonds_b)) # REMOVE ONCE FIXED
+                    #      print("Bonds from atom " + str(a) +": " + str(bonds_a)) # REMOVE ONCE FIXED
+                    #      print("Bonds from atom " + str(b) +": " + str(bonds_b)) # REMOVE ONCE FIXED
             for bd_a in bonds_a:
                 for bd_b in bonds_b:
                     if bd_a[1] == bd_b[0]:
@@ -2081,8 +2086,8 @@ class Molecule:
                         elif bd_b[0] == bond[1]:
                             bonds_b1.append(bond)
                             # Then check whether there is one of those bonds in common to both a and b, ending the loop if so
-                        #        print("Bonds one bond away from atom " + str(a) +": " + str(bonds_a1)) # REMOVE ONCE FIXED
-                        #        print("Bonds one bond away from atom " + str(b) +": " + str(bonds_b1)) # REMOVE ONCE FIXED
+                            #        print("Bonds one bond away from atom " + str(a) +": " + str(bonds_a1)) # REMOVE ONCE FIXED
+                            #        print("Bonds one bond away from atom " + str(b) +": " + str(bonds_b1)) # REMOVE ONCE FIXED
                 for bd_a1 in bonds_a1:
                     for bd_b1 in bonds_b1:
                         if bd_a1 == bd_b1:
@@ -2092,14 +2097,14 @@ class Molecule:
                         break
                         # All cases with more than three bonds between atoms a and b are treated identically, so do not check for 4 bonds or more explicitly  
                         # Determine the value of the screening parameter for the number of covalent bonds separating a and b
-                    #    print("Number of bonds between atoms " + str((a, b)) + " = " + str(n_bonds)) # REMOVE ONCE FIXED
+                        #    print("Number of bonds between atoms " + str((a, b)) + " = " + str(n_bonds)) # REMOVE ONCE FIXED
         if n_bonds <= 2:
             elstat_AB = 0
         elif n_bonds == 3:
             elstat_AB = E_ES_14
         elif n_bonds >= 4:
             elstat_AB = 1
-        #    print("Screening parameter value for atoms " + str((a, b)) + " = " + str(elstat_AB)) # REMOVE ONCE FIXED
+        # print("Screening parameter value for atoms " + str((a, b)) + " = " + str(elstat_AB)) # REMOVE ONCE FIXED
         return elstat_AB
 
     def screen_RepDisp(self, a, b):
@@ -2269,10 +2274,10 @@ class Molecule:
 
         energy = 0.0
         if verbosity >= 1:
-            print("Initial energy for calculation = " + str(energy))
+            print("Initial energy for calculation       = {:> 16.8f}".format(energy))
         energy = energy + self.Ee_QM
         if verbosity >= 1:
-            print("With QM energy of equilibrium structure, energy = " + str(energy))
+            print(" + QM energy (equilibrium structure) = {:> 16.8f}".format(energy))
 
             #  if verbosity >= 1: # REMOVE ONCE FIXED
             #    print("Omitting stretching energy") # REMOVE ONCE FIXED
@@ -2285,7 +2290,7 @@ class Molecule:
             #      print("Adding energy for bond " + str([i.atom1, i.atom2]) + ", distance = " + str(distance) + " energy = " + str(i.energy(distance)) + " to total")
             energy = energy + i.energy(distance)
         if verbosity >= 1:
-            print("With bond stretches, energy = " + str(energy))
+            print(" + bond stretches                    = {:> 16.8f}".format(energy))
 
         for i in self.str13:
             distance = (cartCoordinates[3 * i.atom1] - cartCoordinates[3 * i.atom2]) ** 2
@@ -2294,7 +2299,7 @@ class Molecule:
             distance = math.sqrt(distance)
             energy = energy + i.energy(distance)
         if verbosity >= 1:
-            print("With 1,3-stretches, energy = " + str(energy))
+            print(" + 1,3-stretches                     = {:> 16.8f}".format(energy))
 
         for i in self.bend:
             d_bond_1 = (cartCoordinates[3 * i.atom1] - cartCoordinates[3 * i.atom2]) ** 2
@@ -2319,7 +2324,7 @@ class Molecule:
             theta = numpy.arccos(argument)
             energy = energy + i.energy(theta)
         if verbosity >= 1:
-            print("With bends, energy = " + str(energy))
+            print(" + angle bends                       = {:> 16.8f}".format(energy))
 
         for i in self.tors:
             # Calculate the vectors lying along bonds, and their cross products
@@ -2348,7 +2353,7 @@ class Molecule:
             psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
             energy = energy + i.energy(psi)
         if verbosity >= 1:
-            print("With torsion, energy = " + str(energy))
+            print(" + dihedral torsions                 = {:> 16.8f}".format(energy))
 
         for i in self.inv:
             # Calculate the vectors along bonds, and construct a vector plane_norm orthogonal to the plane of end ato
@@ -2395,7 +2400,7 @@ class Molecule:
 
             energy = energy + i.energy(phi)
         if verbosity >= 1:
-            print("With inversion, energy = " + str(energy))
+            print(" + inversions                        = {:> 16.8f}".format(energy))
             # Don't forget to add non-bonded interactions here
 
         #    print("Omitting all non-covalent interactions") # REMOVE ONCE FIXED
@@ -2453,8 +2458,8 @@ class Molecule:
         e_hbnd = -1 * e_hbnd
         energy = energy + e_hbnd
         if verbosity >= 1:
-            print("With hydrogen bonding, energy = " + str(energy))
-        #    print("Omitting halogen bonding interactions")
+            print(" + hydrogen bonds                    = {:> 16.8f}".format(energy))
+        # print("Omitting halogen bonding interactions")
 
         e_xbnd = 0.0
         for i in self.halogens:
@@ -2523,8 +2528,8 @@ class Molecule:
         e_xbnd = -1 * e_xbnd
         energy = energy + e_xbnd
         if verbosity >= 1:
-            print("With halogen bonding, energy = " + str(energy))
-        #    print("Omitting all Pauli repulsion interactions")
+            print(" + halogen bonds                     = {:> 16.8f}".format(energy))
+        # print("Omitting all Pauli repulsion interactions")
 
         e_Pauli = 0.0
         for i in range(len(self.atoms)):
@@ -2549,8 +2554,8 @@ class Molecule:
                 e_Pauli = e_Pauli + energy_AB
         energy = energy + e_Pauli
         if verbosity >= 1:
-            print("With Pauli repulsion, energy = " + str(energy))
-        #    print("Omitting all electrostatic interactions")
+            print(" + Pauli repulsion                   = {:> 16.8f}".format(energy))
+        # print("Omitting all electrostatic interactions")
 
         e_ES = 0.0
         for i in range(len(self.atoms)):
@@ -2572,11 +2577,11 @@ class Molecule:
                 elstat_AB = self.screen_ES(i, j)
                 energy_AB = potElectrostatic(elstat_AB, chgA, chgB, distance)
                 e_ES = e_ES + energy_AB
-            #        print("Adding ES energy for atoms " + str([i, j]) + " with charges " + str([chgA, chgB]) + ", distance " + str(distance) + ", screening parameter " + str(elstat_AB) + ", giving energy = " + str(energy_AB))
+                #        print("Adding ES energy for atoms " + str([i, j]) + " with charges " + str([chgA, chgB]) + ", distance " + str(distance) + ", screening parameter " + str(elstat_AB) + ", giving energy = " + str(energy_AB))
         energy = energy + e_ES
         if verbosity >= 1:
-            print("With electrostatic interactions, energy = " + str(energy))
-        #    print("Omitting all dispersion interactions")
+            print(" + (classic) electrostatics          = {:> 16.8f}".format(energy))
+        # print("Omitting all dispersion interactions")
 
         e_disp = 0.0
         for i in range(len(self.atoms)):
@@ -2607,13 +2612,13 @@ class Molecule:
                 e_disp = e_disp + energy_AB
         energy = energy + e_disp
         if verbosity >= 1:
-            print("With London dispersion, energy = " + str(energy))
+            print(" + London dispersion                 = {:> 16.8f}".format(energy))
 
         # Calculation of polarisation energy (for solute-solvent) to go here in future
         # Left out for version 1 as optional, only important as intermolecular interactions
 
         if verbosity >= 1:
-            print("Total energy: " + str(energy))
+            print("Total energy                         = {:> 16.8f}".format(energy))
         return energy
 
     def kdepFFEnergy(self, cartCoordinates, ForceConstants, verbosity=0, dtyp=1):
@@ -2637,7 +2642,7 @@ class Molecule:
         if verbosity >= 1:
             print("With QM energy of equilibrium structure, energy = " + str(energy))
 
-        #    if verbosity >= 1: # REMOVE ONCE FIXED
+        # if verbosity >= 1: # REMOVE ONCE FIXED
         #      print("Omitting stretching energy") # REMOVE ONCE FIXED
 
         for j in range(len(self.stretch)):
@@ -2784,7 +2789,7 @@ class Molecule:
         if verbosity >= 1:
             print("With inversion, energy = " + str(energy))
 
-        #    if verbosity >= 1: # REMOVE ONCE FIXED
+        # if verbosity >= 1: # REMOVE ONCE FIXED
         #      print("Omitting all non-covalent interactions") # REMOVE ONCE FIXED
 
         #    if verbosity >=1: # REMOVE ONCE FIXED
@@ -2846,7 +2851,7 @@ class Molecule:
         energy = energy + e_hbnd
         if verbosity >= 1:
             print("With hydrogen bonding, energy = " + str(energy))
-        #    print("Omitting halogen bonding interactions")
+        # print("Omitting halogen bonding interactions")
 
         e_xbnd = 0.0
         for i in self.halogens:
@@ -2916,7 +2921,7 @@ class Molecule:
         energy = energy + e_xbnd
         if verbosity >= 1:
             print("With halogen bonding, energy = " + str(energy))
-        #    print("Omitting all Pauli repulsion interactions")
+        # print("Omitting all Pauli repulsion interactions")
 
         e_Pauli = 0.0
         for i in range(len(self.atoms)):
@@ -2942,7 +2947,7 @@ class Molecule:
         energy = energy + e_Pauli
         if verbosity >= 1:
             print("With Pauli repulsion, energy = " + str(energy))
-        #    print("Omitting all electrostatic interactions")
+        # print("Omitting all electrostatic interactions")
 
         e_ES = 0.0
         for i in range(len(self.atoms)):
@@ -2964,11 +2969,11 @@ class Molecule:
                 elstat_AB = self.screen_ES(i, j)
                 energy_AB = potElectrostatic(elstat_AB, chgA, chgB, distance)
                 e_ES = e_ES + energy_AB
-            #        print("Adding ES energy for atoms " + str([i, j]) + " with charges " + str([chgA, chgB]) + ", distance " + str(distance) + ", screening parameter " + str(elstat_AB) + ", giving energy = " + str(energy_AB))
+                #        print("Adding ES energy for atoms " + str([i, j]) + " with charges " + str([chgA, chgB]) + ", distance " + str(distance) + ", screening parameter " + str(elstat_AB) + ", giving energy = " + str(energy_AB))
         energy = energy + e_ES
         if verbosity >= 1:
             print("With electrostatic interactions, energy = " + str(energy))
-        #    print("Omitting all dispersion interactions")
+        # print("Omitting all dispersion interactions")
 
         e_disp = 0.0
         for i in range(len(self.atoms)):
@@ -3152,7 +3157,6 @@ class Molecule:
                                                                       qn2symb(molbasis[j - 1][2], molbasis[j - 1][3])) +
                                   s[j][i:i + 65])
                 print("")
-
 
         # Create Hamiltonian matrix
         hamiltonian = np.zeros((len(molbasis), len(molbasis)))
@@ -3359,33 +3363,33 @@ class Molecule:
                         mullikenGrossAOPop[i] += mullikenNetAOandOvlPop[i][j] / 2.0
             # Print routine for the gross populations
             print("\nGross Mulliken AO populations")
-            for i in range(0,len(mullikenGrossAOPop)):
+            for i in range(0, len(mullikenGrossAOPop)):
                 print("{: >3}({: >3}){:>2}{}{:<2} {: .6f}".format(self.atoms[molbasis[i][0]].symbol,
-                                                                      molbasis[i][0], molbasis[i][1],
-                                                                      qn2symb(molbasis[i][2]),
-                                                                      qn2symb(molbasis[i][2], molbasis[i][3]), mullikenGrossAOPop[i]))
+                                                                  molbasis[i][0], molbasis[i][1],
+                                                                  qn2symb(molbasis[i][2]),
+                                                                  qn2symb(molbasis[i][2], molbasis[i][3]),
+                                                                  mullikenGrossAOPop[i]))
             print("")
             # Next calculate gross Mulliken atom populations
             mullikenGrossAtomPop = np.zeros(self.numatoms())
             for i in range(0, len(mullikenGrossAOPop)):
                 mullikenGrossAtomPop[molbasis[i][0]] += mullikenGrossAOPop[i]
             print("\nGross Mulliken atomic populations")
-            for i in range(0,len(mullikenGrossAtomPop)):
+            for i in range(0, len(mullikenGrossAtomPop)):
                 print("{: >3}({: >3}) {: .6f}".format(self.atoms[i].symbol,
-                                                                      i, mullikenGrossAtomPop[i]))
+                                                      i, mullikenGrossAtomPop[i]))
 
             print("")
             # Next determine Mulliken net atomic charges
             mullikenNetAtomCharge = np.zeros(self.numatoms())
             for i in range(0, len(mullikenNetAtomCharge)):
-                mullikenNetAtomCharge[i] += self.atoms[i].valele-mullikenGrossAtomPop[i]
+                mullikenNetAtomCharge[i] += self.atoms[i].valele - mullikenGrossAtomPop[i]
             print("\nNet Mulliken atomic charges")
-            for i in range(0,len(mullikenGrossAtomPop)):
+            for i in range(0, len(mullikenGrossAtomPop)):
                 print("{: >3}({: >3}) {: .6f}".format(self.atoms[i].symbol,
-                                                                      i, mullikenNetAtomCharge[i]))
+                                                      i, mullikenNetAtomCharge[i]))
 
             print("")
-
 
         # Return the previously calculated total EHT energy
         return energy
@@ -3469,14 +3473,14 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                     else:
                         break
         if verbosity >= 1:
-            print("\nReading of Mulliken charges finished. \nAdding charges to atoms in WellFARe molecule: ",
+            print("\nReading of Mulliken charges finished. \nAdding QM atomic charges to atoms in WellFARe molecule: ",
                   molecule.name)
         for i in charges:
             readBuffer = i.split()
             n = int(readBuffer[0]) - 1
             molecule.atoms[n].setq(float(readBuffer[2]))
             if verbosity >= 2:
-                print(molecule.atoms[n].__repr__())
+                print(" {:<3} ({:3d}) (Charge: {: .3f} e)".format(molecule.atoms[n].symbol, n, molecule.atoms[n].QMcharge))
         f.close()
     # Read through ORCA file, read *last* set of cartesian coordinates
     elif program == "orca":
@@ -3536,7 +3540,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             molecule.atoms[n].setq(readBuffer[
                                        3])  # Again assuming that the charge is the 4th list entry, with ':' having been split on its own.
             if verbosity >= 2:
-                print(molecule.atoms[n].__repr__())
+                print(" {:<3} ({:3d}) (Charge: {: .3f} e)".format(molecule.atoms[n].symbol, n, molecule.atoms[n].QMcharge))
         f.close()
 
     # EQUILIBRIUM ENERGY READING SECTION
@@ -3695,7 +3699,8 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         for i in range(0, molecule.numatoms()):
             for j in range(i + 1, molecule.numatoms()):
                 if molecule.atmatmdist(i, j) <= (
-                    SymbolToRadius[molecule.atoms[i].symbol] + SymbolToRadius[molecule.atoms[j].symbol]) * distfactor:
+                            SymbolToRadius[molecule.atoms[i].symbol] + SymbolToRadius[
+                            molecule.atoms[j].symbol]) * distfactor:
                     molecule.addBond(i, j)
                     if verbosity >= 2:
                         print(
@@ -3787,109 +3792,110 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                         molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0],
                         math.degrees(molecule.dihedralangle(len(molecule.dihedrals) - 1))))
 
-    # Same for threefolds: Use angles to determine where they are
-    if verbosity >= 2:
-        print("\nAdding threefolds to WellFARe molecule: ", molecule.name)
-    for i in range(0, len(molecule.angles)):
-        for j in range(i + 1, len(molecule.angles)):
-            for k in range(j + 1, len(molecule.angles)):
-                if molecule.angles[i][1] == molecule.angles[j][1] == molecule.angles[k][1]:
-                    if molecule.angles[i][0] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][
-                        2] and molecule.angles[i][2] == molecule.angles[k][0]:
-                        molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][2],
-                                              molecule.angles[i][2])
-                        if verbosity >= 2:
-                            print(
-                                " {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(
-                                    molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1],
-                                    molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
-                                    molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2],
-                                    molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2],
-                                    math.degrees(molecule.outofplaneangle(len(molecule.threefolds) - 1))))
-                    if molecule.angles[i][0] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][
-                        0] and molecule.angles[i][2] == molecule.angles[k][2]:
-                        molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][2],
-                                              molecule.angles[i][2])
-                        if verbosity >= 2:
-                            print(
-                                " {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(
-                                    molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1],
-                                    molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
-                                    molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2],
-                                    molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2],
-                                    math.degrees(molecule.outofplaneangle(len(molecule.threefolds) - 1))))
-                    if molecule.angles[i][0] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][
-                        0] and molecule.angles[i][2] == molecule.angles[k][2]:
-                        molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][0],
-                                              molecule.angles[i][2])
-                        if verbosity >= 2:
-                            print(
-                                " {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(
-                                    molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1],
-                                    molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
-                                    molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0],
-                                    molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2],
-                                    math.degrees(molecule.outofplaneangle(len(molecule.threefolds) - 1))))
-                    if molecule.angles[i][0] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][
-                        2] and molecule.angles[i][2] == molecule.angles[k][0]:
-                        molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][0],
-                                              molecule.angles[i][2])
-                        if verbosity >= 2:
-                            print(
-                                " {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(
-                                    molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1],
-                                    molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
-                                    molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0],
-                                    molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2],
-                                    math.degrees(molecule.outofplaneangle(len(molecule.threefolds) - 1))))
-                    if molecule.angles[i][2] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][
-                        0] and molecule.angles[i][0] == molecule.angles[k][2]:
-                        molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][2], molecule.angles[j][2],
-                                              molecule.angles[i][0])
-                        if verbosity >= 2:
-                            print(
-                                " {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(
-                                    molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1],
-                                    molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2],
-                                    molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2],
-                                    molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
-                                    math.degrees(molecule.outofplaneangle(len(molecule.threefolds) - 1))))
-                    if molecule.angles[i][2] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][
-                        2] and molecule.angles[i][0] == molecule.angles[k][0]:
-                        molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][2], molecule.angles[j][2],
-                                              molecule.angles[i][0])
-                        if verbosity >= 2:
-                            print(
-                                " {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(
-                                    molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1],
-                                    molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2],
-                                    molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2],
-                                    molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
-                                    math.degrees(molecule.outofplaneangle(len(molecule.threefolds) - 1))))
-                    if molecule.angles[i][2] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][
-                        0] and molecule.angles[i][0] == molecule.angles[k][2]:
-                        molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][2], molecule.angles[j][0],
-                                              molecule.angles[i][0])
-                        if verbosity >= 2:
-                            print(
-                                " {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(
-                                    molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1],
-                                    molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2],
-                                    molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0],
-                                    molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
-                                    math.degrees(molecule.outofplaneangle(len(molecule.threefolds) - 1))))
-                    if molecule.angles[i][2] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][
-                        2] and molecule.angles[i][0] == molecule.angles[k][0]:
-                        molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][2], molecule.angles[j][0],
-                                              molecule.angles[i][0])
-                        if verbosity >= 2:
-                            print(
-                                " {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(
-                                    molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1],
-                                    molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2],
-                                    molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0],
-                                    molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
-                                    math.degrees(molecule.outofplaneangle(len(molecule.threefolds) - 1))))
+# Postpone dealing with inversions to later...
+    # # Same for threefolds: Use angles to determine where they are
+    # if verbosity >= 2:
+    #     print("\nAdding threefolds to WellFARe molecule: ", molecule.name)
+    # for i in range(0, len(molecule.angles)):
+    #     for j in range(i + 1, len(molecule.angles)):
+    #         for k in range(j + 1, len(molecule.angles)):
+    #             if molecule.angles[i][1] == molecule.angles[j][1] == molecule.angles[k][1]:
+    #                 if molecule.angles[i][0] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][
+    #                     2] and molecule.angles[i][2] == molecule.angles[k][0]:
+    #                     molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][2],
+    #                                           molecule.angles[i][2])
+    #                     if verbosity >= 2:
+    #                         print(
+    #                             " {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(
+    #                                 molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1],
+    #                                 molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
+    #                                 molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2],
+    #                                 molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2],
+    #                                 math.degrees(molecule.outofplaneangle(len(molecule.threefolds) - 1))))
+    #                 if molecule.angles[i][0] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][
+    #                     0] and molecule.angles[i][2] == molecule.angles[k][2]:
+    #                     molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][2],
+    #                                           molecule.angles[i][2])
+    #                     if verbosity >= 2:
+    #                         print(
+    #                             " {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(
+    #                                 molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1],
+    #                                 molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
+    #                                 molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2],
+    #                                 molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2],
+    #                                 math.degrees(molecule.outofplaneangle(len(molecule.threefolds) - 1))))
+    #                 if molecule.angles[i][0] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][
+    #                     0] and molecule.angles[i][2] == molecule.angles[k][2]:
+    #                     molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][0],
+    #                                           molecule.angles[i][2])
+    #                     if verbosity >= 2:
+    #                         print(
+    #                             " {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(
+    #                                 molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1],
+    #                                 molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
+    #                                 molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0],
+    #                                 molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2],
+    #                                 math.degrees(molecule.outofplaneangle(len(molecule.threefolds) - 1))))
+    #                 if molecule.angles[i][0] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][
+    #                     2] and molecule.angles[i][2] == molecule.angles[k][0]:
+    #                     molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][0], molecule.angles[j][0],
+    #                                           molecule.angles[i][2])
+    #                     if verbosity >= 2:
+    #                         print(
+    #                             " {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(
+    #                                 molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1],
+    #                                 molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
+    #                                 molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0],
+    #                                 molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2],
+    #                                 math.degrees(molecule.outofplaneangle(len(molecule.threefolds) - 1))))
+    #                 if molecule.angles[i][2] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][
+    #                     0] and molecule.angles[i][0] == molecule.angles[k][2]:
+    #                     molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][2], molecule.angles[j][2],
+    #                                           molecule.angles[i][0])
+    #                     if verbosity >= 2:
+    #                         print(
+    #                             " {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(
+    #                                 molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1],
+    #                                 molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2],
+    #                                 molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2],
+    #                                 molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
+    #                                 math.degrees(molecule.outofplaneangle(len(molecule.threefolds) - 1))))
+    #                 if molecule.angles[i][2] == molecule.angles[j][0] and molecule.angles[j][2] == molecule.angles[k][
+    #                     2] and molecule.angles[i][0] == molecule.angles[k][0]:
+    #                     molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][2], molecule.angles[j][2],
+    #                                           molecule.angles[i][0])
+    #                     if verbosity >= 2:
+    #                         print(
+    #                             " {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(
+    #                                 molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1],
+    #                                 molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2],
+    #                                 molecule.atoms[molecule.angles[j][2]].symbol, molecule.angles[j][2],
+    #                                 molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
+    #                                 math.degrees(molecule.outofplaneangle(len(molecule.threefolds) - 1))))
+    #                 if molecule.angles[i][2] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][
+    #                     0] and molecule.angles[i][0] == molecule.angles[k][2]:
+    #                     molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][2], molecule.angles[j][0],
+    #                                           molecule.angles[i][0])
+    #                     if verbosity >= 2:
+    #                         print(
+    #                             " {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(
+    #                                 molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1],
+    #                                 molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2],
+    #                                 molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0],
+    #                                 molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
+    #                                 math.degrees(molecule.outofplaneangle(len(molecule.threefolds) - 1))))
+    #                 if molecule.angles[i][2] == molecule.angles[j][2] and molecule.angles[j][0] == molecule.angles[k][
+    #                     2] and molecule.angles[i][0] == molecule.angles[k][0]:
+    #                     molecule.addThreefold(molecule.angles[i][1], molecule.angles[i][2], molecule.angles[j][0],
+    #                                           molecule.angles[i][0])
+    #                     if verbosity >= 2:
+    #                         print(
+    #                             " {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) ({: 7.2f} deg)".format(
+    #                                 molecule.atoms[molecule.angles[i][1]].symbol, molecule.angles[i][1],
+    #                                 molecule.atoms[molecule.angles[i][2]].symbol, molecule.angles[i][2],
+    #                                 molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0],
+    #                                 molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
+    #                                 math.degrees(molecule.outofplaneangle(len(molecule.threefolds) - 1))))
 
     # Now that we know bonds, angles, dihedrals and threefolds we determine the corresponding force constants
     # Bonds first:
@@ -3926,36 +3932,37 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
     # Note "b" as an argument in the previouw line is a placeholder so that indices are consistent in the FFstretch class
     # it  would need replacing with the appropriate value to make using the  Morse potential an option
 
-    # Then 1,3-stretches:
-    if verbosity >= 2:
-        print("\nAdding Force Field 1,3-bond stretching terms to WellFARe molecule: ", molecule.name)
-    for i in range(0, len(molecule.angles)):
-        a = numpy.array([molecule.atoms[molecule.angles[i][0]].coord[0], molecule.atoms[molecule.angles[i][0]].coord[1],
-                         molecule.atoms[molecule.angles[i][0]].coord[2]])
-        b = numpy.array([molecule.atoms[molecule.angles[i][2]].coord[0], molecule.atoms[molecule.angles[i][2]].coord[1],
-                         molecule.atoms[molecule.angles[i][2]].coord[2]])
-        c1 = (a - b)
-        c2 = (b - a)
-        c = numpy.zeros(molecule.numatoms() * 3)
-        c[3 * molecule.angles[i][0]] = c1[0]
-        c[3 * molecule.angles[i][0] + 1] = c1[1]
-        c[3 * molecule.angles[i][0] + 2] = c1[2]
-        c[3 * molecule.angles[i][1]] = c2[0]
-        c[3 * molecule.angles[i][1] + 1] = c2[1]
-        c[3 * molecule.angles[i][1] + 2] = c2[2]
-        c = c / numpy.linalg.norm(c)
-        fc = numpy.dot(numpy.dot(c, H), numpy.transpose(c))
-        if fc < 0.002:
-            ProgramWarning()
-            print(" This force constant is smaller than 0.002")
-        if verbosity >= 2:
-            print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(
-                molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
-                molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], fc))
-        molecule.addFFStr13(molecule.angles[i][0], molecule.angles[i][2],
-                            molecule.atmatmdist(molecule.angles[i][0], molecule.angles[i][2]), 4,
-                            [fc, "b", molecule.atoms[molecule.angles[i][0]].symbol,
-                             molecule.atoms[molecule.angles[i][2]].symbol])
+# There's a bug in this code that sometimes mis-identifies where 1,3 bond stretches are (example: H2O2)
+    # # Then 1,3-stretches:
+    # if verbosity >= 2:
+    #     print("\nAdding Force Field 1,3-bond stretching terms to WellFARe molecule: ", molecule.name)
+    # for i in range(0, len(molecule.angles)):
+    #     a = numpy.array([molecule.atoms[molecule.angles[i][0]].coord[0], molecule.atoms[molecule.angles[i][0]].coord[1],
+    #                      molecule.atoms[molecule.angles[i][0]].coord[2]])
+    #     b = numpy.array([molecule.atoms[molecule.angles[i][2]].coord[0], molecule.atoms[molecule.angles[i][2]].coord[1],
+    #                      molecule.atoms[molecule.angles[i][2]].coord[2]])
+    #     c1 = (a - b)
+    #     c2 = (b - a)
+    #     c = numpy.zeros(molecule.numatoms() * 3)
+    #     c[3 * molecule.angles[i][0]] = c1[0]
+    #     c[3 * molecule.angles[i][0] + 1] = c1[1]
+    #     c[3 * molecule.angles[i][0] + 2] = c1[2]
+    #     c[3 * molecule.angles[i][1]] = c2[0]
+    #     c[3 * molecule.angles[i][1] + 1] = c2[1]
+    #     c[3 * molecule.angles[i][1] + 2] = c2[2]
+    #     c = c / numpy.linalg.norm(c)
+    #     fc = numpy.dot(numpy.dot(c, H), numpy.transpose(c))
+    #     if fc < 0.002:
+    #         ProgramWarning()
+    #         print(" This force constant is smaller than 0.002")
+    #     if verbosity >= 2:
+    #         print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(
+    #             molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
+    #             molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0], fc))
+    #     molecule.addFFStr13(molecule.angles[i][0], molecule.angles[i][2],
+    #                         molecule.atmatmdist(molecule.angles[i][0], molecule.angles[i][2]), 4,
+    #                         [fc, "b", molecule.atoms[molecule.angles[i][0]].symbol,
+    #                          molecule.atoms[molecule.angles[i][2]].symbol])
 
     # Then angle bends:
     if verbosity >= 2:
@@ -3981,7 +3988,9 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         c[3 * molecule.angles[i][2] + 2] = bdprime[2]
         # Temporary fix to avoid divide-by-zero errors follows, may be replaced by better check in future
         if c.all() == numpy.zeros(molecule.numatoms() * 3).all():
-            print("Zero vector returned while extracting angle bend force constants, skipping normalisation")
+            if verbosity >= 3:
+                print("Zero vector returned while extracting angle bend force constants, skipping normalisation")
+                print("(This is nothing to worry about)")
         else:
             c = c / numpy.linalg.norm(c)
         fc = numpy.dot(numpy.dot(c, H), numpy.transpose(c))
@@ -4033,12 +4042,14 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         c[3 * molecule.dihedrals[i][2] + 1] = p2[1]
         c[3 * molecule.dihedrals[i][2] + 2] = p2[2]
         if c.all() == numpy.zeros(molecule.numatoms() * 3).all():
-            print(
-                "Zero vector returned while extracting force constants, skipping normalisation")  # Avoids fc=nan error for cases where all three atoms lie in the plane of two coordinate axes
+            if verbosity >= 3:
+                # Avoids fc=nan error for cases where all three atoms lie in the plane of two coordinate axes
+                print("Zero vector returned while extracting force constants, skipping normalisation")
+                print("(This is nothing to worry about)")
         else:
             c = c / numpy.linalg.norm(c)
         # Note that the above is just an initial fix for cases where there would otherwise be a divide-by-zero error
-        # These arise where several atoms have 0 in one coordinate which propogates through cross-products and are a 
+        # These arise where several atoms have 0 in one coordinate which propagates through cross-products and are a
         # side-effect of orienting molecule along principal axes from the centre of mass as bonds lie in a coordinate plane
         # Better fix may be possible/necessary - could translate molecule, for instance
         fc = numpy.dot(numpy.dot(c, H), numpy.transpose(c))
@@ -4062,152 +4073,153 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                                molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3])])
     # As for bends, arg list now includes atom symbols and bond lengths, which could be separated out later
 
-    # Threefold inversions last
-    if verbosity >= 2:
-        print("\nAdding Force Field inversion terms ro WellFARe molecule: ", molecule.name)
-    # (Extracting force constants to be implemented later)
-    for i in range(0, len(molecule.threefolds)):
-        a = numpy.array(
-            [molecule.atoms[molecule.threefolds[i][0]].coord[0], molecule.atoms[molecule.threefolds[i][0]].coord[1],
-             molecule.atoms[molecule.threefolds[i][0]].coord[2]])
-        b = numpy.array(
-            [molecule.atoms[molecule.threefolds[i][1]].coord[0], molecule.atoms[molecule.threefolds[i][1]].coord[1],
-             molecule.atoms[molecule.threefolds[i][1]].coord[2]])
-        c = numpy.array(
-            [molecule.atoms[molecule.threefolds[i][2]].coord[0], molecule.atoms[molecule.threefolds[i][2]].coord[1],
-             molecule.atoms[molecule.threefolds[i][2]].coord[2]])
-        d = numpy.array(
-            [molecule.atoms[molecule.threefolds[i][3]].coord[0], molecule.atoms[molecule.threefolds[i][3]].coord[1],
-             molecule.atoms[molecule.threefolds[i][3]].coord[2]])
-        ba = a - b
-        cb = b - c
-        db = b - d
-        dc = c - d
-        bprime = numpy.cross(-cb, -db)
-        cprime = numpy.cross(-dc, cb)
-        dprime = numpy.cross(db, dc)
-        aprime = numpy.cross(bprime, numpy.cross(-ba, bprime)) / numpy.dot(bprime, bprime)
-        c = numpy.zeros(molecule.numatoms() * 3)
-        c[3 * molecule.threefolds[i][0]] = aprime[0]
-        c[3 * molecule.threefolds[i][0] + 1] = aprime[1]
-        c[3 * molecule.threefolds[i][0] + 2] = aprime[2]
-        c[3 * molecule.threefolds[i][1]] = bprime[0]
-        c[3 * molecule.threefolds[i][1] + 1] = bprime[1]
-        c[3 * molecule.threefolds[i][1] + 2] = bprime[2]
-        c[3 * molecule.threefolds[i][2]] = cprime[0]
-        c[3 * molecule.threefolds[i][2] + 1] = cprime[1]
-        c[3 * molecule.threefolds[i][2] + 2] = cprime[2]
-        c[3 * molecule.threefolds[i][3]] = dprime[0]
-        c[3 * molecule.threefolds[i][3] + 1] = dprime[1]
-        c[3 * molecule.threefolds[i][3] + 2] = dprime[2]
-        # Temporary fix to avoid divide-by-zero errors follows, may be replaced by better check in future
-        if c.all() == numpy.zeros(molecule.numatoms() * 3).all():
-            print("Zero vector returned while extracting inversion force constants, skipping normalisation")
-        else:
-            c = c / numpy.linalg.norm(c)
-        fc = numpy.dot(numpy.dot(c, H), numpy.transpose(c))
-        if fc < 0.002:
-            ProgramWarning()
-            print(" This force constant is smaller than 0.002")
-        if verbosity >= 2:
-            print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(
-                molecule.atoms[molecule.threefolds[i][0]].symbol, molecule.threefolds[i][0],
-                molecule.atoms[molecule.threefolds[i][1]].symbol, molecule.threefolds[i][1],
-                molecule.atoms[molecule.threefolds[i][2]].symbol, molecule.threefolds[i][2],
-                molecule.atoms[molecule.threefolds[i][3]].symbol, molecule.threefolds[i][3], fc))
-        molecule.addFFInversion(molecule.threefolds[i][0], molecule.threefolds[i][1], molecule.threefolds[i][2],
-                                molecule.threefolds[i][3], molecule.outofplaneangle(i), 2,
-                                [fc, molecule.atoms[molecule.threefolds[i][0]].symbol,
-                                 molecule.atoms[molecule.threefolds[i][1]].symbol,
-                                 molecule.atoms[molecule.threefolds[i][2]].symbol,
-                                 molecule.atoms[molecule.threefolds[i][3]].symbol,
-                                 molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][1]),
-                                 molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][2]),
-                                 molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][3])])
 
-    # Moving to noncovalent interactions
-    # Locate hydrogen atoms and add them to the list hatoms
-    if verbosity >= 2:
-        print("\nListing hydrogen atoms in WellFARe molecule: ", molecule.name)
-    for i in range(0, len(molecule.atoms)):
-        if molecule.atoms[i].symbol == "H":
-            molecule.addHAtom(i)
-            if verbosity >= 2:
-                print(molecule.atoms[i].symbol, molecule.atoms[i].coord)
-
-    # Locate high electronegatvity atoms and add them to the list highENatoms
-    if verbosity >= 2:
-        print("Listing highly electronegative atoms in WellFARe molecule: ", molecule.name)
-    for i in range(0, len(molecule.atoms)):
-        sym = molecule.atoms[i].symbol
-        if sym == "N" or sym == "O" or sym == "F" or sym == "S" or sym == "Cl":
-            molecule.addhighENatom(i)
-            if verbosity >= 2:
-                print(sym, molecule.atoms[i].coord)
-
-    # Locate halogen atoms and add them to the list halogens
-    if verbosity >= 2:
-        print("Listing non-F halogen atoms in WellFARe molecule: ", molecule.name)
-    for i in range(0, len(molecule.atoms)):
-        sym = molecule.atoms[i].symbol
-        if sym == "Cl" or sym == "Br" or sym == "I" or sym == "At":
-            molecule.addXatom(i)
-            if verbosity >= 2:
-                print(sym, molecule.atoms[i].coord)
-
-
-    # Locate hydrogen bonding triples AHB and create instances of FFHBond
-    if verbosity >= 2:
-        print("\nAdding hydrogen bonds to WellFARe molecule: ", molecule.name)
-    for i in range(0, len(molecule.bonds)):
-        sym1 = molecule.atoms[molecule.bonds[i][0]].symbol
-        sym2 = molecule.atoms[molecule.bonds[i][1]].symbol
-        if sym1 == "H":
-            atH = molecule.bonds[i][0]
-            if sym2 == "N" or sym2 == "O" or sym2 == "F" or sym2 == "S" or sym2 == "Cl":
-                atA = molecule.bonds[i][1]
-                for j in range(0, len(molecule.atoms)):
-                    sym3 = molecule.atoms[j].symbol
-                    if sym3 == "N" or sym3 == "O" or sym3 == "F" or sym3 == "S" or sym3 == "Cl":
-                        r = molecule.atmatmdist(atH, j)
-                        r_check = SymbolToVdWRadius[molecule.atoms[atH].symbol] + SymbolToVdWRadius[
-                            molecule.atoms[j].symbol]  # Using sum of van der Waals radii
-                        if r <= r_check and j != atA:
-                            theta = molecule.anybondangle(atA, atH, j)
-                            molecule.addFFHBond(atA, atH, j, theta, 1,
-                                                [sym2, molecule.atoms[atA].charge, sym1, molecule.atoms[atH].charge,
-                                                 sym3, molecule.atoms[j].charge, molecule.atmatmdist(atA, atH),
-                                                 molecule.atmatmdist(j, atH), molecule.atmatmdist(atA, j)])
-                            if verbosity >= 2:
-                                print(
-                                    " ({:<3}, {:<3}, {:<3} {:3.2f} deg), {:<3}, [{:<3}, {:3.2f}, {:<3}, {:3.2f}, {:<3}, {:3.2f}, {:3.2f}, {:3.2f}, {:3.2f}]".format(
-                                        atA, atH, j, theta, 1, sym2, molecule.atoms[atA].charge, sym1,
-                                        molecule.atoms[atH].charge, sym3, molecule.atoms[j].charge,
-                                        molecule.atmatmdist(atA, atH), molecule.atmatmdist(j, atH),
-                                        molecule.atmatmdist(atA, j)))
-        elif sym2 == "H":
-            atH = molecule.bonds[i][1]
-            if sym1 == "N" or sym1 == "O" or sym1 == "F" or sym1 == "S" or sym1 == "Cl":
-                atA = molecule.bonds[i][0]
-                for j in range(0, len(molecule.atoms)):
-                    sym3 = molecule.atoms[j].symbol
-                    if sym3 == "N" or sym3 == "O" or sym3 == "F" or sym3 == "S" or sym3 == "Cl":
-                        r = molecule.atmatmdist(atH, j)
-                        r_check = SymbolToVdWRadius[sym1] + SymbolToVdWRadius[
-                            sym2]  # Sum of van der Waals radii again used as check
-                        if r <= r_check and j != atA:
-                            theta = molecule.anybondangle(atA, atH, j)
-                            molecule.addFFHBond(atA, atH, j, theta, 1,
-                                                [sym1, molecule.atoms[atA].charge, sym2, molecule.atoms[atH].charge,
-                                                 sym3, molecule.atoms[j].charge, molecule.atmatmdist(atA, atH),
-                                                 molecule.atmatmdist(j, atH), molecule.atmatmdist(atA, j)])
-                            if verbosity >= 2:
-                                print(
-                                    " ({:<3}, {:<3}, {:<3} {:3.2f} deg), {:<3}, [{:<3}, {:3.2f}, {:<3}, {:3.2f}, {:<3}, {:3.2f}, {:3.2f}, {:3.2f}, {:3.2f}]".format(
-                                        atA, atH, j, theta, 1, sym1, molecule.atoms[atA].charge, sym2,
-                                        molecule.atoms[atH].charge, sym3, molecule.atoms[j].charge,
-                                        molecule.atmatmdist(atA, atH), molecule.atmatmdist(j, atH),
-                                        molecule.atmatmdist(atA, j)))
+# Here are the more complicated inversions, H-bonds and X-bonds - deal with this later!
+    # # Threefold inversions last
+    # if verbosity >= 2:
+    #     print("\nAdding Force Field inversion terms to WellFARe molecule: ", molecule.name)
+    # # (Extracting force constants to be implemented later)
+    # for i in range(0, len(molecule.threefolds)):
+    #     a = numpy.array(
+    #         [molecule.atoms[molecule.threefolds[i][0]].coord[0], molecule.atoms[molecule.threefolds[i][0]].coord[1],
+    #          molecule.atoms[molecule.threefolds[i][0]].coord[2]])
+    #     b = numpy.array(
+    #         [molecule.atoms[molecule.threefolds[i][1]].coord[0], molecule.atoms[molecule.threefolds[i][1]].coord[1],
+    #          molecule.atoms[molecule.threefolds[i][1]].coord[2]])
+    #     c = numpy.array(
+    #         [molecule.atoms[molecule.threefolds[i][2]].coord[0], molecule.atoms[molecule.threefolds[i][2]].coord[1],
+    #          molecule.atoms[molecule.threefolds[i][2]].coord[2]])
+    #     d = numpy.array(
+    #         [molecule.atoms[molecule.threefolds[i][3]].coord[0], molecule.atoms[molecule.threefolds[i][3]].coord[1],
+    #          molecule.atoms[molecule.threefolds[i][3]].coord[2]])
+    #     ba = a - b
+    #     cb = b - c
+    #     db = b - d
+    #     dc = c - d
+    #     bprime = numpy.cross(-cb, -db)
+    #     cprime = numpy.cross(-dc, cb)
+    #     dprime = numpy.cross(db, dc)
+    #     aprime = numpy.cross(bprime, numpy.cross(-ba, bprime)) / numpy.dot(bprime, bprime)
+    #     c = numpy.zeros(molecule.numatoms() * 3)
+    #     c[3 * molecule.threefolds[i][0]] = aprime[0]
+    #     c[3 * molecule.threefolds[i][0] + 1] = aprime[1]
+    #     c[3 * molecule.threefolds[i][0] + 2] = aprime[2]
+    #     c[3 * molecule.threefolds[i][1]] = bprime[0]
+    #     c[3 * molecule.threefolds[i][1] + 1] = bprime[1]
+    #     c[3 * molecule.threefolds[i][1] + 2] = bprime[2]
+    #     c[3 * molecule.threefolds[i][2]] = cprime[0]
+    #     c[3 * molecule.threefolds[i][2] + 1] = cprime[1]
+    #     c[3 * molecule.threefolds[i][2] + 2] = cprime[2]
+    #     c[3 * molecule.threefolds[i][3]] = dprime[0]
+    #     c[3 * molecule.threefolds[i][3] + 1] = dprime[1]
+    #     c[3 * molecule.threefolds[i][3] + 2] = dprime[2]
+    #     # Temporary fix to avoid divide-by-zero errors follows, may be replaced by better check in future
+    #     if c.all() == numpy.zeros(molecule.numatoms() * 3).all():
+    #         print("Zero vector returned while extracting inversion force constants, skipping normalisation")
+    #     else:
+    #         c = c / numpy.linalg.norm(c)
+    #     fc = numpy.dot(numpy.dot(c, H), numpy.transpose(c))
+    #     if fc < 0.002:
+    #         ProgramWarning()
+    #         print(" This force constant is smaller than 0.002")
+    #     if verbosity >= 2:
+    #         print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(
+    #             molecule.atoms[molecule.threefolds[i][0]].symbol, molecule.threefolds[i][0],
+    #             molecule.atoms[molecule.threefolds[i][1]].symbol, molecule.threefolds[i][1],
+    #             molecule.atoms[molecule.threefolds[i][2]].symbol, molecule.threefolds[i][2],
+    #             molecule.atoms[molecule.threefolds[i][3]].symbol, molecule.threefolds[i][3], fc))
+    #     molecule.addFFInversion(molecule.threefolds[i][0], molecule.threefolds[i][1], molecule.threefolds[i][2],
+    #                             molecule.threefolds[i][3], molecule.outofplaneangle(i), 2,
+    #                             [fc, molecule.atoms[molecule.threefolds[i][0]].symbol,
+    #                              molecule.atoms[molecule.threefolds[i][1]].symbol,
+    #                              molecule.atoms[molecule.threefolds[i][2]].symbol,
+    #                              molecule.atoms[molecule.threefolds[i][3]].symbol,
+    #                              molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][1]),
+    #                              molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][2]),
+    #                              molecule.atmatmdist(molecule.threefolds[i][0], molecule.threefolds[i][3])])
+    #
+    # # Moving to noncovalent interactions
+    # # Locate hydrogen atoms and add them to the list hatoms
+    # if verbosity >= 2:
+    #     print("\nListing hydrogen atoms in WellFARe molecule: ", molecule.name)
+    # for i in range(0, len(molecule.atoms)):
+    #     if molecule.atoms[i].symbol == "H":
+    #         molecule.addHAtom(i)
+    #         if verbosity >= 2:
+    #             print(molecule.atoms[i].symbol, molecule.atoms[i].coord)
+    #
+    # # Locate high electronegatvity atoms and add them to the list highENatoms
+    # if verbosity >= 2:
+    #     print("Listing highly electronegative atoms in WellFARe molecule: ", molecule.name)
+    # for i in range(0, len(molecule.atoms)):
+    #     sym = molecule.atoms[i].symbol
+    #     if sym == "N" or sym == "O" or sym == "F" or sym == "S" or sym == "Cl":
+    #         molecule.addhighENatom(i)
+    #         if verbosity >= 2:
+    #             print(sym, molecule.atoms[i].coord)
+    #
+    # # Locate halogen atoms and add them to the list halogens
+    # if verbosity >= 2:
+    #     print("Listing non-F halogen atoms in WellFARe molecule: ", molecule.name)
+    # for i in range(0, len(molecule.atoms)):
+    #     sym = molecule.atoms[i].symbol
+    #     if sym == "Cl" or sym == "Br" or sym == "I" or sym == "At":
+    #         molecule.addXatom(i)
+    #         if verbosity >= 2:
+    #             print(sym, molecule.atoms[i].coord)
+    #
+    # # Locate hydrogen bonding triples AHB and create instances of FFHBond
+    # if verbosity >= 2:
+    #     print("\nAdding hydrogen bonds to WellFARe molecule: ", molecule.name)
+    # for i in range(0, len(molecule.bonds)):
+    #     sym1 = molecule.atoms[molecule.bonds[i][0]].symbol
+    #     sym2 = molecule.atoms[molecule.bonds[i][1]].symbol
+    #     if sym1 == "H":
+    #         atH = molecule.bonds[i][0]
+    #         if sym2 == "N" or sym2 == "O" or sym2 == "F" or sym2 == "S" or sym2 == "Cl":
+    #             atA = molecule.bonds[i][1]
+    #             for j in range(0, len(molecule.atoms)):
+    #                 sym3 = molecule.atoms[j].symbol
+    #                 if sym3 == "N" or sym3 == "O" or sym3 == "F" or sym3 == "S" or sym3 == "Cl":
+    #                     r = molecule.atmatmdist(atH, j)
+    #                     r_check = SymbolToVdWRadius[molecule.atoms[atH].symbol] + SymbolToVdWRadius[
+    #                         molecule.atoms[j].symbol]  # Using sum of van der Waals radii
+    #                     if r <= r_check and j != atA:
+    #                         theta = molecule.anybondangle(atA, atH, j)
+    #                         molecule.addFFHBond(atA, atH, j, theta, 1,
+    #                                             [sym2, molecule.atoms[atA].charge, sym1, molecule.atoms[atH].charge,
+    #                                              sym3, molecule.atoms[j].charge, molecule.atmatmdist(atA, atH),
+    #                                              molecule.atmatmdist(j, atH), molecule.atmatmdist(atA, j)])
+    #                         if verbosity >= 2:
+    #                             print(
+    #                                 " ({:<3}, {:<3}, {:<3} {:3.2f} deg), {:<3}, [{:<3}, {:3.2f}, {:<3}, {:3.2f}, {:<3}, {:3.2f}, {:3.2f}, {:3.2f}, {:3.2f}]".format(
+    #                                     atA, atH, j, theta, 1, sym2, molecule.atoms[atA].charge, sym1,
+    #                                     molecule.atoms[atH].charge, sym3, molecule.atoms[j].charge,
+    #                                     molecule.atmatmdist(atA, atH), molecule.atmatmdist(j, atH),
+    #                                     molecule.atmatmdist(atA, j)))
+    #     elif sym2 == "H":
+    #         atH = molecule.bonds[i][1]
+    #         if sym1 == "N" or sym1 == "O" or sym1 == "F" or sym1 == "S" or sym1 == "Cl":
+    #             atA = molecule.bonds[i][0]
+    #             for j in range(0, len(molecule.atoms)):
+    #                 sym3 = molecule.atoms[j].symbol
+    #                 if sym3 == "N" or sym3 == "O" or sym3 == "F" or sym3 == "S" or sym3 == "Cl":
+    #                     r = molecule.atmatmdist(atH, j)
+    #                     r_check = SymbolToVdWRadius[sym1] + SymbolToVdWRadius[
+    #                         sym2]  # Sum of van der Waals radii again used as check
+    #                     if r <= r_check and j != atA:
+    #                         theta = molecule.anybondangle(atA, atH, j)
+    #                         molecule.addFFHBond(atA, atH, j, theta, 1,
+    #                                             [sym1, molecule.atoms[atA].charge, sym2, molecule.atoms[atH].charge,
+    #                                              sym3, molecule.atoms[j].charge, molecule.atmatmdist(atA, atH),
+    #                                              molecule.atmatmdist(j, atH), molecule.atmatmdist(atA, j)])
+    #                         if verbosity >= 2:
+    #                             print(
+    #                                 " ({:<3}, {:<3}, {:<3} {:3.2f} deg), {:<3}, [{:<3}, {:3.2f}, {:<3}, {:3.2f}, {:<3}, {:3.2f}, {:3.2f}, {:3.2f}, {:3.2f}]".format(
+    #                                     atA, atH, j, theta, 1, sym1, molecule.atoms[atA].charge, sym2,
+    #                                     molecule.atoms[atH].charge, sym3, molecule.atoms[j].charge,
+    #                                     molecule.atmatmdist(atA, atH), molecule.atmatmdist(j, atH),
+    #                                     molecule.atmatmdist(atA, j)))
 
 
 # End of routine
@@ -4244,14 +4256,16 @@ def fitForceConstants(molecule, verbosity=0):
         if verbosity >= 2:
             print("\nInitial Force constants:")
             print(InitialFC)
-            print("\QM Hessian:")
-            print(molecule.H_QM)
-            print("\nInitial Force Field Hessian:")
-            print(molecule.kdepHessian(InitialFC))
+            if verbosity >= 3:
+                print("\nQM Hessian:")
+                print(molecule.H_QM)
+                print("\nInitial Force Field Hessian:")
+                print(molecule.kdepHessian(InitialFC))
         timestamp("\nFitted Force constants: ")
         print(xopt)
-        print("\nForce Field Hessian with those force constants:")
-        print(molecule.kdepHessian(xopt))
+        if verbosity >= 3:
+            print("\nForce Field Hessian with those force constants:")
+            print(molecule.kdepHessian(xopt))
 
     # Assign the fitted force constants to the corresponding force field potentials
     # Note: could add verbosity option here to print a representation of each after changing force constant, but probably not required
@@ -4474,6 +4488,7 @@ parser.add_argument("-r", "--reactant", metavar='file', help="input file with qc
 parser.add_argument("-p", "--product", metavar='file', help="input file with qc data of the product",
                     default="g09-dielsalder-p.log")
 parser.add_argument("-v", "--verbosity", help="increase output verbosity", type=int, choices=[0, 1, 2, 3], default=1)
+parser.add_argument("-b", "--bondcutoff", help="Cutoff value for bond identification through Mayer bond order", type=float, default=0.45)
 
 args = parser.parse_args()
 
@@ -4539,25 +4554,22 @@ ProgramHeader()
 #   print(i)
 
 reactant_mol = Molecule("Reactant", 0)
-extractCoordinates(args.reactant, reactant_mol, verbosity=args.verbosity)
+extractCoordinates(args.reactant, reactant_mol, verbosity=args.verbosity, bondcutoff=args.bondcutoff)
 fitForceConstants(reactant_mol, verbosity=args.verbosity)
 
 print("\nCartesian Coordinates of Reactant (as one list):")
 print(reactant_mol.cartesianCoordinates())
 
-print("\nForce Field Energy of Reactant:")
-print(reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity=args.verbosity))
+print("\nForce Field Energy of molecule:", reactant_mol.name)
+print("Here we go:", reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity=args.verbosity))
 
-print("\nGeometry Optimizer (Reactant):")
+print("\nOptimising geometry of molecule:", reactant_mol.name)
 initialcoords2optimiseR = reactant_mol.cartesianCoordinates()
 xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, initialcoords2optimiseR, gtol=0.00005)
-print("\Optimized Geometry coordinates (Reactant):")
-print(xopt)
 
 reactant_mol.setGeometry(xopt)
-print("\nOptimized Geometry in Gaussian format (Reactant):")
+print("\nOptimized Geometry in Gaussian format for molecule:", reactant_mol.name)
 print(reactant_mol.gaussString())
-
 
 # product_mol = Molecule("Product",0)
 # extractCoordinates(infile2, product_mol, verbosity = 2)
