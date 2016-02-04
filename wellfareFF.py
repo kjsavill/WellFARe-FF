@@ -1401,7 +1401,7 @@ class Atom:
 class Molecule:
     """A molecule with a name, charge and a list of atoms"""
 
-    def __init__(self, name, charge):
+    def __init__(self, name, charge = 0):
         """ (Molecule, str, int) -> NoneType
     
     Create a Molecule named name with charge charge and no atoms
@@ -4058,12 +4058,14 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             print(" This force constant is smaller than 0.002")
 
         # Setup list of angles at which the torsion potential has to be calculated for the fitting procedure
-        torsionfit_angles = numpy.zeros(20)
-        for j in range(0,20):
-            torsionfit_angles[j] = math.degrees(molecule.dihedralangle(i)) + (j * 18.0)
+        torsionfit_points = 20 # Number of points for the fit; '20' equals steps of 18 degrees
+        torsionfit_angles = numpy.zeros(torsionfit_points)
+        for j in range(0,torsionfit_points):
+            torsionfit_angles[j] = math.degrees(molecule.dihedralangle(i)) + (j * (360/torsionfit_points))
             if torsionfit_angles[j] > 180.0:
                 torsionfit_angles[j] =  torsionfit_angles[j] - 360.0
-        torsionfit_energies = numpy.zeros(20)
+            print(torsionfit_angles[j])
+        torsionfit_energies = numpy.zeros(torsionfit_points)
 
 
 
@@ -4496,10 +4498,10 @@ parser = argparse.ArgumentParser(
     description="WellFAReFF: Wellington Fast Assessment of Reactions - Force Field",
     epilog="recognised filetypes: g09, orca")
 parser.add_argument("-r", "--reactant", metavar='file', help="input file with qc data of the reactant",
-                    default="g09-dielsalder-r.log")
+                    default="g09-h2o2.log")
 parser.add_argument("-p", "--product", metavar='file', help="input file with qc data of the product",
                     default="g09-dielsalder-p.log")
-parser.add_argument("-v", "--verbosity", help="increase output verbosity", type=int, choices=[0, 1, 2, 3], default=1)
+parser.add_argument("-v", "--verbosity", help="increase output verbosity", type=int, choices=[0, 1, 2, 3], default=2)
 parser.add_argument("-b", "--bondcutoff", help="Cutoff value for bond identification through Mayer bond order", type=float, default=0.45)
 
 args = parser.parse_args()
