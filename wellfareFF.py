@@ -1652,6 +1652,110 @@ class Molecule:
 
         return psi
 
+    def rotateMoleculeArbAxis(self, v1=[0.0, 0.0, 0.0], v2=[0.0, 0.0, 1.0], angle=90.0):
+        """ (Molecule) -> none
+
+    Rotate all atoms of a molecule around axis defined by v1 and v2
+    """
+        # Translate v2 into coordinate origin
+        self.translateMolecule(-v2[0], -v2[1], -v2[2])
+
+        # Rotate v1 - > v2 axis into xy plane
+        if v1[2]-v2[2] > 0.0005: # Check is already in xy plane
+            1 + 1
+
+        # Rotate v1 - > v2 axis along z axis
+
+        # Rotate around z axis
+
+        # Undo: Rotate v1 - > v2 axis out of z axis
+
+        # Undo: Rotate v1 -> v2 axis out of xy plane
+
+        # Undo: Translate v2 out of coordinate origin
+        self.translateMolecule(v2[0], v2[1], v2[2])
+
+        return
+
+    def rotateMolecule(self, axis="z", angle=90.0):
+        """ (Molecule) -> none
+
+    Rotate all atoms of a molecule around specified coordinate axis
+    """
+        # First, convert angle to radians
+        angle =  np.radians(angle)
+        if axis == "x":
+            # Setup Matrix for rotation around x axis
+            RotMatrix = []
+            Rxx = 1.0
+            Rxy = 0.0
+            Rxz = 0.0
+            Ryx = 0.0
+            Ryy = np.cos(angle)
+            Ryz = -np.sin(angle)
+            Rzx = 0.0
+            Rzy = np.sin(angle)
+            Rzz = np.cos(angle)
+            RotMatrix.append([Rxx, Rxy, Rxz])
+            RotMatrix.append([Ryx, Ryy, Ryz])
+            RotMatrix.append([Rzx, Rzy, Rzz])
+            RotMatrix = np.matrix(RotMatrix)
+        elif axis =="y":
+            # Setup Matrix for rotation around y axis
+            RotMatrix = []
+            Rxx = np.cos(angle)
+            Rxy = 0.0
+            Rxz = np.sin(angle)
+            Ryx = 0.0
+            Ryy = 1.0
+            Ryz = 0.0
+            Rzx = -np.sin(angle)
+            Rzy = 0.0
+            Rzz = np.cos(angle)
+            RotMatrix.append([Rxx, Rxy, Rxz])
+            RotMatrix.append([Ryx, Ryy, Ryz])
+            RotMatrix.append([Rzx, Rzy, Rzz])
+            RotMatrix = np.matrix(RotMatrix)
+        else:
+            # Default: Setup Matrix for rotation around z axis
+            RotMatrix = []
+            Rxx = np.cos(angle)
+            Rxy = -np.sin(angle)
+            Rxz = 0.0
+            Ryx = np.sin(angle)
+            Ryy = np.cos(angle)
+            Ryz = 0.0
+            Rzx = 0.0
+            Rzy = 0.0
+            Rzz = 1.0
+            RotMatrix.append([Rxx, Rxy, Rxz])
+            RotMatrix.append([Ryx, Ryy, Ryz])
+            RotMatrix.append([Rzx, Rzy, Rzz])
+            RotMatrix = np.matrix(RotMatrix)
+        # Apply the rotation matrix to all atoms
+        for i in self.atoms:
+            vector = [i.coord[0], i.coord[1], i.coord[2]]
+            vector = np.matrix(vector)
+            vector = RotMatrix.dot(np.matrix.transpose(vector))
+            vector = np.array(vector).flatten().tolist()
+            i.coord[0] = vector[0]
+            i.coord[1] = vector[1]
+            i.coord[2] = vector[2]
+
+        return
+
+    def translateMolecule(self, x, y, z):
+        """ (Molecule) -> none
+
+    Translate all atoms of a molecule along the three axes
+    """
+        for i in self.atoms:
+            i.coord[0] = i.coord[0] + x
+            i.coord[1] = i.coord[1] + y
+            i.coord[2] = i.coord[2] + z
+
+        return
+
     def outofplaneangle(self, i):
         """ (Molecule) -> number (in radians)
 
@@ -3071,7 +3175,7 @@ class Molecule:
 
         return sqdev
 
-    def HMOEnergy(self, K=1.75, charge=0, verbosity=3):
+    def HMOEnergy(self, K=1.75, charge=0, verbosity=0):
         """ (Molecule) -> number (extended Hueckel aka Tight Binding energy)
 
           Returns a number containing the molecular energy according to the current extended Hueckel aka Tight Binding
@@ -4067,25 +4171,40 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                 torsionfit_angles[j] -= 360.0
 
         # Create two "molecules", one with all atoms to consider on the right side of the dihedral, one for the left.
-        print("\nCreating right and left sides:")
+
+        # Creating "right side" first
         rightside = Molecule("Right side of the dihedral", 0)
+        # Adding the two atoms that belong to the dihedral first. Figure out which others to add later.
         rightside.addAtom(molecule.atoms[molecule.dihedrals[i][0]])
         rightside.addAtom(molecule.atoms[molecule.dihedrals[i][1]])
-        print("Right:", rightside, "\n")
+
+        # Creating the left side
         leftside = Molecule("Left side of the dihedral", 0)
+        # Same: Adding the two atoms that belong to the dihedral first. Figure out which others to add later.
         leftside.addAtom(molecule.atoms[molecule.dihedrals[i][2]])
         leftside.addAtom(molecule.atoms[molecule.dihedrals[i][3]])
-        print("Left:", leftside, "\n")
-        bothsides = Molecule("Both sides of the dihedral", 0)
-        for j in range(0,rightside.numatoms()):
-            bothsides.addAtom(rightside.atoms[j])
-        for j in range(0,leftside.numatoms()):
-            bothsides.addAtom(leftside.atoms[j])
-        print("Both:", bothsides, "\n")
-        print(bothsides.gaussString())
-        print(bothsides.HMOEnergy())
 
-        #torsionfit_energies = np.zeros(torsionfit_points)
+        # Determine the energies along the dihedral scan
+        torsionfit_energies = np.zeros(torsionfit_points)
+        for k in range(0,torsionfit_points):
+
+
+            # Rotating the left side (around the middle bond in the dihedral)
+            leftside.rotateMoleculeArbAxis([molecule.atoms[molecule.dihedrals[i][1]].coord[0], molecule.atoms[molecule.dihedrals[i][1]].coord[1], molecule.atoms[molecule.dihedrals[i][1]].coord[2]], [molecule.atoms[molecule.dihedrals[i][2]].coord[0], molecule.atoms[molecule.dihedrals[i][2]].coord[1], molecule.atoms[molecule.dihedrals[i][2]].coord[2]],torsionfit_angles[k])
+
+
+            # Creating the "supermolecule" by copying all atoms from right and left into one
+            bothsides = Molecule("Dihedral at {: .1f} degrees rotation ({: .1f} deg)".format(k * (360/torsionfit_points), torsionfit_angles[k]), 0)
+            for j in range(0,rightside.numatoms()):
+                bothsides.addAtom(rightside.atoms[j])
+            for j in range(0,leftside.numatoms()):
+                bothsides.addAtom(leftside.atoms[j])
+            print(bothsides.xyzString())
+
+            # Calculate Extended Hückel Energy for the "supermolecule"
+            torsionfit_energies[k] = bothsides.HMOEnergy()
+        print(torsionfit_energies)
+
 
 
 
