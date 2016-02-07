@@ -1401,7 +1401,7 @@ class Atom:
 class Molecule:
     """A molecule with a name, charge and a list of atoms"""
 
-    def __init__(self, name, charge = 0):
+    def __init__(self, name, charge=0):
         """ (Molecule, str, int) -> NoneType
     
     Create a Molecule named name with charge charge and no atoms
@@ -1655,22 +1655,52 @@ class Molecule:
     def rotateMoleculeArbAxis(self, v1=[0.0, 0.0, 0.0], v2=[0.0, 0.0, 1.0], angle=90.0):
         """ (Molecule) -> none
 
-    Rotate all atoms of a molecule around axis defined by v1 and v2
+    Rotate all atoms of a molecule around axis defined by v1 and v2 by angle (in degrees)
     """
         # Translate v2 into coordinate origin
         self.translateMolecule(-v2[0], -v2[1], -v2[2])
 
-        # Rotate v1 - > v2 axis into xy plane
-        if v1[2]-v2[2] > 0.0005: # Check is already in xy plane
-            1 + 1
+        u = v1[0] - v2[0]
+        v = v1[1] - v2[1]
+        w = v1[2] - v2[2]
+        L = (u ** 2) + (v ** 2) + (w ** 2)
+        pi = np.radians(angle)
 
-        # Rotate v1 - > v2 axis along z axis
+        RotMatrix = []
+        Rxx = (u ** 2 + (v ** 2 + w ** 2) * np.cos(pi)) / L
+        Rxy = ((u * v) * (1 - np.cos(pi)) - w * np.sqrt(L) * np.sin(pi)) / L
+        Rxz = ((u * w) * (1 - np.cos(pi)) + v * np.sqrt(L) * np.sin(pi)) / L
+        # Rxt = (()*(1-np.cos(pi))+())/L
 
-        # Rotate around z axis
+        Ryx = ((u * v) * (1 - np.cos(pi)) + w * np.sqrt(L) * np.sin(pi)) / L
+        Ryy = (v ** 2 + (u ** 2 + w ** 2) * np.cos(pi)) / L
+        Ryz = ((v * w) * (1 - np.cos(pi)) - u * np.sqrt(L) * np.sin(pi)) / L
+        # Ryt = 0.0
 
-        # Undo: Rotate v1 - > v2 axis out of z axis
+        Rzx = ((u * w) * (1 - np.cos(pi)) - v * np.sqrt(L) * np.sin(pi)) / L
+        Rzy = ((v * w) * (1 - np.cos(pi)) + u * np.sqrt(L) * np.sin(pi)) / L
+        Rzz = (w ** 2 + (u ** 2 + v ** 2) * np.cos(pi)) / L
+        # Rzt = 0.0
 
-        # Undo: Rotate v1 -> v2 axis out of xy plane
+        # Rtx = 0.0
+        # Rty = 0.0
+        # Rtz = 0.0
+        # Rtt = 1.0
+
+        RotMatrix.append([Rxx, Rxy, Rxz])
+        RotMatrix.append([Ryx, Ryy, Ryz])
+        RotMatrix.append([Rzx, Rzy, Rzz])
+        # RotMatrix.append([Rtx, Rty, Rtz, Rtt])
+        RotMatrix = np.matrix(RotMatrix)
+
+        for i in self.atoms:
+            vector = [i.coord[0], i.coord[1], i.coord[2]]
+            vector = np.matrix(vector)
+            vector = RotMatrix.dot(np.matrix.transpose(vector))
+            vector = np.array(vector).flatten().tolist()
+            i.coord[0] = vector[0]
+            i.coord[1] = vector[1]
+            i.coord[2] = vector[2]
 
         # Undo: Translate v2 out of coordinate origin
         self.translateMolecule(v2[0], v2[1], v2[2])
@@ -1683,7 +1713,7 @@ class Molecule:
     Rotate all atoms of a molecule around specified coordinate axis
     """
         # First, convert angle to radians
-        angle =  np.radians(angle)
+        angle = np.radians(angle)
         if axis == "x":
             # Setup Matrix for rotation around x axis
             RotMatrix = []
@@ -1700,7 +1730,7 @@ class Molecule:
             RotMatrix.append([Ryx, Ryy, Ryz])
             RotMatrix.append([Rzx, Rzy, Rzz])
             RotMatrix = np.matrix(RotMatrix)
-        elif axis =="y":
+        elif axis == "y":
             # Setup Matrix for rotation around y axis
             RotMatrix = []
             Rxx = np.cos(angle)
@@ -1846,19 +1876,19 @@ class Molecule:
         for i in self.atoms:
             Ixx = Ixx + (
                 i.mass * (
-                (Ang2Bohr(i.coord[1]) * Ang2Bohr(i.coord[1])) + (Ang2Bohr(i.coord[2]) * Ang2Bohr(i.coord[2]))))
+                    (Ang2Bohr(i.coord[1]) * Ang2Bohr(i.coord[1])) + (Ang2Bohr(i.coord[2]) * Ang2Bohr(i.coord[2]))))
             Ixy = Ixy - i.mass * Ang2Bohr(i.coord[0]) * Ang2Bohr(i.coord[1])
             Ixz = Ixz - i.mass * Ang2Bohr(i.coord[0]) * Ang2Bohr(i.coord[2])
             Iyx = Iyx - i.mass * Ang2Bohr(i.coord[1]) * Ang2Bohr(i.coord[0])
             Iyy = Iyy + (
                 i.mass * (
-                (Ang2Bohr(i.coord[0]) * Ang2Bohr(i.coord[0])) + (Ang2Bohr(i.coord[2]) * Ang2Bohr(i.coord[2]))))
+                    (Ang2Bohr(i.coord[0]) * Ang2Bohr(i.coord[0])) + (Ang2Bohr(i.coord[2]) * Ang2Bohr(i.coord[2]))))
             Iyz = Iyz - i.mass * Ang2Bohr(i.coord[1]) * Ang2Bohr(i.coord[2])
             Izx = Izx - i.mass * Ang2Bohr(i.coord[2]) * Ang2Bohr(i.coord[0])
             Izy = Izy - i.mass * Ang2Bohr(i.coord[2]) * Ang2Bohr(i.coord[1])
             Izz = Izz + (
                 i.mass * (
-                (Ang2Bohr(i.coord[0]) * Ang2Bohr(i.coord[0])) + (Ang2Bohr(i.coord[1]) * Ang2Bohr(i.coord[1]))))
+                    (Ang2Bohr(i.coord[0]) * Ang2Bohr(i.coord[0])) + (Ang2Bohr(i.coord[1]) * Ang2Bohr(i.coord[1]))))
         inertiaTensor.append([Ixx, Ixy, Ixz])
         inertiaTensor.append([Iyx, Iyy, Iyz])
         inertiaTensor.append([Izx, Izy, Izz])
@@ -3262,7 +3292,6 @@ class Molecule:
                                   s[j][i:i + 65])
                 print("")
 
-
         # Create Hamiltonian matrix
         hamiltonian = np.zeros((len(molbasis), len(molbasis)))
         # Calculate Hamiltonian matrix elements
@@ -3468,33 +3497,33 @@ class Molecule:
                         mullikenGrossAOPop[i] += mullikenNetAOandOvlPop[i][j] / 2.0
             # Print routine for the gross populations
             print("\nGross Mulliken AO populations")
-            for i in range(0,len(mullikenGrossAOPop)):
+            for i in range(0, len(mullikenGrossAOPop)):
                 print("{: >3}({: >3}){:>2}{}{:<2} {: .6f}".format(self.atoms[molbasis[i][0]].symbol,
-                                                                      molbasis[i][0], molbasis[i][1],
-                                                                      qn2symb(molbasis[i][2]),
-                                                                      qn2symb(molbasis[i][2], molbasis[i][3]), mullikenGrossAOPop[i]))
+                                                                  molbasis[i][0], molbasis[i][1],
+                                                                  qn2symb(molbasis[i][2]),
+                                                                  qn2symb(molbasis[i][2], molbasis[i][3]),
+                                                                  mullikenGrossAOPop[i]))
             print("")
             # Next calculate gross Mulliken atom populations
             mullikenGrossAtomPop = np.zeros(self.numatoms())
             for i in range(0, len(mullikenGrossAOPop)):
                 mullikenGrossAtomPop[molbasis[i][0]] += mullikenGrossAOPop[i]
             print("\nGross Mulliken atomic populations")
-            for i in range(0,len(mullikenGrossAtomPop)):
+            for i in range(0, len(mullikenGrossAtomPop)):
                 print("{: >3}({: >3}) {: .6f}".format(self.atoms[i].symbol,
-                                                                      i, mullikenGrossAtomPop[i]))
+                                                      i, mullikenGrossAtomPop[i]))
 
             print("")
             # Next determine Mulliken net atomic charges
             mullikenNetAtomCharge = np.zeros(self.numatoms())
             for i in range(0, len(mullikenNetAtomCharge)):
-                mullikenNetAtomCharge[i] += self.atoms[i].valele-mullikenGrossAtomPop[i]
+                mullikenNetAtomCharge[i] += self.atoms[i].valele - mullikenGrossAtomPop[i]
             print("\nNet Mulliken atomic charges")
-            for i in range(0,len(mullikenGrossAtomPop)):
+            for i in range(0, len(mullikenGrossAtomPop)):
                 print("{: >3}({: >3}) {: .6f}".format(self.atoms[i].symbol,
-                                                                      i, mullikenNetAtomCharge[i]))
+                                                      i, mullikenNetAtomCharge[i]))
 
             print("")
-
 
         # Return the previously calculated total EHT energy
         return energy
@@ -3585,7 +3614,8 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             n = int(readBuffer[0]) - 1
             molecule.atoms[n].setq(float(readBuffer[2]))
             if verbosity >= 2:
-                print(" {:<3} ({:3d}) (Charge: {: .3f} e)".format(molecule.atoms[n].symbol, n, molecule.atoms[n].QMcharge))
+                print(" {:<3} ({:3d}) (Charge: {: .3f} e)".format(molecule.atoms[n].symbol, n,
+                                                                  molecule.atoms[n].QMcharge))
         f.close()
     # Read through ORCA file, read *last* set of cartesian coordinates
     elif program == "orca":
@@ -3645,7 +3675,8 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             molecule.atoms[n].setq(readBuffer[
                                        3])  # Again assuming that the charge is the 4th list entry, with ':' having been split on its own.
             if verbosity >= 2:
-                print(" {:<3} ({:3d}) (Charge: {: .3f} e)".format(molecule.atoms[n].symbol, n, molecule.atoms[n].QMcharge))
+                print(" {:<3} ({:3d}) (Charge: {: .3f} e)".format(molecule.atoms[n].symbol, n,
+                                                                  molecule.atoms[n].QMcharge))
         f.close()
 
     # EQUILIBRIUM ENERGY READING SECTION
@@ -3897,7 +3928,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                         molecule.atoms[molecule.angles[j][0]].symbol, molecule.angles[j][0],
                         math.degrees(molecule.dihedralangle(len(molecule.dihedrals) - 1))))
 
-# Postpone dealing with inversions to later...
+                # Postpone dealing with inversions to later...
     # # Same for threefolds: Use angles to determine where they are
     # if verbosity >= 2:
     #     print("\nAdding threefolds to WellFARe molecule: ", molecule.name)
@@ -4009,9 +4040,9 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
     for i in range(0, len(molecule.bonds)):
         # print(molecule.atoms[molecule.bonds[i][0]].coord[1])
         a = np.array([molecule.atoms[molecule.bonds[i][0]].coord[0], molecule.atoms[molecule.bonds[i][0]].coord[1],
-                         molecule.atoms[molecule.bonds[i][0]].coord[2]])
+                      molecule.atoms[molecule.bonds[i][0]].coord[2]])
         b = np.array([molecule.atoms[molecule.bonds[i][1]].coord[0], molecule.atoms[molecule.bonds[i][1]].coord[1],
-                         molecule.atoms[molecule.bonds[i][1]].coord[2]])
+                      molecule.atoms[molecule.bonds[i][1]].coord[2]])
         c1 = (a - b)
         c2 = (b - a)
         c = np.zeros(molecule.numatoms() * 3)
@@ -4034,10 +4065,10 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                               molecule.atmatmdist(molecule.bonds[i][0], molecule.bonds[i][1]), 3,
                               [fc, "b", molecule.atoms[molecule.bonds[i][0]].symbol,
                                molecule.atoms[molecule.bonds[i][1]].symbol])
-    # Note "b" as an argument in the previouw line is a placeholder so that indices are consistent in the FFstretch class
-    # it  would need replacing with the appropriate value to make using the  Morse potential an option
+        # Note "b" as an argument in the previouw line is a placeholder so that indices are consistent in the FFstretch class
+        # it  would need replacing with the appropriate value to make using the  Morse potential an option
 
-# There's a bug in this code that sometimes mis-identifies where 1,3 bond stretches are (example: H2O2)
+    # There's a bug in this code that sometimes mis-identifies where 1,3 bond stretches are (example: H2O2)
     # # Then 1,3-stretches:
     # if verbosity >= 2:
     #     print("\nAdding Force Field 1,3-bond stretching terms to WellFARe molecule: ", molecule.name)
@@ -4074,11 +4105,11 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         print("\nAdding Force Field angle bending terms to WellFARe molecule: ", molecule.name)
     for i in range(0, len(molecule.angles)):
         a = np.array([molecule.atoms[molecule.angles[i][0]].coord[0], molecule.atoms[molecule.angles[i][0]].coord[1],
-                         molecule.atoms[molecule.angles[i][0]].coord[2]])
+                      molecule.atoms[molecule.angles[i][0]].coord[2]])
         b = np.array([molecule.atoms[molecule.angles[i][1]].coord[0], molecule.atoms[molecule.angles[i][1]].coord[1],
-                         molecule.atoms[molecule.angles[i][1]].coord[2]])
+                      molecule.atoms[molecule.angles[i][1]].coord[2]])
         c = np.array([molecule.atoms[molecule.angles[i][2]].coord[0], molecule.atoms[molecule.angles[i][2]].coord[1],
-                         molecule.atoms[molecule.angles[i][2]].coord[2]])
+                      molecule.atoms[molecule.angles[i][2]].coord[2]])
         aprime = a - b
         bprime = c - b
         p = np.cross(aprime, bprime)
@@ -4163,10 +4194,10 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             print(" This force constant is smaller than 0.002")
 
         # Setup list of angles at which the torsion potential has to be calculated for the fitting procedure
-        torsionfit_points = 20 # Number of points for the fit; '20' equals steps of 18 degrees
+        torsionfit_points = 20  # Number of points for the fit; '20' equals steps of 18 degrees
         torsionfit_angles = np.zeros(torsionfit_points)
-        for j in range(0,torsionfit_points):
-            torsionfit_angles[j] = math.degrees(molecule.dihedralangle(i)) + (j * (360/torsionfit_points))
+        for j in range(0, torsionfit_points):
+            torsionfit_angles[j] = math.degrees(molecule.dihedralangle(i)) + (j * (360 / torsionfit_points))
             if torsionfit_angles[j] > 180.0:
                 torsionfit_angles[j] -= 360.0
 
@@ -4186,28 +4217,29 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
 
         # Determine the energies along the dihedral scan
         torsionfit_energies = np.zeros(torsionfit_points)
-        for k in range(0,torsionfit_points):
-
+        for k in range(0, torsionfit_points):
 
             # Rotating the left side (around the middle bond in the dihedral)
-            leftside.rotateMoleculeArbAxis([molecule.atoms[molecule.dihedrals[i][1]].coord[0], molecule.atoms[molecule.dihedrals[i][1]].coord[1], molecule.atoms[molecule.dihedrals[i][1]].coord[2]], [molecule.atoms[molecule.dihedrals[i][2]].coord[0], molecule.atoms[molecule.dihedrals[i][2]].coord[1], molecule.atoms[molecule.dihedrals[i][2]].coord[2]],torsionfit_angles[k])
-
+            leftside.rotateMoleculeArbAxis(
+                [molecule.atoms[molecule.dihedrals[i][1]].coord[0], molecule.atoms[molecule.dihedrals[i][1]].coord[1],
+                 molecule.atoms[molecule.dihedrals[i][1]].coord[2]],
+                [molecule.atoms[molecule.dihedrals[i][2]].coord[0], molecule.atoms[molecule.dihedrals[i][2]].coord[1],
+                 molecule.atoms[molecule.dihedrals[i][2]].coord[2]], (360 / torsionfit_points))
 
             # Creating the "supermolecule" by copying all atoms from right and left into one
-            bothsides = Molecule("Dihedral at {: .1f} degrees rotation ({: .1f} deg)".format(k * (360/torsionfit_points), torsionfit_angles[k]), 0)
-            for j in range(0,rightside.numatoms()):
+            bothsides = Molecule(
+                "Dihedral at {: .1f} degrees rotation ({: .1f} deg)".format(k * (360 / torsionfit_points),
+                                                                            torsionfit_angles[k]), 0)
+            for j in range(0, rightside.numatoms()):
                 bothsides.addAtom(rightside.atoms[j])
-            for j in range(0,leftside.numatoms()):
+            for j in range(0, leftside.numatoms()):
                 bothsides.addAtom(leftside.atoms[j])
             print(bothsides.xyzString())
 
             # Calculate Extended Hückel Energy for the "supermolecule"
             torsionfit_energies[k] = bothsides.HMOEnergy()
-        print(torsionfit_energies)
-
-
-
-
+            # for k in range(0, torsionfit_points):
+            #     print(torsionfit_energies[k])
 
         # Once the torsion potential has been determined, add the torsion term to the Force Field
         if verbosity >= 2:
@@ -4225,10 +4257,10 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                                molecule.atmatmdist(molecule.dihedrals[i][0], molecule.dihedrals[i][1]),
                                molecule.atmatmdist(molecule.dihedrals[i][1], molecule.dihedrals[i][2]),
                                molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3])])
-    # As for bends, arg list now includes atom symbols and bond lengths, which could be separated out later
+        # As for bends, arg list now includes atom symbols and bond lengths, which could be separated out later
 
 
-# Here are the more complicated inversions, H-bonds and X-bonds - deal with this later!
+    # Here are the more complicated inversions, H-bonds and X-bonds - deal with this later!
     # # Threefold inversions last
     # if verbosity >= 2:
     #     print("\nAdding Force Field inversion terms to WellFARe molecule: ", molecule.name)
@@ -4642,7 +4674,8 @@ parser.add_argument("-r", "--reactant", metavar='file', help="input file with qc
 parser.add_argument("-p", "--product", metavar='file', help="input file with qc data of the product",
                     default="g09-dielsalder-p.log")
 parser.add_argument("-v", "--verbosity", help="increase output verbosity", type=int, choices=[0, 1, 2, 3], default=2)
-parser.add_argument("-b", "--bondcutoff", help="Cutoff value for bond identification through Mayer bond order", type=float, default=0.45)
+parser.add_argument("-b", "--bondcutoff", help="Cutoff value for bond identification through Mayer bond order",
+                    type=float, default=0.45)
 
 args = parser.parse_args()
 
@@ -4709,7 +4742,7 @@ ProgramHeader()
 
 reactant_mol = Molecule("Reactant", 0)
 extractCoordinates(args.reactant, reactant_mol, verbosity=args.verbosity, bondcutoff=args.bondcutoff)
-#fitForceConstants(reactant_mol, verbosity=args.verbosity)
+# fitForceConstants(reactant_mol, verbosity=args.verbosity)
 
 print("\nForce Field Energy of molecule:", reactant_mol.name)
 print("\nHere we go:", reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity=args.verbosity))
