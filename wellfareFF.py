@@ -3205,6 +3205,30 @@ class Molecule:
 
         return sqdev
 
+    def assembleDihedralScanFragments(self, dihedral):
+        """ (Molecule) -> two Fragments (type molecule) for dihedral angle scan
+
+          Returns two fragments for the potential energy curve scan to parametrise
+          dihedral angle potentials
+        """
+
+        # Create right hand side of the dihedral angle
+        right = Molecule("Right side of the dihedral", 0)
+
+        # Create the left hand side of the dihedral angle
+        left = Molecule("Left side of the dihedral", 0)
+
+        # Add atoms that belong to the dihedral to the right side
+        right.addAtom(self.atoms[dihedral[0]])
+        right.addAtom(self.atoms[dihedral[1]])
+
+        # Add atoms that belong to the dihedral to the left side
+        left.addAtom(self.atoms[dihedral[2]])
+        left.addAtom(self.atoms[dihedral[3]])
+
+        return right, left
+
+
     def HMOEnergy(self, K=1.75, charge=0, verbosity=0):
         """ (Molecule) -> number (extended Hueckel aka Tight Binding energy)
 
@@ -4205,15 +4229,12 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
 
         # Creating "right side" first
         rightside = Molecule("Right side of the dihedral", 0)
-        # Adding the two atoms that belong to the dihedral first. Figure out which others to add later.
-        rightside.addAtom(molecule.atoms[molecule.dihedrals[i][0]])
-        rightside.addAtom(molecule.atoms[molecule.dihedrals[i][1]])
 
         # Creating the left side
         leftside = Molecule("Left side of the dihedral", 0)
-        # Same: Adding the two atoms that belong to the dihedral first. Figure out which others to add later.
-        leftside.addAtom(molecule.atoms[molecule.dihedrals[i][2]])
-        leftside.addAtom(molecule.atoms[molecule.dihedrals[i][3]])
+
+        # Assemble the two sides from the molecule
+        rightside, leftside = molecule.assembleDihedralScanFragments(molecule.dihedrals[i])
 
         # Determine the energies along the dihedral scan
         torsionfit_energies = np.zeros(torsionfit_points)
@@ -4234,12 +4255,16 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                 bothsides.addAtom(rightside.atoms[j])
             for j in range(0, leftside.numatoms()):
                 bothsides.addAtom(leftside.atoms[j])
-            print(bothsides.xyzString())
+            # Debug only: Print the geometries that are used for the fitting
+            #print(bothsides.xyzString())
 
             # Calculate Extended Hückel Energy for the "supermolecule"
             torsionfit_energies[k] = bothsides.HMOEnergy()
             # for k in range(0, torsionfit_points):
             #     print(torsionfit_energies[k])
+
+        # Debug only: Print the energies that will be used for fitting
+        #print("Energies: ", torsionfit_energies)
 
         # Once the torsion potential has been determined, add the torsion term to the Force Field
         if verbosity >= 2:
