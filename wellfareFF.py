@@ -3218,13 +3218,57 @@ class Molecule:
         # Create the left hand side of the dihedral angle
         left = Molecule("Left side of the dihedral", 0)
 
-        # Add atoms that belong to the dihedral to the right side
-        right.addAtom(self.atoms[dihedral[0]])
+        # Add the two "middle atoms" of the dihedral to the right and left side
         right.addAtom(self.atoms[dihedral[1]])
-
-        # Add atoms that belong to the dihedral to the left side
         left.addAtom(self.atoms[dihedral[2]])
-        left.addAtom(self.atoms[dihedral[3]])
+
+        # Setup two lists to keep track of atoms on either side
+        rightlist = []
+        leftlist = []
+
+        # Loop though all bonds and add all directly bonded atoms to either right or left
+        # Also add the new atoms to the prepared lists
+        for i in self.bonds:
+            if i[0] == dihedral[1] and i[1] != dihedral[2]:
+                right.addAtom(self.atoms[i[1]])
+                rightlist.append(i[1])
+            if i[1] == dihedral[1] and i[0] != dihedral[2]:
+                right.addAtom(self.atoms[i[0]])
+                rightlist.append(i[0])
+            if i[0] == dihedral[2] and i[1] != dihedral[1]:
+                left.addAtom(self.atoms[i[1]])
+                leftlist.append(i[1])
+            if i[1] == dihedral[2] and i[0] != dihedral[1]:
+                left.addAtom(self.atoms[i[0]])
+                leftlist.append(i[0])
+
+        # Setup two more lists to keep track of "second shell"  atoms
+        rightlist2 = []
+        leftlist2 = []
+
+        # Now loop again and add atoms that are bonded to the newly added atoms
+        # but add hydrogen atoms instead of the originals
+        for i in self.bonds:
+            if i[0] in rightlist and i[1] != dihedral[1] and i[1] not in rightlist:
+                #print(self.atoms[i[1]])
+                #print(Atom("H", self.atoms[i[1]].coord[0], self.atoms[i[1]].coord[1], self.atoms[i[1]].coord[2], 1.0))
+                right.addAtom(Atom("H", self.atoms[i[1]].coord[0], self.atoms[i[1]].coord[1], self.atoms[i[1]].coord[2], 1.0))
+                rightlist2.append(i[1])
+            if i[1] in rightlist and i[0] != dihedral[1] and i[0] not in rightlist:
+                #print(self.atoms[i[0]])
+                #print(Atom("H", self.atoms[i[0]].coord[0], self.atoms[i[0]].coord[1], self.atoms[i[0]].coord[2], 1.0))
+                right.addAtom(Atom("H", self.atoms[i[0]].coord[0], self.atoms[i[0]].coord[1], self.atoms[i[0]].coord[2], 1.0))
+                rightlist2.append(i[0])
+            if i[0] in leftlist and i[1] != dihedral[2] and i[1] not in leftlist:
+                #print(self.atoms[i[1]])
+                #print(Atom("H", self.atoms[i[1]].coord[0], self.atoms[i[1]].coord[1], self.atoms[i[1]].coord[2], 1.0))
+                left.addAtom(Atom("H", self.atoms[i[1]].coord[0], self.atoms[i[1]].coord[1], self.atoms[i[1]].coord[2], 1.0))
+                leftlist2.append(i[1])
+            if i[1] in leftlist and i[0] != dihedral[2] and i[0] not in leftlist:
+                #print(self.atoms[i[0]])
+                #print(Atom("H", self.atoms[i[0]].coord[0], self.atoms[i[0]].coord[1], self.atoms[i[0]].coord[2], 1.0))
+                left.addAtom(Atom("H", self.atoms[i[0]].coord[0], self.atoms[i[0]].coord[1], self.atoms[i[0]].coord[2], 1.0))
+                leftlist2.append(i[0])
 
         return right, left
 
@@ -4256,7 +4300,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             for j in range(0, leftside.numatoms()):
                 bothsides.addAtom(leftside.atoms[j])
             # Debug only: Print the geometries that are used for the fitting
-            #print(bothsides.xyzString())
+            print(bothsides.xyzString())
 
             # Calculate Extended Hückel Energy for the "supermolecule"
             torsionfit_energies[k] = bothsides.HMOEnergy()
@@ -4264,7 +4308,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             #     print(torsionfit_energies[k])
 
         # Debug only: Print the energies that will be used for fitting
-        #print("Energies: ", torsionfit_energies)
+        print("Energies: ", torsionfit_energies)
 
         # Once the torsion potential has been determined, add the torsion term to the Force Field
         if verbosity >= 2:
@@ -4695,7 +4739,7 @@ parser = argparse.ArgumentParser(
     description="WellFAReFF: Wellington Fast Assessment of Reactions - Force Field",
     epilog="recognised filetypes: g09, orca")
 parser.add_argument("-r", "--reactant", metavar='file', help="input file with qc data of the reactant",
-                    default="g09-h2o2.log")
+                    default="g09-benzene.log")
 parser.add_argument("-p", "--product", metavar='file', help="input file with qc data of the product",
                     default="g09-dielsalder-p.log")
 parser.add_argument("-v", "--verbosity", help="increase output verbosity", type=int, choices=[0, 1, 2, 3], default=2)
