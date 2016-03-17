@@ -3286,12 +3286,18 @@ class Molecule:
         return right, left
 
 
-    def HMOEnergy(self, K=1.75, charge=0, verbosity=0):
+    def HMOEnergy(self, K=1.75, charge=0, verbosity=0, typ=2):
         """ (Molecule) -> number (extended Hueckel aka Tight Binding energy)
 
         Returns a number containing the molecular energy according to the current extended Hueckel aka Tight Binding
         definition at structure specified by the provided cartesian coordinates.
         """
+        # For diagnostic purposes only, set verbosity = 3 regardless of input
+        verbosity = 3
+        # NOTE: This should be deleted once running smoothly
+        # NOTE 2: while the best way to solve HC = SCE is in question, the additiional argument typ is used to select between options. Ideally this can eventually be done away with
+        # Present default is typ=2, employing linalg.eig from SciPy, with typ=1 switching to linalg.eigh
+        
 
         # Assemble an array that holds information about the basis set.
         molbasis = []
@@ -3323,6 +3329,9 @@ class Molecule:
         # Create overlap matrix
         overlap = np.zeros((len(molbasis), len(molbasis)))
         # Calculate overlap matrix elements
+        """ Note: for some systems, overlap matrix as currently computed is not positive definite. 
+        This creates problems when computing MO Energies and MO Vectors. 
+	Will need to be fixed """
         for i in range(0, len(molbasis)):
             # Exploit matrix symmetry by only calculating diagonal and upper triangle, then copying elements
             # to fill the rest
@@ -3424,14 +3433,61 @@ class Molecule:
 
         # Use SciPy algorithm for generalised eigenvalue problem for symmetric matrices to solve
         # HC = SCE, H and S are our input matrices, E holds the energies and C are the coefficients.
-        MOEnergies, MOVectors = scipy.linalg.eigh(hamiltonian, b=overlap)
+        if typ == 1:
+            MOEnergies, MOVectors = scipy.linalg.eigh(hamiltonian, b=overlap)
+        elif typ == 2:
+            # As a temporary fix, until it is known whether the overlap matrix ought always to be positive definite, use a different SciPy algorithm which does not assume that
+            MOEnergies, MOVectors = scipy.linalg.eig(hamiltonian, b=overlap)
+            # Note that this returns the right eigenvectors by default
+            # Note also output may be less consistent with eig than eigh since no ordering by magnitude is guaranteed
 
+            # Now order the eigenvalue and eigenvector output of linalg.eig in alignmnent with the output from linalg.eigh
+            MOEnergiesOrdered = np.zeros(len(MOEnergies))
+            MOVectorsOrdered = np.zeros((len(MOVectors), len(MOVectors[0])))
+            place = 0
+            # Store the original lists of MO energies and vectors so they can be recovered once sorting is complete
+            MOEnergiesOriginal = MOEnergies
+            MOVectorsOriginal = MOVectors
+            while place < len(MOEnergiesOriginal):
+                # Identify smallest unsorted MO energy and add to sorted energy list
+                #print("\nIntermediate re-ordering step " + str(place)) # Temporary print for troubleshooting only
+                nextMOenergy = min(MOEnergies)
+                MOEnergiesOrdered[place] = nextMOenergy 
+                #print("\nOrdered MO Energies at step " + str(place)) # Temporary print step for troubleshooting only
+                #print(MOEnergiesOrdered)
+                # Identify the corresponding MO vector and add to ordered vector list
+                vectorindex = np.where(MOEnergies == nextMOenergy)
+                nextMOvector = MOVectors[:, vectorindex]
+                for i in range(len(nextMOvector)):
+                    MOVectorsOrdered[i, place] = MOVectors[i, vectorindex[0][0]]
+                # Remove the MO energy and MO vector just sorted from the original lists to avoid double counting
+                #print("\nOrdered MO Vectors at step " + str(place)) # Temporary print step for troubleshooting only
+                #print(MOVectorsOrdered) # Temporary print step for troubleshooting only
+                MOEnergies = np.delete(MOEnergies, (vectorindex[0][0]))
+                MOVectors = np.delete(MOVectors, (vectorindex[0][0]), axis=1)
+                #print("\n modified unordered MO energies and vectors after step " + str(place)) # Temporary print step for troubleshooting only
+                #print(MOEnergies) # Temporary print step for troubleshooting only
+                #print(MOVectors) # Temporary print step for troubleshooting only
+                place += 1
+            # Restore the original, unordered lists of MOEnergies and MOVectors in case they are needed later    
+            MOEnergies = MOEnergiesOriginal
+            MOVectors = MOVectorsOriginal
+        
         # Calculate total energy as sum over energies of occupied MOs
         energy = 0.0
-        for i in range(0, valence_electrons):
-            energy += MOEnergies[i // 2]
-    
+        if typ == 1:
+            for i in range(0, valence_electrons):
+                energy += MOEnergies[i // 2]
+        elif typ == 2:
+            for i in range(0, valence_electrons):
+                energy += MOEnergiesOrdered[i // 2]        
+
         # Print MO energies
+        if typ == 2:
+            # While using linalg.eig, use the ordered energy and vector lists for printing
+            MOEnergies = MOEnergiesOrdered 
+            MOVectors = MOVectorsOrdered 
+            # Optionally these could be set back to their original, unordered values for the population analysis
         if verbosity >= 3:
             print("\nMO Energies ({} electrons, total energy {: .5f} hartree)".format(valence_electrons, energy))
             s = ""
