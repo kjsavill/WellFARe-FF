@@ -541,7 +541,7 @@ def potGLJ(r, r0, k_str, a):
     """"
     Generalised Lennard-Jones potential (for bond and 1,3 stretches)
     """
-    # k_str to be set equal to force constant for /that/ bond as read from Hessian as an initial guess, fitting implemented later
+
     u = k_str * (1 + ((r0 / r) ** a) - 2 * ((r0 / r) ** (a / 2)))
 
     return u
@@ -711,7 +711,7 @@ def potPauliRep(rep_disp_AB, symA, symB, r_AB, C6_AB, C8_AB, typ=1):
     if typ == 1:
         R_0D3 = VdWCutoffRadius(symA, symB)
     elif typ == 2:
-        R_0D3 = RadiusFromCn(C6_AB, C8_AB)  # Note still need to confirm whether R_0D3 and R0_AB are actually equivalent
+        R_0D3 = RadiusFromCn(C6_AB, C8_AB)
     u = rep_disp_AB * (z_eff_A * z_eff_B / r_AB) * math.exp(-1 * beta_rep * r_AB / (R_0D3 ** (3 / 2)))
 
     return u
@@ -751,9 +751,7 @@ def potElectrostatic(elstat_AB, chg_A, chg_B, r_AB):
     Function for the electrostatic potential between atoms A and B
     """
 
-    # Determination of the screening parameter elstat_AB still to be implemented
     u = elstat_AB * (chg_A * chg_B / r_AB)
-
 
     return u
 
@@ -1042,6 +1040,14 @@ class FFTorsion:
 
         return s + r
 
+    def setk(self, newk):
+        """ (FFTorsion) -> None Type
+
+    Set the torsion force constant for this potential equal to newk
+    (Only used if torsion is being treated under typ = 1 and included in Hessian fit routine)
+    """
+        self.k = newk
+
     def energy(self, theta):
         """ Returns the energy of this torsion potential at angle theta"""
 
@@ -1293,7 +1299,7 @@ class Atom:
         self.charge = SymbolToNumber[sym]
         self.mass = SymbolToMass[sym]
         self.coord = [x, y, z]
-        self.QMcharge = q  # Extracting q from input file yet to be implemented
+        self.QMcharge = q 
         self.basis = []
         self.valele = SymbolToValE[sym]
 
@@ -1349,6 +1355,7 @@ class Atom:
         elif sym == "Ar":
             self.basis.append(STO(sym, 3, 0))
             self.basis.append(STO(sym, 3, 1))
+        # Eventually the list of elements accommodated here will need completing
 
     def __str__(self):
         """ (Atom) -> str
@@ -2772,7 +2779,7 @@ class Molecule:
 
       Returns a number containing the molecular energy according to the current Force Field definition at a fixed structure specified by cartCoordinates
       and using the stretch, bend and inversion force constants specified by ForceConstants
-      The contribution from non-covalent interactions, and the torsional force constants, are fixed
+      The contributions from non-covalent interactions, and the torsional force constants unless torsion potentials are type 1, are fixed
       The dispersion potential
       The dispersion correction used is specified by dtyp, with 1 for C6-only calculating cutoff radius from van der Waals radii, 2 for full D3 using C6 and C8 coefficients
     """
@@ -2854,7 +2861,14 @@ class Molecule:
         if verbosity >= 1:
             print("With bends, energy = " + str(energy))
 
-        for i in self.tors:
+        for j in range(len(self.tors)):
+            i = self.tors[j]
+            if i.typ == 1:
+                ktors0 = i.k # Store the value of the force constant originally associated with this torsion potential
+                i.setk(ForceConstants[len(self.stretch) + len(self.str13) + len(self.bend) + len(self.inv) + j]) # Set the force constant for this torsion potential equal to the value specified in the input list of force constants
+            else:
+                pass
+                
             # Calculate the vectors lying along bonds, and their cross products
             atom_e1 = [cartCoordinates[3 * i.atom1], cartCoordinates[3 * i.atom1 + 1], cartCoordinates[3 * i.atom1 + 2]]
             atom_b1 = [cartCoordinates[3 * i.atom2], cartCoordinates[3 * i.atom2 + 1], cartCoordinates[3 * i.atom2 + 2]]
@@ -2880,6 +2894,10 @@ class Molecule:
             vn1_coord_vc = np.dot(vnormal_1, basis_cv)
             psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
             energy = energy + i.energy(psi)
+            if i.typ == 1:
+                i.setk(ktors0) # Restore the original value of the torsional force constant so this potential is not permanently modified by the energy calculations
+            else:
+                pass
         if verbosity >= 1:
             print("With torsion, energy = " + str(energy))
 
@@ -3293,7 +3311,7 @@ class Molecule:
         definition at structure specified by the provided cartesian coordinates.
         """
         # For diagnostic purposes only, set verbosity = 3 regardless of input
-        verbosity = 3
+        # verbosity = 3
         # NOTE: This should be deleted once running smoothly
         # NOTE 2: while the best way to solve HC = SCE is in question, the additiional argument typ is used to select between options. Ideally this can eventually be done away with
         # Present default is typ=2, employing linalg.eig from SciPy, with typ=1 switching to linalg.eigh
@@ -4379,6 +4397,8 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         # Debug only: Print the energies that will be used for fitting
         print("Energies: ", torsionfit_energies)
 
+        # Use of torsionfit_energiees in fitting torsion potential to be added here later
+
         # Once the torsion potential has been determined, add the torsion term to the Force Field
         if verbosity >= 2:
             print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(
@@ -4567,6 +4587,15 @@ def fitForceConstants(molecule, verbosity=0):
         ForceConstants.append(molecule.bend[i].k)
     for i in range(len(molecule.inv)):
         ForceConstants.append(molecule.inv[i].k_inv)
+    # Include force constants for torsion interactions only if not being fitted elsewhere
+    for i in range(len(molecule.tors)):
+        if molecule.tors[i].typ == 1:
+            # print("Adding torsion force constant: " + str(molecule.tors[i].k)) # Temporary block only
+            ForceConstants.append(molecule.tors[i].k)
+        else:
+            # print("Torsion force constant not added, fitting elsewhere") # Temporary block only
+            pass
+        # Note this could run into problems if not all dihedrals are treated the same, but that ought never to be the case
     InitialFC = ForceConstants
     if verbosity >= 1:
         print("\nForce constants to be optimised:")
@@ -4602,7 +4631,11 @@ def fitForceConstants(molecule, verbosity=0):
         molecule.bend[i].setk(xopt[len(molecule.stretch) + len(molecule.str13) + i])
     for i in range(len(molecule.inv)):
         molecule.inv[i].setk(xopt[len(molecule.stretch) + len(molecule.str13) + len(molecule.bend) + i])
-
+    for i in range(len(molecule.tors)):
+        if molecule.tors[i].typ == 1:
+            molecule.tors[i].setk(xopt[len(molecule.stretch) + len(molecule.str13) + len(molecule.bend) + len(molecule.inv) + i])
+        else:
+            pass
 
 ######################################################################################
 # Functions for additional calculations, optional to the program, defined below here #
@@ -4881,7 +4914,7 @@ ProgramHeader()
 
 reactant_mol = Molecule("Reactant", 0)
 extractCoordinates(args.reactant, reactant_mol, verbosity=args.verbosity, bondcutoff=args.bondcutoff)
-# fitForceConstants(reactant_mol, verbosity=args.verbosity)
+fitForceConstants(reactant_mol, verbosity=args.verbosity)
 
 
 print("\nForce Field Energy of molecule:", reactant_mol.name)
