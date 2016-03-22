@@ -593,15 +593,15 @@ def potTorsion(theta, theta0, f_dmp, k_tors):
     """
     Torsion potential
     """
+    # Note that the input k_tors should be a list of values k_tors_n for indices n
 
     f_chiral = ChiralityFunction(theta)
 
     u = 0.0
-    # Sort out where n comes from in the following sum, check if k_tors ** n or k_tors_n
-    # for n in # Range to be determined:
-    #    inner_sum = (f_chiral * (1 + math.cos(n * (theta - theta0) + math.pi))) + ((1 - f_chiral) * (1 + math.cos(n * (theta + theta0 - (2 * math.pi)) + math.pi)))
-    #    u = u + ((k_tors ** n) * inner_sum)
-    # u = u * f_dmp
+    for n in range(1, len(k_tors) + 1):
+        inner_sum = (f_chiral * (1 + math.cos(n * (theta - theta0) + math.pi))) + ((1 - f_chiral) * (1 + math.cos(n * (theta + theta0 - (2 * math.pi)) + math.pi)))
+        u = u + (k_tors[n-1] * inner_sum)
+    u = u * f_dmp
 
     return u
 
@@ -982,8 +982,9 @@ class FFTorsion:
     
     A torsion potential between atoms number a, b, c and d with equilibrium
     angle theta0, of type typ with arguments [arg] comprising the dihedral
-    force constant, the atomic symbols of atoms a, b, c and d, and the 
-    ab, bc and cd bond lengths
+    force constant, the atomic symbols of atoms a, b, c and d, the 
+    ab, bc and cd bond lengths, and the values of k_tors_n from fitting to 
+    energies from the HMOEnergy function, if applicable
     """
 
         self.atom1 = a
@@ -1003,7 +1004,9 @@ class FFTorsion:
             f_dmp_23 = DampingFunction(arg[2], arg[3], r_23)
             f_dmp_34 = DampingFunction(arg[3], arg[4], r_34)
             self.f_dmp = f_dmp_12 * f_dmp_23 * f_dmp_34
-            self.k = arg[0]
+            self.k_tors = []
+            for i in range(8, len(arg)):
+                self.k_tors.append(arg[i])
         else:
             self.typ = 1
             self.k = arg[0]
@@ -1054,8 +1057,8 @@ class FFTorsion:
         energy = 0.0
         if self.typ == 1:
             energy = potSimpleCosine(theta, self.theta0, self.k)
-        elif typ == 2:
-            energy = potTorsion(theta, self.theta0, self.f_dmp, self.k)
+        elif self.typ == 2:
+            energy = potTorsion(theta, self.theta0, self.f_dmp, self.k_tors)
         # Will need two cases, one for non-rotatable bonds, the other for rotatable bonds.
         # Probably best to implement via types
         return energy
@@ -4397,7 +4400,44 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         # Debug only: Print the energies that will be used for fitting
         print("Energies: ", torsionfit_energies)
 
-        # Use of torsionfit_energiees in fitting torsion potential to be added here later
+        # Fitting routine to determine values of k_tors_n begins here
+        # Calculate the inputs needed for the torsion potential
+        theta0 = molecule.dihedralangle(i)
+        sym1 = molecule.atoms[molecule.dihedrals[i][0]].symbol
+        sym2 = molecule.atoms[molecule.dihedrals[i][1]].symbol
+        sym3 = molecule.atoms[molecule.dihedrals[i][2]].symbol
+        sym4 = molecule.atoms[molecule.dihedrals[i][3]].symbol
+        r_12 = molecule.atmatmdist(molecule.dihedrals[i][0], molecule.dihedrals[i][1])
+        r_23 = molecule.atmatmdist(molecule.dihedrals[i][1], molecule.dihedrals[i][2])
+        r_34 = molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3])
+        f_dmp_12 = DampingFunction(sym1, sym2, r_12)
+        f_dmp_23 = DampingFunction(sym2, sym3, r_23)
+        f_dmp_34 = DampingFunction(sym3, sym4, r_34)
+        f_dmp = f_dmp_12 * f_dmp_23 * f_dmp_34
+        # Define an objective function for the difference between HMOEnergy and energy from the torsion potential
+        # NOTE: need to check whether this ought to be a vector or scalar valued function for use with leastsq
+        def TorsEnergyDiff(k_tors, energies, angles, theta0, f_dmp):
+            energydiffs = np.zeros(len(energies))
+            for i in range(len(energies)):
+                energydiff = potTorsion(angles[i], theta0, f_dmp, k_tors) - energies[i]
+                energydiffs[i] = energydiff
+            return energydiffs 
+        # Use the SciPy leastsq optimiser to carry out a least squares fit for k_tors
+        k_tors_init = np.zeros(4) # NOTE: Setting values to a non-zero guess value may be useful to avoid problems currently arising in geometry optimisation with bonds dissociating
+        print("Starting values of k_tors for fitting:")
+        print(k_tors_init)
+        k_tors = scipy.optimize.leastsq(TorsEnergyDiff, k_tors_init, (torsionfit_energies, torsionfit_angles, theta0, f_dmp))
+        print("Optimised values of k_tors:")
+        print(k_tors)
+        # Debugging only, access the individual constants and print
+        k_tors_1 = k_tors[0][0]
+        k_tors_2 = k_tors[0][1]
+        k_tors_3 = k_tors[0][2]
+        k_tors_4 = k_tors[0][3]
+        print("k_tors_1 = " + str(k_tors_1))
+        print("k_tors_2 = " + str(k_tors_2))
+        print("k_tors_3 = " + str(k_tors_3))
+        print("k_tors_4 = " + str(k_tors_4))
 
         # Once the torsion potential has been determined, add the torsion term to the Force Field
         if verbosity >= 2:
@@ -4407,14 +4447,14 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                 molecule.atoms[molecule.dihedrals[i][2]].symbol, molecule.dihedrals[i][2],
                 molecule.atoms[molecule.dihedrals[i][3]].symbol, molecule.dihedrals[i][3], fc))
         molecule.addFFTorsion(molecule.dihedrals[i][0], molecule.dihedrals[i][1], molecule.dihedrals[i][2],
-                              molecule.dihedrals[i][3], molecule.dihedralangle(i), 1,
+                              molecule.dihedrals[i][3], molecule.dihedralangle(i), 2,
                               [fc, molecule.atoms[molecule.dihedrals[i][0]].symbol,
                                molecule.atoms[molecule.dihedrals[i][1]].symbol,
                                molecule.atoms[molecule.dihedrals[i][2]].symbol,
                                molecule.atoms[molecule.dihedrals[i][3]].symbol,
                                molecule.atmatmdist(molecule.dihedrals[i][0], molecule.dihedrals[i][1]),
                                molecule.atmatmdist(molecule.dihedrals[i][1], molecule.dihedrals[i][2]),
-                               molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3])])
+                               molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3]), k_tors_1, k_tors_2, k_tors_3, k_tors_4])
         # As for bends, arg list now includes atom symbols and bond lengths, which could be separated out later
 
 
