@@ -3307,7 +3307,7 @@ class Molecule:
         return right, left
 
 
-    def HMOEnergy(self, K=1.75, charge=0, verbosity=0, typ=2):
+    def HMOEnergy(self, K=1.75, charge=0, verbosity=0, typ=1):
         """ (Molecule) -> number (extended Hueckel aka Tight Binding energy)
 
         Returns a number containing the molecular energy according to the current extended Hueckel aka Tight Binding
@@ -3456,7 +3456,7 @@ class Molecule:
         # HC = SCE, H and S are our input matrices, E holds the energies and C are the coefficients.
         if typ == 1:
             MOEnergies, MOVectors = scipy.linalg.eigh(hamiltonian, b=overlap)
-        elif typ == 2:
+        elif typ == 2: # Can probably be removed, long term
             # As a temporary fix, until it is known whether the overlap matrix ought always to be positive definite, use a different SciPy algorithm which does not assume that
             MOEnergies, MOVectors = scipy.linalg.eig(hamiltonian, b=overlap)
             # Note that this returns the right eigenvectors by default
@@ -3469,17 +3469,49 @@ class Molecule:
             # Store the original lists of MO energies and vectors so they can be recovered once sorting is complete
             MOEnergiesOriginal = MOEnergies
             MOVectorsOriginal = MOVectors
+            print("MOEnergiesOriginal, length " + str(len(MOEnergiesOriginal)) + ":") #Temporary print step for troubleshooting only
+            print(MOEnergiesOriginal) #Temporary print step for troubleshooting only
+            #print("MOVectorsOrginal, shape " + str(MOVectorsOriginal.shape) + " :") #Temporary print step for troubleshooting only
+            #print(MOVectorsOriginal) #Temporary print step for troubleshooting only
+
+            # Check for infinite eigenvalues 
+            for j in range(len(MOEnergiesOriginal)):
+                if np.isinf(MOEnergiesOriginal[j]): # This condition might not be enough to pick up a double inf + nanj, need to check
+                    print("\nInfinite eigenvalue found in list of MO Energies")
+                    print("Program will continue\n")
+                else:
+                    pass
+
             while place < len(MOEnergiesOriginal):
                 # Identify smallest unsorted MO energy and add to sorted energy list
                 #print("\nIntermediate re-ordering step " + str(place)) # Temporary print for troubleshooting only
                 nextMOenergy = min(MOEnergies)
-                MOEnergiesOrdered[place] = nextMOenergy 
+                #print("nextMOenergy = " + str(nextMOenergy))
+                MOEnergiesOrdered[place] = nextMOenergy
                 #print("\nOrdered MO Energies at step " + str(place)) # Temporary print step for troubleshooting only
                 #print(MOEnergiesOrdered)
                 # Identify the corresponding MO vector and add to ordered vector list
-                vectorindex = np.where(MOEnergies == nextMOenergy)
+                if np.isinf(nextMOenergy):
+                    # Location of corresponding eigenvector based on the assumption that sorting from minimum up has removed all non-infinite eigenvalues, so the next eigenvector left in the list is the correct one
+                    vectorindex = np.where(np.isinf(MOEnergies)) 
+                else:
+                    vectorindex = np.where(MOEnergies == nextMOenergy)
+                #print("MOEnergies at step " + str(place))
+                #print(MOEnergies)
+                #print("vectorindex at step " + str(place))
+                #print(vectorindex)
                 nextMOvector = MOVectors[:, vectorindex]
+                #print("nextMOvector:")
+                #print(nextMOvector)
                 for i in range(len(nextMOvector)):
+                    #print("i = " + str(i))
+                    #print("place = " + str(place))
+                    #print("vectorindex[0][0]")
+                    #print(vectorindex[0][0])
+                    #print("MOVectorsOrdered[i, place]")
+                    #print(MOVectorsOrdered[i, place])
+                    #print("MOVectors[i, vectorindex[0][0]")
+                    #print(MOVectors[i, vectorindex[0][0]])
                     MOVectorsOrdered[i, place] = MOVectors[i, vectorindex[0][0]]
                 # Remove the MO energy and MO vector just sorted from the original lists to avoid double counting
                 #print("\nOrdered MO Vectors at step " + str(place)) # Temporary print step for troubleshooting only
@@ -3490,18 +3522,25 @@ class Molecule:
                 #print(MOEnergies) # Temporary print step for troubleshooting only
                 #print(MOVectors) # Temporary print step for troubleshooting only
                 place += 1
+            print("\nOrdered MO energies and vectors")
+            print(MOEnergiesOrdered)
+            #print(MOVectorsOrdered)
             # Restore the original, unordered lists of MOEnergies and MOVectors in case they are needed later    
             MOEnergies = MOEnergiesOriginal
             MOVectors = MOVectorsOriginal
         
         # Calculate total energy as sum over energies of occupied MOs
         energy = 0.0
+        print("Calculating EHT energy: " + str(energy)) # For testing treatment of infinite eigenvalues only
         if typ == 1:
             for i in range(0, valence_electrons):
                 energy += MOEnergies[i // 2]
+                print("+ " + str(MOEnergies[i // 2]) + " = " + str( energy))
         elif typ == 2:
             for i in range(0, valence_electrons):
-                energy += MOEnergiesOrdered[i // 2]        
+                energy += MOEnergiesOrdered[i // 2]     
+                print("+ " + str(MOEnergiesOrdered[i // 2]) + " = " + str(energy))   
+        print("Total EHT Energy: " + str(energy) + "\n")
 
         # Print MO energies
         if typ == 2:
@@ -4400,6 +4439,20 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         # Debug only: Print the energies that will be used for fitting
         print("Energies: ", torsionfit_energies)
 
+        # Check if any of the energy values is infinite, remove that data point from fit set if so
+        modifycheck = 0
+        for j in range(len(torsionfit_energies)):
+            if np.isinf(torsionfit_energies[j]):
+                del(torsionfit_energies[j])
+                del(torsionfit_angles[j])
+                modifycheck += 1
+            else:
+                pass
+        if modifycheck > 0:
+            print("Revised energies: ", torsionfit_energies)
+        else:
+            pass
+
         # Fitting routine to determine values of k_tors_n begins here
         # Calculate the inputs needed for the torsion potential
         theta0 = molecule.dihedralangle(i)
@@ -4415,30 +4468,61 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         f_dmp_34 = DampingFunction(sym3, sym4, r_34)
         f_dmp = f_dmp_12 * f_dmp_23 * f_dmp_34
         # Define an objective function for the difference between HMOEnergy and energy from the torsion potential
-        # NOTE: need to check whether this ought to be a vector or scalar valued function for use with leastsq
+        """ 
         def TorsEnergyDiff(k_tors, energies, angles, theta0, f_dmp):
             energydiffs = np.zeros(len(energies))
             for i in range(len(energies)):
-                energydiff = potTorsion(angles[i], theta0, f_dmp, k_tors) - energies[i]
+                energydiff = abs(potTorsion(angles[i], theta0, f_dmp, k_tors) - energies[i])
                 energydiffs[i] = energydiff
             return energydiffs 
-        # Use the SciPy leastsq optimiser to carry out a least squares fit for k_tors
+        """
+        def TorsLeastSq(k_tors, energies, angles, theta0, f_dmp):
+            sum_sq_diffs = 0.0
+            for i in range(len(energies)):
+                ediff = potTorsion(angles[i], theta0, f_dmp, k_tors) - energies[i]
+                absdiff = abs(ediff)
+                sqdiff = absdiff ** 2
+                sum_sq_diffs += sqdiff
+            return sum_sq_diffs
+        # Set up initial k_tors values for the optimisation
         k_tors_init = np.zeros(4) # NOTE: Setting values to a non-zero guess value may be useful to avoid problems currently arising in geometry optimisation with bonds dissociating
+        for j in range(len(k_tors_init)):
+            k_tors_init[j] = 1 # 1 is just a guess to try and ensure optimisation reaches a reasonable solution
         print("Starting values of k_tors for fitting:")
         print(k_tors_init)
-        k_tors = scipy.optimize.leastsq(TorsEnergyDiff, k_tors_init, (torsionfit_energies, torsionfit_angles, theta0, f_dmp))
+        # Use the SciPy leastsq optimiser to carry out a least squares fit for k_tors
+        #k_tors = scipy.optimize.leastsq(TorsEnergyDiff, k_tors_init, (torsionfit_energies, torsionfit_angles, theta0, f_dmp))
+        # Use a built in optimiser and the TorsLeastSq objective function to obtain a least squares fit for k_tors values
+        k_tors_opt = scipy.optimize.minimize(TorsLeastSq, k_tors_init, (torsionfit_energies, torsionfit_angles, theta0, f_dmp), method='BFGS')
+        #print("Optimisation output:")
+        #print(k_tors_opt)
+        k_tors = k_tors_opt.x
         print("Optimised values of k_tors:")
         print(k_tors)
-        # Debugging only, access the individual constants and print
-        k_tors_1 = k_tors[0][0]
-        k_tors_2 = k_tors[0][1]
-        k_tors_3 = k_tors[0][2]
-        k_tors_4 = k_tors[0][3]
+        k_tors_1 = k_tors[0]
+        k_tors_2 = k_tors[1]
+        k_tors_3 = k_tors[2]
+        k_tors_4 = k_tors[3]
+        """
+        # Debugging only, access the individual constants and print        
         print("k_tors_1 = " + str(k_tors_1))
         print("k_tors_2 = " + str(k_tors_2))
         print("k_tors_3 = " + str(k_tors_3))
         print("k_tors_4 = " + str(k_tors_4))
-
+        # Debug for h2o2 only
+        print("Printing atom list")
+        print(str(molecule.atoms))
+        print("Printing dihedral list")
+        print(molecule.dihedrals)
+        print("Printing dihedrals[0]")
+        print(molecule.dihedrals[0])
+        print("Printing dihedrals[i]")
+        print(molecule.dihedrals[i])
+        print("Printing dihedrals[i][0]")
+        print(molecule.dihedrals[i][0])
+        print("Printing the atom at index dihedrals[i][0]")
+        print(molecule.atoms[molecule.dihedrals[i][0]])
+        """
         # Once the torsion potential has been determined, add the torsion term to the Force Field
         if verbosity >= 2:
             print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(
@@ -4447,14 +4531,14 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                 molecule.atoms[molecule.dihedrals[i][2]].symbol, molecule.dihedrals[i][2],
                 molecule.atoms[molecule.dihedrals[i][3]].symbol, molecule.dihedrals[i][3], fc))
         molecule.addFFTorsion(molecule.dihedrals[i][0], molecule.dihedrals[i][1], molecule.dihedrals[i][2],
-                              molecule.dihedrals[i][3], molecule.dihedralangle(i), 2,
+                              molecule.dihedrals[i][3], molecule.dihedralangle(i), 1,
                               [fc, molecule.atoms[molecule.dihedrals[i][0]].symbol,
                                molecule.atoms[molecule.dihedrals[i][1]].symbol,
                                molecule.atoms[molecule.dihedrals[i][2]].symbol,
                                molecule.atoms[molecule.dihedrals[i][3]].symbol,
                                molecule.atmatmdist(molecule.dihedrals[i][0], molecule.dihedrals[i][1]),
                                molecule.atmatmdist(molecule.dihedrals[i][1], molecule.dihedrals[i][2]),
-                               molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3]), k_tors_1, k_tors_2, k_tors_3, k_tors_4])
+                               molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3]), k_tors_1, k_tors_2, k_tors_3, k_tors_4])# NOTE that a length-independent way to add k_tors_n for all relevant n is needed
         # As for bends, arg list now includes atom symbols and bond lengths, which could be separated out later
 
 
