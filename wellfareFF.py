@@ -1005,9 +1005,20 @@ class FFTorsion:
             f_dmp_23 = DampingFunction(arg[2], arg[3], r_23)
             f_dmp_34 = DampingFunction(arg[3], arg[4], r_34)
             self.f_dmp = f_dmp_12 * f_dmp_23 * f_dmp_34
-            self.k_tors = []
-            for i in range(8, len(arg)):
-                self.k_tors.append(arg[i])
+            self.k_tors = arg[8]
+            #for i in range(8, len(arg)):
+            #    self.k_tors.append(arg[i])
+        elif typ == 3:
+            self.typ = typ
+            self.typ = typ
+            r_12 = arg[5]
+            r_23 = arg[6]
+            r_34 = arg[7]
+            f_dmp_12 = DampingFunction(arg[1], arg[2], r_12)
+            f_dmp_23 = DampingFunction(arg[2], arg[3], r_23)
+            f_dmp_34 = DampingFunction(arg[3], arg[4], r_34)
+            self.f_dmp = f_dmp_12 * f_dmp_23 * f_dmp_34
+            self.k = arg[8][0]
         else:
             self.typ = 1
             self.k = arg[0]
@@ -1044,6 +1055,10 @@ class FFTorsion:
 
         return s + r
 
+    def setk(self, newk):
+        """ Sets the single force constant k for type 1 or 3 torsion potentials equal to newk"""
+        self.k = newk
+
     def energy(self, theta):
         """ Returns the energy of this torsion potential at angle theta"""
 
@@ -1054,6 +1069,10 @@ class FFTorsion:
             energy = potTorsion(theta, self.theta0, self.f_dmp, self.k_tors)
         # Will need two cases, one for non-rotatable bonds, the other for rotatable bonds.
         # Probably best to implement via types
+        elif self.typ == 3:
+             k_tors = []
+             k_tors.append(self.k)
+             energy = potTorsion(theta, self.theta0, self.f_dmp, k_tors)
         return energy
 
 
@@ -2551,14 +2570,14 @@ class Molecule:
             print(" + inversions                        = {:> 16.8f}".format(energy))
             # Don't forget to add non-bonded interactions here
 
-        #    print("Omitting all non-covalent interactions") # REMOVE ONCE FIXED
+        print("Omitting all non-covalent interactions") # REMOVE ONCE FIXED
         #    print("Omitting hydrogen bonding interactions") # REMOVE ONCE FIXED
         #    print("Omitting all non-covalent interactions except hydrogen bonding")
         #    print("Omitting all non-covalent interactions expcept halogen bonding")
         #    print("Omitting all non-covalent interactions except Pauli repulsion")         
         #    print("Omitting all non-covalent interactions except electrostatics")
         #    print("Omitting all non-covalent interactions except dispersion")
-
+        """
         e_hbnd = 0.0
         for i in self.hatoms:
             atH = [cartCoordinates[3 * i], cartCoordinates[3 * i + 1], cartCoordinates[3 * i + 2]]
@@ -2764,7 +2783,7 @@ class Molecule:
 
         # Calculation of polarisation energy (for solute-solvent) to go here in future
         # Left out for version 1 as optional, only important as intermolecular interactions
-
+        """
         if verbosity >= 1:
             print("Total energy                         = {:> 16.8f}".format(energy))
         return energy
@@ -2856,35 +2875,6 @@ class Molecule:
         if verbosity >= 1:
             print("With bends, energy = " + str(energy))
 
-        for i in self.tors:
-            # Calculate the vectors lying along bonds, and their cross products
-            atom_e1 = [cartCoordinates[3 * i.atom1], cartCoordinates[3 * i.atom1 + 1], cartCoordinates[3 * i.atom1 + 2]]
-            atom_b1 = [cartCoordinates[3 * i.atom2], cartCoordinates[3 * i.atom2 + 1], cartCoordinates[3 * i.atom2 + 2]]
-            atom_b2 = [cartCoordinates[3 * i.atom3], cartCoordinates[3 * i.atom3 + 1], cartCoordinates[3 * i.atom3 + 2]]
-            atom_e2 = [cartCoordinates[3 * i.atom4], cartCoordinates[3 * i.atom4 + 1], cartCoordinates[3 * i.atom4 + 2]]
-            end_1 = [atom_e1[i] - atom_b1[i] for i in range(3)]
-            bridge = [atom_b1[i] - atom_b2[i] for i in range(3)]
-            end_2 = [atom_b2[i] - atom_e2[i] for i in range(3)]
-            vnormal_1 = np.cross(end_1, bridge)
-            vnormal_2 = np.cross(bridge, end_2)
-
-            # Construct a set of orthogonal basis vectors to define a frame with vnormal_2 as the x axis
-            vcross = np.cross(vnormal_2, bridge)
-            norm_vn2 = np.linalg.norm(vnormal_2)
-            norm_b = np.linalg.norm(bridge)
-            norm_vc = np.linalg.norm(vcross)
-            basis_vn2 = [vnormal_2[i] / norm_vn2 for i in range(3)]
-            basis_b = [bridge[i] / norm_b for i in range(3)]
-            basis_cv = [vcross[i] / norm_vc for i in range(3)]
-
-            # Find the signed angle between vnormal_1 and vnormal_2 in the new frame
-            vn1_coord_n2 = np.dot(vnormal_1, basis_vn2)
-            vn1_coord_vc = np.dot(vnormal_1, basis_cv)
-            psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
-            energy = energy + i.energy(psi)
-        if verbosity >= 1:
-            print("With torsion, energy = " + str(energy))
-
         for j in range(len(self.inv)):
             i = self.inv[j]
             k_inv0 = i.k_inv  # Store the force constant k originally associated with this inversion potential 
@@ -2938,8 +2928,43 @@ class Molecule:
         if verbosity >= 1:
             print("With inversion, energy = " + str(energy))
 
-        # if verbosity >= 1: # REMOVE ONCE FIXED
-        #      print("Omitting all non-covalent interactions") # REMOVE ONCE FIXED
+        for j in range(len(self.tors)):
+            i = self.tors[j]
+            if i.typ == 1 or i.typ == 3:
+                k_tors0 = i.k # Store the original k value associated with this torsion potential, where applicable
+                i.setk(ForceConstants[len(self.stretch) + len(self.str13) + len(self.bend) + len(self.inv) + j])
+            # Calculate the vectors lying along bonds, and their cross products
+            atom_e1 = [cartCoordinates[3 * i.atom1], cartCoordinates[3 * i.atom1 + 1], cartCoordinates[3 * i.atom1 + 2]]
+            atom_b1 = [cartCoordinates[3 * i.atom2], cartCoordinates[3 * i.atom2 + 1], cartCoordinates[3 * i.atom2 + 2]]
+            atom_b2 = [cartCoordinates[3 * i.atom3], cartCoordinates[3 * i.atom3 + 1], cartCoordinates[3 * i.atom3 + 2]]
+            atom_e2 = [cartCoordinates[3 * i.atom4], cartCoordinates[3 * i.atom4 + 1], cartCoordinates[3 * i.atom4 + 2]]
+            end_1 = [atom_e1[i] - atom_b1[i] for i in range(3)]
+            bridge = [atom_b1[i] - atom_b2[i] for i in range(3)]
+            end_2 = [atom_b2[i] - atom_e2[i] for i in range(3)]
+            vnormal_1 = np.cross(end_1, bridge)
+            vnormal_2 = np.cross(bridge, end_2)
+
+            # Construct a set of orthogonal basis vectors to define a frame with vnormal_2 as the x axis
+            vcross = np.cross(vnormal_2, bridge)
+            norm_vn2 = np.linalg.norm(vnormal_2)
+            norm_b = np.linalg.norm(bridge)
+            norm_vc = np.linalg.norm(vcross)
+            basis_vn2 = [vnormal_2[i] / norm_vn2 for i in range(3)]
+            basis_b = [bridge[i] / norm_b for i in range(3)]
+            basis_cv = [vcross[i] / norm_vc for i in range(3)]
+
+            # Find the signed angle between vnormal_1 and vnormal_2 in the new frame
+            vn1_coord_n2 = np.dot(vnormal_1, basis_vn2)
+            vn1_coord_vc = np.dot(vnormal_1, basis_cv)
+            psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
+            energy = energy + i.energy(psi)
+            if i.typ == 1 or i.typ == 3:
+                i.setk(k_tors0) # Restore the original force constant associated with this torsion poetential so that it is not permanently modified by the energy calculation
+        if verbosity >= 1:
+            print("With torsion, energy = " + str(energy))
+
+        if verbosity >= 1: # REMOVE ONCE FIXED
+             print("Omitting all non-covalent interactions") # REMOVE ONCE FIXED
 
         #    if verbosity >=1: # REMOVE ONCE FIXED
         #      print("Total energy:") # REMOVE ONCE FIXED
@@ -2951,7 +2976,7 @@ class Molecule:
         #    print("Omitting all non-covalent interactions except Pauli repulsion")   
         #    print("Omitting all non-covalent interactions except electrostatics")
         #    print("Omitting all non-covalent interactions except dispersion")
-
+        """
         e_hbnd = 0.0
         for i in self.hatoms:
             atH = [cartCoordinates[3 * i], cartCoordinates[3 * i + 1], cartCoordinates[3 * i + 2]]
@@ -3156,7 +3181,7 @@ class Molecule:
 
         # Calculation of polarisation energy (for solute-solvent) to go here in future
         # Left out for version 1 as optional, only important as intermolecular interactions
-
+        """
         if verbosity >= 1:
             print("Total energy:")
         return (energy)
@@ -3298,7 +3323,6 @@ class Molecule:
         # verbosity = 3
         # NOTE: This should be deleted once running smoothly
         # NOTE 2: while the best way to solve HC = SCE is in question, the additiional argument typ is used to select between options. Ideally this can eventually be done away with
-        # Present default is typ=2, employing linalg.eig from SciPy, with typ=1 switching to linalg.eigh
         
 
         # Assemble an array that holds information about the basis set.
@@ -4367,7 +4391,8 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         if fc < 0.002:
             ProgramWarning()
             print(" This force constant is smaller than 0.002")
-
+        # NOTE: eventually if simple torsion is used, could save time by skipping this step altogether
+        
         # Setup list of angles at which the torsion potential has to be calculated for the fitting procedure
         torsionfit_points = 20  # Number of points for the fit; '20' equals steps of 18 degrees
         torsionfit_angles = np.zeros(torsionfit_points)
@@ -4444,7 +4469,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         f_dmp_12 = DampingFunction(sym1, sym2, r_12)
         f_dmp_23 = DampingFunction(sym2, sym3, r_23)
         f_dmp_34 = DampingFunction(sym3, sym4, r_34)
-        f_dmp = f_dmp_12 * f_dmp_23 * f_dmp_34
+        f_dmp = f_dmp_12 * f_dmp_23 * f_dmp_34 
         # Define an objective function for the difference between HMOEnergy and energy from the torsion potential
         """ 
         def TorsEnergyDiff(k_tors, energies, angles, theta0, f_dmp):
@@ -4459,11 +4484,12 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             for i in range(len(energies)):
                 ediff = potTorsion(angles[i], theta0, f_dmp, k_tors) - energies[i]
                 absdiff = abs(ediff)
+                absdiff = absdiff 
                 sqdiff = absdiff ** 2
                 sum_sq_diffs += sqdiff
             return sum_sq_diffs
         # Set up initial k_tors values for the optimisation
-        k_tors_init = np.zeros(4) # NOTE: Setting values to a non-zero guess value may be useful to avoid problems currently arising in geometry optimisation with bonds dissociating
+        k_tors_init = np.zeros(3) # NOTE: Setting values to a non-zero guess value may be useful to avoid problems currently arising in geometry optimisation with bonds dissociating
         for j in range(len(k_tors_init)):
             k_tors_init[j] = 1 # 1 is just a guess to try and ensure optimisation reaches a reasonable solution
         print("Starting values of k_tors for fitting:")
@@ -4471,17 +4497,26 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         # Use the SciPy leastsq optimiser to carry out a least squares fit for k_tors
         #k_tors = scipy.optimize.leastsq(TorsEnergyDiff, k_tors_init, (torsionfit_energies, torsionfit_angles, theta0, f_dmp))
         # Use a built in optimiser and the TorsLeastSq objective function to obtain a least squares fit for k_tors values
-        k_tors_opt = scipy.optimize.minimize(TorsLeastSq, k_tors_init, (torsionfit_energies, torsionfit_angles, theta0, f_dmp), method='BFGS')
+        k_tors_opt = scipy.optimize.minimize(TorsLeastSq, k_tors_init, (torsionfit_energies, torsionfit_angles, theta0, f_dmp), method='BFGS', options={'disp': True, 'gtol':1e-05})
+        k_tors = k_tors_opt.x
+
+        #Check quality of fit, print a warning if difference in any two energies exceeds a chosen threshold
+        for j in range(len(torsionfit_angles)):
+            torsfittedenergy = potTorsion(torsionfit_angles[j], theta0, f_dmp, k_tors)
+            if abs(torsfittedenergy - torsionfit_energies[j]) > 0.4: # This value could be tailored depending on margin of error permissible
+                print("Warning: energy from torsion fit not within 0.4 of EHT energy")
+                 #ProgramAbort() #NOTE: Must delete this to test fit further once suitable candidate is found
+                break
+
         #print("Optimisation output:")
         print(k_tors_opt)
-        k_tors = k_tors_opt.x
         print("Optimised values of k_tors:")
         print(k_tors)
+        """
         k_tors_1 = k_tors[0]
         k_tors_2 = k_tors[1]
         k_tors_3 = k_tors[2]
-        k_tors_4 = k_tors[3]
-        """
+        k_tors_4 = k_tors[3] 
         # Debugging only, access the individual constants and print        
         print("k_tors_1 = " + str(k_tors_1))
         print("k_tors_2 = " + str(k_tors_2))
@@ -4501,6 +4536,28 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         print("Printing the atom at index dihedrals[i][0]")
         print(molecule.atoms[molecule.dihedrals[i][0]])
         """
+
+        # As a temporary measure, calculate and print both HMO and PotTors energies to be plotted as a check on the fit
+        torsionfitted_energies = np.zeros(len(torsionfit_angles))
+        torsfit_ediffs = np.zeros(len(torsionfit_angles))
+        for j in range(len(torsionfit_angles)):
+            torsionfitted_energies[j] = potTorsion(torsionfit_angles[j], theta0, f_dmp, k_tors)
+            torsfit_ediffs[j] = torsionfitted_energies[j] - torsionfit_energies[j]
+        print("torsionfit_angles: " + str(torsionfit_angles))
+        print("torsionfit_energies: " + str(torsionfit_energies))
+        print("torsionfitted_energies: " + str(torsionfitted_energies))
+        print("\nTorsion fit comparison for dihedral " + str(i))
+        print("{:<11}  {:<11}  {:<11} {:<11} ".format("Angle", "EH energy", "FF energy", "FF - EH energy"))
+        for j in range(len(torsionfit_angles)):
+            print("{:>11.6f}  {:>11.6f}  {:>11.6f}  {:>11.6f}".format(torsionfit_angles[j], torsionfit_energies[j], torsionfitted_energies[j], torsfit_ediffs[j]))
+        mean_ediff = 0
+        for j in range(len(torsfit_ediffs)):
+            mean_ediff += torsfit_ediffs[j]
+        mean_ediff = mean_ediff/len(torsfit_ediffs)
+        print("Mean energy difference: " + str(mean_ediff))
+
+        #print("Using k_tors with torsion type 3")
+
         # Once the torsion potential has been determined, add the torsion term to the Force Field
         if verbosity >= 2:
             print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(
@@ -4516,7 +4573,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                                molecule.atoms[molecule.dihedrals[i][3]].symbol,
                                molecule.atmatmdist(molecule.dihedrals[i][0], molecule.dihedrals[i][1]),
                                molecule.atmatmdist(molecule.dihedrals[i][1], molecule.dihedrals[i][2]),
-                               molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3]), k_tors_1, k_tors_2, k_tors_3, k_tors_4])# NOTE that a length-independent way to add k_tors_n for all relevant n is needed
+                               molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3]), k_tors])# NOTE that a length-independent way to add k_tors_n for all relevant n is needed
         # As for bends, arg list now includes atom symbols and bond lengths, which could be separated out later
 
 
@@ -4689,6 +4746,9 @@ def fitForceConstants(molecule, verbosity=0):
         ForceConstants.append(molecule.bend[i].k)
     for i in range(len(molecule.inv)):
         ForceConstants.append(molecule.inv[i].k_inv)
+    for i in range(len(molecule.tors)):
+        if molecule.tors[i].typ == 1 or molecule.tors[i].typ == 3:
+            ForceConstants.append(molecule.tors[i].k)
     InitialFC = ForceConstants
     if verbosity >= 1:
         print("\nForce constants to be optimised:")
@@ -4724,6 +4784,9 @@ def fitForceConstants(molecule, verbosity=0):
         molecule.bend[i].setk(xopt[len(molecule.stretch) + len(molecule.str13) + i])
     for i in range(len(molecule.inv)):
         molecule.inv[i].setk(xopt[len(molecule.stretch) + len(molecule.str13) + len(molecule.bend) + i])
+    for i in range(len(molecule.tors)):
+        if molecule.tors[i].typ == 1 or molecule.tors[i].typ == 3:
+            molecule.tors[i].setk(xopt[len(molecule.stretch) + len(molecule.str13) + len(molecule.bend) + len(molecule.inv) + i]) 
 
 
 ######################################################################################
@@ -5018,39 +5081,39 @@ reactant_mol.setGeometry(xopt)
 print("\nOptimized Geometry in Gaussian format for molecule:", reactant_mol.name)
 print(reactant_mol.gaussString())
 
-product_mol = Molecule("Product",0)
-extractCoordinates(args.product, product_mol, verbosity = args.verbosity, bondcutoff=args.bondcutoff)
-fitForceConstants(product_mol, verbosity = args.verbosity)
+#product_mol = Molecule("Product",0)
+#extractCoordinates(args.product, product_mol, verbosity = args.verbosity, bondcutoff=args.bondcutoff)
+#fitForceConstants(product_mol, verbosity = args.verbosity)
 
 #print("\nCartesian Coordinates of Product (as one list):")
 #print(product_mol.cartesianCoordinates())
 
-print("\nForce Field Energy of Product:")
-print(product_mol.FFEnergy(product_mol.cartesianCoordinates(), verbosity = args.verbosity))
+#print("\nForce Field Energy of Product:")
+#print(product_mol.FFEnergy(product_mol.cartesianCoordinates(), verbosity = args.verbosity))
 
-print("\nOptimising geometry of molecule:", product_mol.name)
-initialcoords2optimiseP = product_mol.cartesianCoordinates()
-xopt = scipy.optimize.fmin_bfgs(product_mol.FFEnergy, initialcoords2optimiseP, gtol=0.00005)
+#print("\nOptimising geometry of molecule:", product_mol.name)
+#initialcoords2optimiseP = product_mol.cartesianCoordinates()
+#xopt = scipy.optimize.fmin_bfgs(product_mol.FFEnergy, initialcoords2optimiseP, gtol=0.00005)
 # print("\Optimized Geometry coordinates (Product):")
 # print(xopt)
 
-product_mol.setGeometry(xopt)
-print("\nOptimized Geometry in Gaussian format for molecule:", product_mol.name)
-print(product_mol.gaussString())
+#product_mol.setGeometry(xopt)
+#print("\nOptimized Geometry in Gaussian format for molecule:", product_mol.name)
+#print(product_mol.gaussString())
 
 
-print("\nDistort Geometry by interpolation and print energy again:")
-coordinates2optimiseR = reactant_mol.cartesianCoordinates()
-coordinates2optimiseP = product_mol.cartesianCoordinates()
+#print("\nDistort Geometry by interpolation and print energy again:")
+#coordinates2optimiseR = reactant_mol.cartesianCoordinates()
+#coordinates2optimiseP = product_mol.cartesianCoordinates()
 
-coordinates2optimiseR = (np.array(coordinates2optimiseR)+(np.array(coordinates2optimiseP))/2.0)
+#coordinates2optimiseR = (np.array(coordinates2optimiseR)+(np.array(coordinates2optimiseP))/2.0)
 
-print(reactant_mol.FFEnergy(coordinates2optimiseR, verbosity = 1))
+#print(reactant_mol.FFEnergy(coordinates2optimiseR, verbosity = 1))
 
-print("\nGeometry Optimizer:")
-xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
-print("\nOptimized Geometry coordinates:")
-print(xopt)
+#print("\nGeometry Optimizer:")
+#xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, coordinates2optimiseR, gtol=0.00005)
+#print("\nOptimized Geometry coordinates:")
+#print(xopt)
 
 
 # print("\nBond Dissociation:")
