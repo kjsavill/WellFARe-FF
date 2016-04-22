@@ -4496,32 +4496,49 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         f_dmp_23 = DampingFunction(sym2, sym3, r_23)
         f_dmp_34 = DampingFunction(sym3, sym4, r_34)
         f_dmp = f_dmp_12 * f_dmp_23 * f_dmp_34 
+        # Alternative equilibrium angle: use the angle where EH energy is at a minimum
+        minHMOenergy = min(HMO_energies)
+        eqHMOindex = np.where(HMO_energies == minHMOenergy)
+        eqHMO = torsionfit_angles[eqHMOindex]
+
+        # Definition of alternative torsion potential 
+        def cosine_pot(psi, psi_e, k):
+            sumpot = 0.0
+            # I've left damping out of this test since it is not important for angles around equilibrium distances.
+            for n in range(0, len(k)):
+                # sumpot += k[n] * ((f_chiral(psi) * (1 + np.cos((n + 1) * (np.radians(psi - psi_e)) + math.pi))) + (
+                # (1 - f_chiral(psi)) * (1 + np.cos((n + 1) * (np.radians(psi + psi_e) - 2 * math.pi) + math.pi))))
+                sumpot += k[n] * np.cos(np.radians((n+1) * (psi - psi_e)))
+            return sumpot
+
         # Define an objective function for the difference between HMOEnergy and energy from the torsion potential
-        """ 
         def TorsEnergyDiff(k_tors, energies, angles, theta0, f_dmp):
             energydiffs = np.zeros(len(energies))
             for i in range(len(energies)):
                 energydiff = abs(potTorsion(angles[i], theta0, f_dmp, k_tors) - energies[i])
                 energydiffs[i] = energydiff
             return energydiffs 
-        """
+
         def TorsLeastSq(k_tors, energies, angles, theta0, f_dmp):
             sum_sq_diffs = 0.0
             for j in range(len(energies)):
-                ediff = potTorsion(math.radians(angles[j]), theta0, f_dmp, k_tors) - energies[i]
+                ediff = potTorsion(math.radians(angles[j]), theta0, f_dmp, k_tors) - energies[j]
                 absdiff = abs(ediff)
                 absdiff = absdiff 
                 sqdiff = absdiff ** 2
                 sum_sq_diffs += sqdiff
             return sum_sq_diffs
+
         def CosSeriesLeastSq(k_tors, energies, angles, theta0):
             sq_diffs_sum = 0.0
             for j in range(len(energies)):
-                difference = potCosineSum(math.radians(angles[j]), theta0, k_tors) - energies[i]
+                difference = potCosineSum(math.radians(angles[j]), theta0, k_tors) - energies[j]
+                #difference = cosine_pot(angles[j], theta0, k_tors) - energies[j]
                 absolutediff = abs(difference)
                 squarediff = absolutediff ** 2
                 sq_diffs_sum += squarediff
             return sq_diffs_sum
+
         # Offset HMO energies to center around zero for fitting
         offset = (max(HMO_energies) + min(HMO_energies))/2.0
         torsionfit_energies = np.zeros(len(HMO_energies))
@@ -4537,14 +4554,14 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         # Use the SciPy leastsq optimiser to carry out a least squares fit for k_tors
         #k_tors = scipy.optimize.leastsq(TorsEnergyDiff, k_tors_init, (torsionfit_energies, torsionfit_angles, theta0, f_dmp))
         # Use a built in optimiser and the TorsLeastSq objective function to obtain a least squares fit for k_tors values
-        k_tors_opt = scipy.optimize.minimize(TorsLeastSq, k_tors_init, (torsionfit_energies, torsionfit_angles, theta0, f_dmp), method='BFGS', options={'disp': True, 'gtol':1e-05}, tol=None)
-        #k_tors_opt = scipy.optimize.minimize(CosSeriesLeastSq, k_tors_init, (torsionfit_energies, torsionfit_angles, theta0), method='BFGS', options={'disp': True, 'gtol':1e-05}, tol=None)
+        #k_tors_opt = scipy.optimize.minimize(TorsLeastSq, k_tors_init, (torsionfit_energies, torsionfit_angles, theta0, f_dmp), method='BFGS', options={'disp': True, 'gtol':1e-05}, tol=None)
+        k_tors_opt = scipy.optimize.minimize(CosSeriesLeastSq, k_tors_init, (torsionfit_energies, torsionfit_angles, math.radians(eqHMO))) #theta0), method='BFGS', options={'disp': True, 'gtol':1e-05}, tol=None)
         k_tors = k_tors_opt.x
 
         #Check quality of fit, print a warning if difference in any two energies exceeds a chosen threshold
         for j in range(len(torsionfit_angles)):
             #torsfittedenergy = potTorsion(math.radians(torsionfit_angles[j]), theta0, f_dmp, k_tors)
-            torsfittedenergy = potCosineSum(math.radians(torsionfit_angles[j]), theta0, k_tors)
+            torsfittedenergy = potCosineSum(math.radians(torsionfit_angles[j]), math.radians(eqHMO), k_tors) #theta0, k_tors)
             if abs(torsfittedenergy - torsionfit_energies[j]) > 0.4: # This value could be tailored depending on margin of error permissible
                 print("Warning: energy from torsion fit not within 0.4 of EHT energy")
                  #ProgramAbort() #NOTE: Must delete this to test fit further once suitable candidate is found
@@ -4579,28 +4596,125 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         print(molecule.atoms[molecule.dihedrals[i][0]])
         """
 
+        # Perform a second fitting procedure following proof of concept code known to work in order to compare and debug
+        print("\nFitting again for comparison\n")        
+
+        # Definition of Grimme's V_tors term
+        def cosine_pot(psi, psi_e, k):
+            sumpot = 0.0
+            # I've left damping out of this test since it is not important for angles around equilibrium distances.
+            for n in range(0, len(k)):
+                # sumpot += k[n] * ((f_chiral(psi) * (1 + np.cos((n + 1) * (np.radians(psi - psi_e)) + math.pi))) + (
+                # (1 - f_chiral(psi)) * (1 + np.cos((n + 1) * (np.radians(psi + psi_e) - 2 * math.pi) + math.pi))))
+                sumpot += k[n] * np.cos(np.radians((n+1) * (psi - psi_e)))
+            return sumpot
+
+
+        # Defining a function to minimise for the curve fit
+        def residuals(coeffopt, angles, eq_angle, energiescomp):
+            for k in range(0, len(angles)):
+                #VtorsEnergies[k] = potCosineSum(angles[k], eq_angle, coeffopt)
+                VtorsEnergies[k] = cosine_pot(angles[k], eq_angle, coeffopt)
+            #print("Residuals: ", np.sum(np.square(np.subtract(VtorsEnergies, energiescomp))))
+            return np.sum(np.square(np.subtract(VtorsEnergies, energiescomp)))
+
+        def cosine_potLeastSq(k_tors, energies, angles, theta0):
+            sq_diffs_sum = 0.0
+            #print("len(energies) for cosine_potLeastSq " + str(len(energies)))
+            #print("len(angles) for cosine_potLeastSq " + str(len(angles)))
+            for k in range(len(energies)):
+                #print("cosine_potLeastSq, value of k" + str(k))
+                #difference = potCosineSum(math.radians(angles[j]), theta0, k_tors) - energies[i]
+                difference = cosine_pot(angles[k], theta0, k_tors) - energies[k]
+                absolutediff = abs(difference)
+                squarediff = absolutediff ** 2
+                sq_diffs_sum += squarediff
+            return sq_diffs_sum
+
+        # Enter some data manually...
+        # The angles of the scan
+        #angles = [0.0, 18.0, 36.0, 54.0, 72.0, 90.0, 108.0, 126.0, 144.0, 162.0, 180.0, 198.0, 216.0, 234.0, 252.0, 270.0,
+        #          288.0, 306.0, 324.0, 342.0]
+        angles = torsionfit_angles        
+
+        # The energies from the Extended Hückel calculation
+        #energies = [-8.66438018, -8.66252415, -8.66118080, -8.66147707, -8.66316270, -8.66483236, -8.66512519, -8.66380571,
+        #            -8.66194250, -8.66107747, -8.66193958, -8.66380231, -8.66512409, -8.66483445, -8.66316629, -8.66147920,
+        #            -8.66117968, -8.66252072, -8.66437731, -8.66522486]
+        energies = torsionfit_energies
+        # The "length" of the cosine expansion in the V_tors term
+        length = len(k_tors_init)
+
+        # Start of the main script
+
+        # Center the EHT energies around zero
+        energies = np.subtract(energies, ((np.amin(energies) + np.amax(energies)) / 2.0))
+
+        # Define starting coefficient "k" (set to -1.0)
+        coeff = np.multiply(np.ones(length), -1.0)
+
+        # Create array to store V_tors energies
+        VtorsEnergies = np.zeros(len(energies))
+
+        # I'll set the "equilibrium" angle close to one of the minima in the Extended Hückel scan
+        eq_angle = eqHMO #theta0 #100.0
+        
+        # Print starting information
+        print("EHT Energies along all angles:")
+        for j in range(0,len(angles)):
+            print(energies[j])
+
+        optcoeff = scipy.optimize.minimize(residuals, coeff, args=(angles, eq_angle, energies))
+        #optcoeff = scipy.optimize.minimize(cosine_potLeastSq, coeff, args=(energies, angles, eq_angle))
+
+        print("Success of second optimisation? ", optcoeff.success)
+        print("Message: ", optcoeff.message)
+        print("Best coefficient set: ", optcoeff.x)
+
+        # Calculate the value of V_tors for what we have right now:
+        #print("Energies along all angles with new coefficients:")
+        for j in range(0, len(angles)):
+            #VtorsEnergies[j] = potCosineSum(angles[j], eq_angle, optcoeff.x)
+            VtorsEnergies[j] = cosine_pot(angles[j], eq_angle, optcoeff.x)
+            #print(VtorsEnergies[j])
+        
         # As a temporary measure, calculate and print both HMO and PotTors energies to be plotted as a check on the fit
         torsionfitted_energies = np.zeros(len(torsionfit_angles))
         torsfit_ediffs = np.zeros(len(torsionfit_angles))
+        fit2_ediffs = np.zeros(len(torsionfit_angles))
         for j in range(len(torsionfit_angles)):
             #torsionfitted_energies[j] = potTorsion(math.radians(torsionfit_angles[j]), theta0, f_dmp, k_tors)
-            torsionfitted_energies[j] = potCosineSum(math.radians(torsionfit_angles[j]), theta0, k_tors)
+            torsionfitted_energies[j] = potCosineSum(math.radians(torsionfit_angles[j]), math.radians(eqHMO), k_tors)
             torsfit_ediffs[j] = torsionfitted_energies[j] - torsionfit_energies[j]
+            fit2_ediffs[j] = VtorsEnergies[j] - torsionfit_energies[j]
         print("torsionfit_angles: " + str(torsionfit_angles))
         print("torsionfit_energies: " + str(torsionfit_energies))
         print("torsionfitted_energies: " + str(torsionfitted_energies))
         print("\nTorsion fit comparison for dihedral " + str(i))
-        print("{:^9}  {:^13}  {:^13} {:^13} ".format("Angle", "EH energy", "FF energy", "FF - EH energy"))
-        print("{:^9}  {:^13}  {:^13} {:^13} ".format(" ", "(offset)", " ", " "))
+        print("{:^9}  {:^12}  {:^12}  {:^12}  {:^12}  {:^12} ".format("Angle", "EH energy", "FF energy", "FF - EH energy", "VtorsEnergy", "Vt - EH energy"))
+        print("{:^9}  {:^12}  {:^12}  {:^12}  {:^12}  {:^12} ".format(" ", "(offset)", " ", " ", " ", " "))
         for j in range(len(torsionfit_angles)):
-            print("{:>9.4f}  {:>13.9f}  {:>13.9f}  {:>13.9f}".format(torsionfit_angles[j], torsionfit_energies[j], torsionfitted_energies[j], torsfit_ediffs[j]))
-        mean_ediff = 0
+            print("{:>9.4f}  {:>12.8f}  {:>12.8f}  {:>12.8f}  {:>12.8f}  {:>12.8f}".format(torsionfit_angles[j], torsionfit_energies[j], torsionfitted_energies[j], torsfit_ediffs[j], VtorsEnergies[j], fit2_ediffs[j]))
+        mean_ediff = 0.0
+        mean_ediff2 = 0.0
         for j in range(len(torsfit_ediffs)):
             mean_ediff += torsfit_ediffs[j]
+            mean_ediff2 += fit2_ediffs[j]
         mean_ediff = mean_ediff/len(torsfit_ediffs)
-        print("Mean energy difference: " + str(mean_ediff))
+        mean_ediff2 = mean_ediff2/len(fit2_ediffs)
+        print("Mean energy differences, FF/EH: " + str(mean_ediff) + ", Vt/EH: " + str(mean_ediff2))
         ediff_range = max(torsfit_ediffs) - min(torsfit_ediffs)
-        print("Range in energy differences: " + str(ediff_range))
+        ediff_range2 = max(fit2_ediffs) - min(fit2_ediffs)
+        print("Ranges in energy differences, FF/EH: " + str(ediff_range) + ", Vt/EH: " + str(ediff_range2))
+        print("k_tors from FF optimisation:")
+        print(k_tors)
+        print("k_tors from Vt optimisation:")
+        print(optcoeff.x)
+        print("Differences in k_tors values:")
+        ktorsdiffs = np.zeros(len(k_tors))
+        for j in range(len(k_tors)):
+            ktorsdiffs[j] = k_tors[j] - optcoeff.x[j]
+        print(ktorsdiffs)
 
         #print("Using k_tors with torsion type 3")
 
