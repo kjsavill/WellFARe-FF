@@ -1018,6 +1018,7 @@ class FFTorsion:
             self.k_tors = arg[8]
             #for i in range(8, len(arg)):
             #    self.k_tors.append(arg[i])
+            self.theta0HMO = arg[9]
         elif typ == 3:
             self.typ = typ
             r_12 = arg[5]
@@ -1038,6 +1039,7 @@ class FFTorsion:
             f_dmp_34 = DampingFunction(arg[3], arg[4], r_34)
             self.f_dmp = f_dmp_12 * f_dmp_23 * f_dmp_34
             self.k_tors = arg[8]
+            self.theta0HMO = arg[9]
         else:
             self.typ = 1
             self.k = arg[0]
@@ -1085,7 +1087,7 @@ class FFTorsion:
         if self.typ == 1:
             energy = potSimpleCosine(theta, self.theta0, self.k)
         elif self.typ == 2:
-            energy = potTorsion(theta, self.theta0, self.f_dmp, self.k_tors)
+            energy = potTorsion(theta, self.theta0HMO, self.f_dmp, self.k_tors)
         # Will need two cases, one for non-rotatable bonds, the other for rotatable bonds.
         # Probably best to implement via types
         elif self.typ == 3:
@@ -1093,7 +1095,7 @@ class FFTorsion:
             k_tors.append(self.k)
             energy = potTorsion(theta, self.theta0, self.f_dmp, k_tors)
         elif self.typ == 4:
-            energy = potCosineSum(theta, self.theta0, self.k_tors)
+            energy = potCosineSum(theta, self.theta0HMO, self.k_tors)
         return energy
 
 
@@ -4479,7 +4481,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
 
         # Fitting routine to determine values of k_tors_n begins here
         # Calculate the inputs needed for the torsion potential
-        theta0 = molecule.dihedralangle(i)
+        #theta0 = molecule.dihedralangle(i)
         sym1 = molecule.atoms[molecule.dihedrals[i][0]].symbol
         sym2 = molecule.atoms[molecule.dihedrals[i][1]].symbol
         sym3 = molecule.atoms[molecule.dihedrals[i][2]].symbol
@@ -4491,37 +4493,50 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         f_dmp_23 = DampingFunction(sym2, sym3, r_23)
         f_dmp_34 = DampingFunction(sym3, sym4, r_34)
         f_dmp = f_dmp_12 * f_dmp_23 * f_dmp_34 
-        # Define an objective function for the difference between HMOEnergy and energy from the torsion potential
-        """ 
+        # Determine the equilibrium dihedral angle from EHT calculations to use in fitting
+        minHMOenergy = min(HMO_energies)
+        eqHMOindex = np.where(HMO_energies == minHMOenergy)
+        eqHMO = torsionfit_angles[eqHMOindex[0][0]] # NOTE: using the first, rather than second or later, angle in the list of fit points at which HMO energy is minimal as the equilibrium angle may affect results
+        print("eqHMOindex:")
+        print(eqHMOindex)
+        print("eqHMO:")
+        print(eqHMO)
+
+        # Define objective functions for the difference between HMOEnergy and energy from the torsion potential
+         
         def TorsEnergyDiff(k_tors, energies, angles, theta0, f_dmp):
             energydiffs = np.zeros(len(energies))
-            for i in range(len(energies)):
-                energydiff = abs(potTorsion(angles[i], theta0, f_dmp, k_tors) - energies[i])
-                energydiffs[i] = energydiff
+            for j in range(len(energies)):
+                energydiff = abs(potTorsion(math.radians(angles[j]), theta0, f_dmp, k_tors) - energies[j])
+                energydiffs[j] = energydiff
             return energydiffs 
-        """
+        
         def TorsLeastSq(k_tors, energies, angles, theta0, f_dmp):
             sum_sq_diffs = 0.0
             for j in range(len(energies)):
-                ediff = potTorsion(math.radians(angles[j]), theta0, f_dmp, k_tors) - energies[i]
+                ediff = potTorsion(math.radians(angles[j]), theta0, f_dmp, k_tors) - energies[j]
                 absdiff = abs(ediff)
-                absdiff = absdiff 
                 sqdiff = absdiff ** 2
                 sum_sq_diffs += sqdiff
             return sum_sq_diffs
+
         def CosSeriesLeastSq(k_tors, energies, angles, theta0):
             sq_diffs_sum = 0.0
             for j in range(len(energies)):
-                difference = potCosineSum(math.radians(angles[j]), theta0, k_tors) - energies[i]
+                difference = potCosineSum(math.radians(angles[j]), theta0, k_tors) - energies[j]
                 absolutediff = abs(difference)
                 squarediff = absolutediff ** 2
                 sq_diffs_sum += squarediff
             return sq_diffs_sum
+
         # Offset HMO energies to center around zero for fitting
         offset = (max(HMO_energies) + min(HMO_energies))/2.0
         torsionfit_energies = np.zeros(len(HMO_energies))
         for j in range(len(HMO_energies)):
             torsionfit_energies[j] = HMO_energies[j] - offset
+        # Print the modified energies to be used in fitting
+        print("torsionfit_energies:")
+        print(torsionfit_energies)
         
         # Set up initial k_tors values for the optimisation
         k_tors_init = np.zeros(4) # NOTE: Setting values to a non-zero guess value may be useful to avoid problems currently arising in geometry optimisation with bonds dissociating
@@ -4532,14 +4547,14 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         # Use the SciPy leastsq optimiser to carry out a least squares fit for k_tors
         #k_tors = scipy.optimize.leastsq(TorsEnergyDiff, k_tors_init, (torsionfit_energies, torsionfit_angles, theta0, f_dmp))
         # Use a built in optimiser and the TorsLeastSq objective function to obtain a least squares fit for k_tors values
-        k_tors_opt = scipy.optimize.minimize(TorsLeastSq, k_tors_init, (torsionfit_energies, torsionfit_angles, theta0, f_dmp), method='BFGS', options={'disp': True, 'gtol':1e-05}, tol=None)
-        #k_tors_opt = scipy.optimize.minimize(CosSeriesLeastSq, k_tors_init, (torsionfit_energies, torsionfit_angles, theta0), method='BFGS', options={'disp': True, 'gtol':1e-05}, tol=None)
+        #k_tors_opt = scipy.optimize.minimize(TorsLeastSq, k_tors_init, (torsionfit_energies, torsionfit_angles, math.radians(eqHMO), f_dmp)) #, method='BFGS', options={'disp': True, 'gtol':1e-05}, tol=None)
+        k_tors_opt = scipy.optimize.minimize(CosSeriesLeastSq, k_tors_init, (torsionfit_energies, torsionfit_angles, math.radians(eqHMO))) #, method='BFGS', options={'disp': True, 'gtol':1e-05}, tol=None)
         k_tors = k_tors_opt.x
 
         #Check quality of fit, print a warning if difference in any two energies exceeds a chosen threshold
         for j in range(len(torsionfit_angles)):
-            #torsfittedenergy = potTorsion(math.radians(torsionfit_angles[j]), theta0, f_dmp, k_tors)
-            torsfittedenergy = potCosineSum(math.radians(torsionfit_angles[j]), theta0, k_tors)
+            #torsfittedenergy = potTorsion(math.radians(torsionfit_angles[j]), math.radians(eqHMO), f_dmp, k_tors)
+            torsfittedenergy = potCosineSum(math.radians(torsionfit_angles[j]), math.radians(eqHMO), k_tors)
             if abs(torsfittedenergy - torsionfit_energies[j]) > 0.4: # This value could be tailored depending on margin of error permissible
                 print("Warning: energy from torsion fit not within 0.4 of EHT energy")
                  #ProgramAbort() #NOTE: Must delete this to test fit further once suitable candidate is found
@@ -4578,8 +4593,8 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         torsionfitted_energies = np.zeros(len(torsionfit_angles))
         torsfit_ediffs = np.zeros(len(torsionfit_angles))
         for j in range(len(torsionfit_angles)):
-            #torsionfitted_energies[j] = potTorsion(math.radians(torsionfit_angles[j]), theta0, f_dmp, k_tors)
-            torsionfitted_energies[j] = potCosineSum(math.radians(torsionfit_angles[j]), theta0, k_tors)
+            #torsionfitted_energies[j] = potTorsion(math.radians(torsionfit_angles[j]), math.radians(eqHMO), f_dmp, k_tors)
+            torsionfitted_energies[j] = potCosineSum(math.radians(torsionfit_angles[j]), math.radians(eqHMO), k_tors)
             torsfit_ediffs[j] = torsionfitted_energies[j] - torsionfit_energies[j]
         print("torsionfit_angles: " + str(torsionfit_angles))
         print("torsionfit_energies: " + str(torsionfit_energies))
@@ -4614,7 +4629,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                                molecule.atoms[molecule.dihedrals[i][3]].symbol,
                                molecule.atmatmdist(molecule.dihedrals[i][0], molecule.dihedrals[i][1]),
                                molecule.atmatmdist(molecule.dihedrals[i][1], molecule.dihedrals[i][2]),
-                               molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3]), k_tors])# NOTE that a length-independent way to add k_tors_n for all relevant n is needed
+                               molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3]), k_tors, math.radians(eqHMO)])
         # As for bends, arg list now includes atom symbols and bond lengths, which could be separated out later
 
 
