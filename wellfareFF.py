@@ -4303,6 +4303,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             print(bothsides.xyzString())
 
             # Calculate Extended Hückel Energy for the "supermolecule"
+            bothsides.orient()
             torsionfit_energies[k] = bothsides.HMOEnergy()
             # for k in range(0, torsionfit_points):
             #     print(torsionfit_energies[k])
