@@ -2224,6 +2224,210 @@ class Molecule:
         if a >= 0 and a <= len(self.atoms):
             self.halogens.append(a)
 
+    def ringcheck(self, checkbond):
+        """ (Molecule) -> Boolean
+
+        Checks whether or not the bond a forms part of a ring
+        """
+        
+        bond1 = self.bonds[checkbond]
+        a = bond1[0]
+        b = bond1[1]
+        print("\nChecking bond " + str(bond1))
+        inring = False
+        terminalbd = False 
+        ringsize  = 0
+        bonds_a = []
+        bonds_b = []
+        # Find bonds from atom a to any other atom, and from atom b to any other atom
+        # NOTE: A single loop, and a single list, expanding outwards could be used to cover rings of arbitary size provided a suitable break condition to stop the loop when all bonds have been checked is found. 
+        # For now, rings up to 8 atoms are covered manually to allow testing
+        for bond in self.bonds:
+            if not bond == bond1:
+                if bond[0] == a:
+                    bonds_a.append(bond)
+                elif bond[1] == a:
+                    bonds_a.append([bond[1], bond[0]])
+                elif bond[0] == b:
+                    bonds_b.append(bond)
+                elif bond[1] == b:
+                    bonds_b.append([bond[1], bond[0]])
+            # Check whether there is a common third atom bonded to both a and b, stopping if one such atom is found 
+        print("Bonds from atom " + str(a) +": " + str(bonds_a)) # REMOVE ONCE FIXED
+        print("Bonds from atom " + str(b) +": " + str(bonds_b)) # REMOVE ONCE FIXED
+        if not bonds_a or not bonds_b:
+            terminalbd = True
+            print("Bond is in a terminal position in the molecule")
+        else:
+            for bd_a in bonds_a:
+                for bd_b in bonds_b:
+                    if bd_a[1] == bd_b[1]:
+                        inring = True
+                        ringsize = 3
+                        break 
+                if inring:
+                    break
+        # If not, find all bonds 1 bond away from each of atom a and atom b
+        if not inring and not terminalbd:
+            bonds_a1 = []
+            bonds_b1 = []
+            for bond in self.bonds:
+                for bd_a in bonds_a:
+                    if bd_a[1] == bond[0] and bd_a[0] != bond[1]:
+                        bonds_a1.append(bond)
+                    elif bd_a[1] == bond[1] and bd_a[0] != bond[0]:
+                        bonds_a1.append([bond[1], bond[0]])
+                for bd_b in bonds_b:
+                    if bd_b[1] == bond[0] and bd_b[0] != bond[1]:
+                        bonds_b1.append(bond)
+                    elif bd_b[1] == bond[1] and bd_b[0] != bond[0]:
+                        bonds_b1.append([bond[1], bond[0]])
+            # Then check whether there is one of those bonds in common to both a and b, ending the loop if so
+            print("Bonds one bond away from atom " + str(a) +": " + str(bonds_a1)) # REMOVE ONCE FIXED
+            print("Bonds one bond away from atom " + str(b) +": " + str(bonds_b1)) # REMOVE ONCE FIXED
+            for bd_a1 in bonds_a1:
+                for bd_b1 in bonds_b1:
+                    if bd_a1[0] == bd_b1[1]:
+                        inring = True
+                        ringsize = 4
+                        break
+                    elif bd_a1[1] == bd_b1[1]:
+                        inring = True
+                        ringsize = 5
+                        break
+                if inring:
+                    break
+        # If not, find all bonds 2 away from each of atom a and b 
+        if not inring and not terminalbd:
+            bonds_a2 = []
+            bonds_b2 = []
+            for bond in self.bonds:
+                for bd_a1 in bonds_a1:
+                    if bd_a1[1] == bond[0] and bd_a1[0] != bond[1]:
+                        bonds_a2.append(bond)
+                    elif bd_a1[1] == bond[1] and bd_a1[0] != bond[0]:
+                        bonds_a2.append([bond[1], bond[0]])
+                for bd_b1 in bonds_b1:
+                    if bd_b1[1] == bond[0] and bd_b1[0] != bond[1]:
+                        bonds_b2.append(bond)
+                    elif bd_b1[1] == bond[1] and bd_b1[0] != bond[0]:
+                        bonds_b2.append([bond[1], bond[0]])
+                        # Then check whether there is one of those bonds in common to both a and b, ending the loop if so
+            print("Bonds two bonds away from atom " + str(a) +": " + str(bonds_a2)) # REMOVE ONCE FIXED
+            print("Bonds two bonds away from atom " + str(b) +": " + str(bonds_b2)) # REMOVE ONCE FIXED
+            for bd_a2 in bonds_a2:
+                for bd_b2 in bonds_b2:
+                    if bd_a2[0] == bd_b2[1]:
+                        inring = True
+                        ringsize = 6
+                        break
+                    elif bd_a2[1] == bd_b2[1]:
+                        inring == True
+                        ringsize = 7
+                if inring:
+                    break
+        # If not, find all bonds 3 away from each of atom a and b 
+        if not inring and not terminalbd:
+            bonds_a3 = []
+            bonds_b3 = []
+            for bond in self.bonds:
+                for bd_a2 in bonds_a2:
+                    if bd_a2[1] == bond[0] and bd_a2[0] != bond[1]:
+                        bonds_a3.append(bond)
+                    elif bd_a2[1] == bond[1] and bd_a2[0] != bond[0]:
+                        bonds_a3.append([bond[1], bond[0]])
+                for bd_b2 in bonds_b2:
+                    if bd_b2[1] == bond[0] and bd_b2[0] != bond[1]:
+                        bonds_b3.append(bond)
+                    elif bd_b2[1] == bond[1] and bd_b2[0] != bond[0]:
+                        bonds_b3.append([bond[1], bond[0]])
+                        # Then check whether there is one of those bonds in common to both a and b, ending the loop if so
+            print("Bonds three bonds away from atom " + str(a) +": " + str(bonds_a3)) # REMOVE ONCE FIXED
+            print("Bonds three bonds away from atom " + str(b) +": " + str(bonds_b3)) # REMOVE ONCE FIXED
+            for bd_a3 in bonds_a3:
+                for bd_b3 in bonds_b3:
+                    if bd_a3[0] == bd_b3[1]:
+                        inring = True
+                        ringsize = 8
+                        break
+                    elif bd_a3[1] == bd_b3[1]:
+                        inring = True
+                        ringsize = 9
+                        break
+                if inring:
+                    break
+        # If not, find all bonds 4 away from each of atom a and b 
+        if not inring and not terminalbd:
+            bonds_a4 = []
+            bonds_b4 = []
+            for bond in self.bonds:
+                for bd_a3 in bonds_a3:
+                    if bd_a3[1] == bond[0] and bd_a3[0] != bond[1]:
+                        bonds_a4.append(bond)
+                    elif bd_a3[1] == bond[1] and bd_a3[0] != bond[0]:
+                        bonds_a4.append([bond[1], bond[0]])
+                for bd_b3 in bonds_b3:
+                    if bd_b3[1] == bond[0] and bd_b3[0] != bond[1]:
+                        bonds_b4.append(bond)
+                    elif bd_b3[1] == bond[1] and bd_b3[0] != bond[0]:
+                        bonds_b4.append([bond[1], bond[0]])
+                        # Then check whether there is one of those bonds in common to both a and b, ending the loop if so
+            print("Bonds four bonds away from atom " + str(a) +": " + str(bonds_a4)) # REMOVE ONCE FIXED
+            print("Bonds four bonds away from atom " + str(b) +": " + str(bonds_b4)) # REMOVE ONCE FIXED
+            for bd_a4 in bonds_a4:
+                for bd_b4 in bonds_b4:
+                    if bd_a4[0] == bd_b4[1]:
+                        inring = True
+                        ringsize = 10
+                        break
+                    elif bd_a4[1] == bd_b4[1]:
+                        inring = True
+                        ringsize = 11
+                        break
+                if inring:
+                    break
+        # If not, find all bonds 5 away from each of atom a and b 
+        if not inring and not terminalbd:
+            bonds_a5 = []
+            bonds_b5 = []
+            for bond in self.bonds:
+                for bd_a4 in bonds_a4:
+                    if bd_a4[1] == bond[0] and bd_a4[0] != bond[1]:
+                        bonds_a5.append(bond)
+                    elif bd_a4[1] == bond[1] and bd_a4[0] != bond[0]:
+                        bonds_a5.append([bond[1], bond[0]])
+                for bd_b4 in bonds_b4:
+                    if bd_b4[1] == bond[0] and bd_b4[0] != bond[1]:
+                        bonds_b5.append(bond)
+                    elif bd_b4[1] == bond[1] and bd_b4[0] != bond[0]:
+                        bonds_b5.append([bond[1], bond[0]])
+                        # Then check whether there is one of those bonds in common to both a and b, ending the loop if so
+            print("Bonds five bonds away from atom " + str(a) +": " + str(bonds_a5)) # REMOVE ONCE FIXED
+            print("Bonds five bonds away from atom " + str(b) +": " + str(bonds_b5)) # REMOVE ONCE FIXED
+            for bd_a5 in bonds_a5:
+                for bd_b5 in bonds_b5:
+                    if bd_a5[0] == bd_b5[1]:
+                        inring = True
+                        ringsize = 12
+                        break
+                    elif bd_a5[1] == bd_b5[1]:
+                        inring = True
+                        ringsize = 13
+                        break
+
+        if not inring and not terminalbd:
+            if not bonds_a5 and not bonds_b5:
+                pass 
+            else:
+                print("Search for rings stopped at ring size 13")
+
+        print("Bond {0} in ring? {1}".format(checkbond, inring))
+        if inring:
+            print("Size of ring: " + str(ringsize))
+
+        return inring        
+
+
     def screen_ES(self, a, b):
         """ (Molecule) -> Number
     
@@ -4415,7 +4619,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             ProgramWarning()
             print(" This force constant is smaller than 0.002")
         # NOTE: eventually if simple torsion is used, could save time by skipping this step altogether
-        
+        """ 
         # Setup list of angles at which the torsion potential has to be calculated for the fitting procedure
         torsionfit_points = 20  # Number of points for the fit; '20' equals steps of 18 degrees
         torsionfit_angles = np.zeros(torsionfit_points)
@@ -4564,7 +4768,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         print(k_tors_opt)
         print("Optimised values of k_tors:")
         print(k_tors)
-        """
+        
         k_tors_1 = k_tors[0]
         k_tors_2 = k_tors[1]
         k_tors_3 = k_tors[2]
@@ -4587,7 +4791,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         print(molecule.dihedrals[i][0])
         print("Printing the atom at index dihedrals[i][0]")
         print(molecule.atoms[molecule.dihedrals[i][0]])
-        """
+        
 
         # As a temporary measure, calculate and print both HMO and PotTors energies to be plotted as a check on the fit
         torsionfitted_energies = np.zeros(len(torsionfit_angles))
@@ -4613,7 +4817,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         print("Range in energy differences: " + str(ediff_range))
 
         #print("Using k_tors with torsion type 3")
-
+        """
         # Once the torsion potential has been determined, add the torsion term to the Force Field
         if verbosity >= 2:
             print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(
@@ -4622,14 +4826,14 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                 molecule.atoms[molecule.dihedrals[i][2]].symbol, molecule.dihedrals[i][2],
                 molecule.atoms[molecule.dihedrals[i][3]].symbol, molecule.dihedrals[i][3], fc))
         molecule.addFFTorsion(molecule.dihedrals[i][0], molecule.dihedrals[i][1], molecule.dihedrals[i][2],
-                              molecule.dihedrals[i][3], molecule.dihedralangle(i), 4,
+                              molecule.dihedrals[i][3], molecule.dihedralangle(i), 1,
                               [fc, molecule.atoms[molecule.dihedrals[i][0]].symbol,
                                molecule.atoms[molecule.dihedrals[i][1]].symbol,
                                molecule.atoms[molecule.dihedrals[i][2]].symbol,
                                molecule.atoms[molecule.dihedrals[i][3]].symbol,
                                molecule.atmatmdist(molecule.dihedrals[i][0], molecule.dihedrals[i][1]),
                                molecule.atmatmdist(molecule.dihedrals[i][1], molecule.dihedrals[i][2]),
-                               molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3]), k_tors, math.radians(eqHMO)])
+                               molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3])]) #, k_tors, math.radians(eqHMO)])
         # As for bends, arg list now includes atom symbols and bond lengths, which could be separated out later
 
 
@@ -5124,18 +5328,20 @@ reactant_mol = Molecule("Reactant", 0)
 extractCoordinates(args.reactant, reactant_mol, verbosity=args.verbosity, bondcutoff=args.bondcutoff)
 fitForceConstants(reactant_mol, verbosity=args.verbosity)
 
+for i in range(len(reactant_mol.bonds)):
+    reactant_mol.ringcheck(i)
 
-print("\nForce Field Energy of molecule:", reactant_mol.name)
-print("\nHere we go:", reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity=args.verbosity))
+#print("\nForce Field Energy of molecule:", reactant_mol.name)
+#print("\nHere we go:", reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity=args.verbosity))
 
 
-print("\nOptimising geometry of molecule:", reactant_mol.name)
-initialcoords2optimiseR = reactant_mol.cartesianCoordinates()
-xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, initialcoords2optimiseR, gtol=0.00005)
+#print("\nOptimising geometry of molecule:", reactant_mol.name)
+#initialcoords2optimiseR = reactant_mol.cartesianCoordinates()
+#xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, initialcoords2optimiseR, gtol=0.00005)
 
-reactant_mol.setGeometry(xopt)
-print("\nOptimized Geometry in Gaussian format for molecule:", reactant_mol.name)
-print(reactant_mol.gaussString())
+#reactant_mol.setGeometry(xopt)
+#print("\nOptimized Geometry in Gaussian format for molecule:", reactant_mol.name)
+#print(reactant_mol.gaussString())
 
 #product_mol = Molecule("Product",0)
 #extractCoordinates(args.product, product_mol, verbosity = args.verbosity, bondcutoff=args.bondcutoff)
