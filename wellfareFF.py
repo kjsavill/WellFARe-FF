@@ -126,7 +126,7 @@ def au2AMU(au):
     return au / 1822.88839
 
 
-# Conversion of length in Angstroms to  to
+# Conversion of length in Angstroms to
 # atomic units (Bohrs)
 def Ang2Bohr(ang):
     return ang * 1.889725989
@@ -156,7 +156,7 @@ def kcal_mol2au(kcm):
 def au2kcal_mol(au):
     return au * 627.503
 
-
+# Dictionary to convert atomic symbols to atomic numbers
 SymbolToNumber = {
     "H": 1, "He": 2, "Li": 3, "Be": 4, "B": 5, "C": 6, "N": 7, "O": 8, "F": 9,
     "Ne": 10, "Na": 11, "Mg": 12, "Al": 13, "Si": 14, "P": 15, "S": 16, "Cl": 17,
@@ -179,6 +179,7 @@ SymbolToNumber = {
 # Invert the above: atomic numbers to atomic symbols
 NumberToSymbol = {v: k for k, v in SymbolToNumber.items()}
 
+# Dictionary to convert atomic symbols to atomic masses
 SymbolToMass = {
     "H": 1.00794, "He": 4.002602, "Li": 6.941, "Be": 9.012182, "B": 10.811,
     "C": 12.0107, "N": 14.0067, "O": 15.9994, "F": 18.9984032, "Ne": 20.1797,
@@ -273,7 +274,7 @@ SymbolToEN = {
     "Mt": 1.30, "Ds": 1.30, "Rg": 1.30, "Cn": 1.30, "Uut": 1.30, "Uuq": 1.30,
     "Uup": 1.30, "Uuh": 1.30, "Uus": 1.30, "Uuo": 1.30}
 
-# Define dictionary to convert atomic symbods to valence electron number
+# Define dictionary to convert atomic symbols to valence electron number
 SymbolToValenceE = {
     "H": 1, "He": 2, "Li": 1, "Be": 2, "B": 3, "C": 4,
     "N": 5, "O": 6, "F": 7, "Ne": 8, "Na": 1, "Mg": 2,
@@ -507,6 +508,16 @@ def potSimpleCosine(theta, theta0, k):
 
     return u
 
+def potCosineSum(theta, theta0, k_tors):
+    """
+    Simplified torsion potential with undamped cosine sum
+    """
+
+    cossum = 0.0
+    for i in range(len(k_tors)):
+        cossum += k_tors[i] * np.cos((i+1)*(theta - theta0))
+
+    return cossum
 
 def bond_exp(a, b):
     """
@@ -519,13 +530,15 @@ def bond_exp(a, b):
     return bond_exp
 
 
-def exp_1_3(a, b):
+def exp_1_3(a, b, inring):
     """
     Exponent a used in the Generalised Lennard-Jones potential for 1,3-stretches
     """
     # Now taking atomic symbols as input 
     exp_1_3 = k_a13 + (k_b13 * k_a[a] * k_a[b])
-    # Special case: if both atoms are in a ring, then k_13r is added to exp_1_3. Detection of rings to be implemented later
+    
+    if inring:
+        exp_1_3 = exp_1_3 + k_13r
 
     return exp_1_3
 
@@ -590,11 +603,10 @@ def potTorsion(theta, theta0, f_dmp, k_tors):
     f_chiral = ChiralityFunction(theta)
 
     u = 0.0
-    # Sort out where n comes from in the following sum, check if k_tors ** n or k_tors_n
-    # for n in # Range to be determined:
-    #    inner_sum = (f_chiral * (1 + math.cos(n * (theta - theta0) + math.pi))) + ((1 - f_chiral) * (1 + math.cos(n * (theta + theta0 - (2 * math.pi)) + math.pi)))
-    #    u = u + ((k_tors ** n) * inner_sum)
-    # u = u * f_dmp
+    for n in range(1, len(k_tors + 1)): 
+        inner_sum = (f_chiral * (1 + math.cos(n * (theta - theta0) + math.pi))) + ((1 - f_chiral) * (1 + math.cos(n * (theta + theta0 - (2 * math.pi)) + math.pi)))
+        u = u + (k_tors[n-1] * inner_sum)
+    u = u * f_dmp
 
     return u
 
@@ -808,7 +820,8 @@ class FFStretch:
             # check whether an Atom can be passed to a function this way
             self.k_str = arg[0]
         elif typ == 4:
-            self.exp_a = exp_1_3(arg[2], arg[3])
+            self.ring = arg[4]
+            self.exp_a = exp_1_3(arg[2], arg[3], self.ring)
             self.k_str = arg[0]
         else:
             self.typ = 1
@@ -974,8 +987,10 @@ class FFTorsion:
     
     A torsion potential between atoms number a, b, c and d with equilibrium
     angle theta0, of type typ with arguments [arg] comprising the dihedral
-    force constant, the atomic symbols of atoms a, b, c and d, and the 
-    ab, bc and cd bond lengths
+    force constant, the atomic symbols of atoms a, b, c and d,  the 
+    ab, bc and cd bond lengths, the values of k_tors_n and equilibrium angle
+    from fitting to HMOEnergy result, if applicable, and a Boolean for whether
+    the central bond of the dihedral is in a ring 
     """
 
         self.atom1 = a
@@ -983,6 +998,7 @@ class FFTorsion:
         self.atom3 = c
         self.atom4 = d
         self.theta0 = theta0
+        self.ring = arg[10]
         if typ == 1:
             self.typ = typ
             self.k = arg[0]
@@ -995,7 +1011,31 @@ class FFTorsion:
             f_dmp_23 = DampingFunction(arg[2], arg[3], r_23)
             f_dmp_34 = DampingFunction(arg[3], arg[4], r_34)
             self.f_dmp = f_dmp_12 * f_dmp_23 * f_dmp_34
-            self.k = arg[0]
+            self.k_tors = arg[8]
+            #for i in range(8, len(arg)):
+            #    self.k_tors.append(arg[i])
+            self.theta0HMO = arg[9]
+        elif typ == 3:
+            self.typ = typ
+            r_12 = arg[5]
+            r_23 = arg[6]
+            r_34 = arg[7]
+            f_dmp_12 = DampingFunction(arg[1], arg[2], r_12)
+            f_dmp_23 = DampingFunction(arg[2], arg[3], r_23)
+            f_dmp_34 = DampingFunction(arg[3], arg[4], r_34)
+            self.f_dmp = f_dmp_12 * f_dmp_23 * f_dmp_34
+            self.k = arg[8][0]
+        elif typ == 4:
+            self.typ = typ
+            r_12 = arg[5]
+            r_23 = arg[6]
+            r_34 = arg[7]
+            f_dmp_12 = DampingFunction(arg[1], arg[2], r_12)
+            f_dmp_23 = DampingFunction(arg[2], arg[3], r_23)
+            f_dmp_34 = DampingFunction(arg[3], arg[4], r_34)
+            self.f_dmp = f_dmp_12 * f_dmp_23 * f_dmp_34
+            self.k_tors = arg[8]
+            self.theta0HMO = arg[9]
         else:
             self.typ = 1
             self.k = arg[0]
@@ -1032,16 +1072,26 @@ class FFTorsion:
 
         return s + r
 
+    def setk(self, newk):
+        """ Sets the single force constant k for type 1 or 3 torsion potentials equal to newk """
+        self.k = newk
+
     def energy(self, theta):
         """ Returns the energy of this torsion potential at angle theta"""
 
         energy = 0.0
         if self.typ == 1:
             energy = potSimpleCosine(theta, self.theta0, self.k)
-        elif typ == 2:
-            energy = potTorsion(theta, self.theta0, self.f_dmp, self.k)
+        elif self.typ == 2:
+            energy = potTorsion(theta, self.theta0HMO, self.f_dmp, self.k_tors)
         # Will need two cases, one for non-rotatable bonds, the other for rotatable bonds.
         # Probably best to implement via types
+        elif self.typ == 3:
+            k_tors = []
+            k_tors.append(self.k)
+            energy = potTorsion(theta, self.theta0, self.f_dmp, k_tors)
+        elif self.typ == 4:
+            energy = potCosineSum(theta, self.theta0HMO, self.k_tors)
         return energy
 
 
@@ -1357,10 +1407,10 @@ class Atom:
     def __repr__(self):
         """ (Atom) -> str
     
-    Return a string representation of this Atom in this format:"
+        Return a string representation of this Atom in this format:"
     
-      Atom("SYMBOL", charge, QM charge, mass, X, Y, Z)
-    """
+        Atom("SYMBOL", charge, QM charge, mass, X, Y, Z)
+        """
 
         return '("{0}", {1}, {2}, {3}, {4}, {5} {6})'.format(self.symbol, self.charge, self.QMcharge, self.mass,
                                                              self.coord[0], self.coord[1], self.coord[2])
@@ -2169,6 +2219,236 @@ class Molecule:
         if a >= 0 and a <= len(self.atoms):
             self.halogens.append(a)
 
+    def ringcheckbd(self, checkbond):
+        """ (Molecule) -> Boolean
+
+        Checks whether or not the bond a forms part of a ring
+        """
+        
+        bond1 = self.bonds[checkbond]
+        a = bond1[0]
+        b = bond1[1]
+        print("\nChecking bond " + str(bond1))
+        inring = False
+        terminalbd = False 
+        ringsize  = 0
+        bonds_a = []
+        bonds_b = []
+        # Find bonds from atom a to any other atom, and from atom b to any other atom
+        # NOTE: A single loop, and a single list, expanding outwards could be used to cover rings of arbitary size provided a suitable break condition to stop the loop when all bonds have been checked is found. 
+        # For now, rings up to 8 atoms are covered manually to allow testing
+        for bond in self.bonds:
+            if not bond == bond1:
+                if bond[0] == a:
+                    bonds_a.append(bond)
+                elif bond[1] == a:
+                    bonds_a.append([bond[1], bond[0]])
+                elif bond[0] == b:
+                    bonds_b.append(bond)
+                elif bond[1] == b:
+                    bonds_b.append([bond[1], bond[0]])
+            # Check whether there is a common third atom bonded to both a and b, stopping if one such atom is found 
+        #print("Bonds from atom " + str(a) +": " + str(bonds_a)) # REMOVE ONCE FIXED
+        #print("Bonds from atom " + str(b) +": " + str(bonds_b)) # REMOVE ONCE FIXED
+        if not bonds_a or not bonds_b:
+            terminalbd = True
+            print("Bond is in a terminal position in the molecule")
+        else:
+            for bd_a in bonds_a:
+                for bd_b in bonds_b:
+                    if bd_a[1] == bd_b[1]:
+                        inring = True
+                        ringsize = 3
+                        break 
+                if inring:
+                    break
+        # If not, find all bonds 1 bond away from each of atom a and atom b
+        if not inring and not terminalbd:
+            bonds_a1 = []
+            bonds_b1 = []
+            for bond in self.bonds:
+                for bd_a in bonds_a:
+                    if bd_a[1] == bond[0] and bd_a[0] != bond[1]:
+                        bonds_a1.append(bond)
+                    elif bd_a[1] == bond[1] and bd_a[0] != bond[0]:
+                        bonds_a1.append([bond[1], bond[0]])
+                for bd_b in bonds_b:
+                    if bd_b[1] == bond[0] and bd_b[0] != bond[1]:
+                        bonds_b1.append(bond)
+                    elif bd_b[1] == bond[1] and bd_b[0] != bond[0]:
+                        bonds_b1.append([bond[1], bond[0]])
+            # Then check whether there is one of those bonds in common to both a and b, ending the loop if so
+            #print("Bonds one bond away from atom " + str(a) +": " + str(bonds_a1)) # REMOVE ONCE FIXED
+            #print("Bonds one bond away from atom " + str(b) +": " + str(bonds_b1)) # REMOVE ONCE FIXED
+            for bd_a1 in bonds_a1:
+                for bd_b1 in bonds_b1:
+                    if bd_a1[0] == bd_b1[1]:
+                        inring = True
+                        ringsize = 4
+                        break
+                    elif bd_a1[1] == bd_b1[1]:
+                        inring = True
+                        ringsize = 5
+                        break
+                if inring:
+                    break
+        # If not, find all bonds 2 away from each of atom a and b 
+        if not inring and not terminalbd:
+            bonds_a2 = []
+            bonds_b2 = []
+            for bond in self.bonds:
+                for bd_a1 in bonds_a1:
+                    if bd_a1[1] == bond[0] and bd_a1[0] != bond[1]:
+                        bonds_a2.append(bond)
+                    elif bd_a1[1] == bond[1] and bd_a1[0] != bond[0]:
+                        bonds_a2.append([bond[1], bond[0]])
+                for bd_b1 in bonds_b1:
+                    if bd_b1[1] == bond[0] and bd_b1[0] != bond[1]:
+                        bonds_b2.append(bond)
+                    elif bd_b1[1] == bond[1] and bd_b1[0] != bond[0]:
+                        bonds_b2.append([bond[1], bond[0]])
+                        # Then check whether there is one of those bonds in common to both a and b, ending the loop if so
+            #print("Bonds two bonds away from atom " + str(a) +": " + str(bonds_a2)) # REMOVE ONCE FIXED
+            #print("Bonds two bonds away from atom " + str(b) +": " + str(bonds_b2)) # REMOVE ONCE FIXED
+            for bd_a2 in bonds_a2:
+                for bd_b2 in bonds_b2:
+                    if bd_a2[0] == bd_b2[1]:
+                        inring = True
+                        ringsize = 6
+                        break
+                    elif bd_a2[1] == bd_b2[1]:
+                        inring == True
+                        ringsize = 7
+                if inring:
+                    break
+        # If not, find all bonds 3 away from each of atom a and b 
+        if not inring and not terminalbd:
+            bonds_a3 = []
+            bonds_b3 = []
+            for bond in self.bonds:
+                for bd_a2 in bonds_a2:
+                    if bd_a2[1] == bond[0] and bd_a2[0] != bond[1]:
+                        bonds_a3.append(bond)
+                    elif bd_a2[1] == bond[1] and bd_a2[0] != bond[0]:
+                        bonds_a3.append([bond[1], bond[0]])
+                for bd_b2 in bonds_b2:
+                    if bd_b2[1] == bond[0] and bd_b2[0] != bond[1]:
+                        bonds_b3.append(bond)
+                    elif bd_b2[1] == bond[1] and bd_b2[0] != bond[0]:
+                        bonds_b3.append([bond[1], bond[0]])
+                        # Then check whether there is one of those bonds in common to both a and b, ending the loop if so
+            #print("Bonds three bonds away from atom " + str(a) +": " + str(bonds_a3)) # REMOVE ONCE FIXED
+            #print("Bonds three bonds away from atom " + str(b) +": " + str(bonds_b3)) # REMOVE ONCE FIXED
+            for bd_a3 in bonds_a3:
+                for bd_b3 in bonds_b3:
+                    if bd_a3[0] == bd_b3[1]:
+                        inring = True
+                        ringsize = 8
+                        break
+                    elif bd_a3[1] == bd_b3[1]:
+                        inring = True
+                        ringsize = 9
+                        break
+                if inring:
+                    break
+        # If not, find all bonds 4 away from each of atom a and b 
+        if not inring and not terminalbd:
+            bonds_a4 = []
+            bonds_b4 = []
+            for bond in self.bonds:
+                for bd_a3 in bonds_a3:
+                    if bd_a3[1] == bond[0] and bd_a3[0] != bond[1]:
+                        bonds_a4.append(bond)
+                    elif bd_a3[1] == bond[1] and bd_a3[0] != bond[0]:
+                        bonds_a4.append([bond[1], bond[0]])
+                for bd_b3 in bonds_b3:
+                    if bd_b3[1] == bond[0] and bd_b3[0] != bond[1]:
+                        bonds_b4.append(bond)
+                    elif bd_b3[1] == bond[1] and bd_b3[0] != bond[0]:
+                        bonds_b4.append([bond[1], bond[0]])
+                        # Then check whether there is one of those bonds in common to both a and b, ending the loop if so
+            #print("Bonds four bonds away from atom " + str(a) +": " + str(bonds_a4)) # REMOVE ONCE FIXED
+            #print("Bonds four bonds away from atom " + str(b) +": " + str(bonds_b4)) # REMOVE ONCE FIXED
+            for bd_a4 in bonds_a4:
+                for bd_b4 in bonds_b4:
+                    if bd_a4[0] == bd_b4[1]:
+                        inring = True
+                        ringsize = 10
+                        break
+                    elif bd_a4[1] == bd_b4[1]:
+                        inring = True
+                        ringsize = 11
+                        break
+                if inring:
+                    break
+        # If not, find all bonds 5 away from each of atom a and b 
+        if not inring and not terminalbd:
+            bonds_a5 = []
+            bonds_b5 = []
+            for bond in self.bonds:
+                for bd_a4 in bonds_a4:
+                    if bd_a4[1] == bond[0] and bd_a4[0] != bond[1]:
+                        bonds_a5.append(bond)
+                    elif bd_a4[1] == bond[1] and bd_a4[0] != bond[0]:
+                        bonds_a5.append([bond[1], bond[0]])
+                for bd_b4 in bonds_b4:
+                    if bd_b4[1] == bond[0] and bd_b4[0] != bond[1]:
+                        bonds_b5.append(bond)
+                    elif bd_b4[1] == bond[1] and bd_b4[0] != bond[0]:
+                        bonds_b5.append([bond[1], bond[0]])
+                        # Then check whether there is one of those bonds in common to both a and b, ending the loop if so
+            #print("Bonds five bonds away from atom " + str(a) +": " + str(bonds_a5)) # REMOVE ONCE FIXED
+            #print("Bonds five bonds away from atom " + str(b) +": " + str(bonds_b5)) # REMOVE ONCE FIXED
+            for bd_a5 in bonds_a5:
+                for bd_b5 in bonds_b5:
+                    if bd_a5[0] == bd_b5[1]:
+                        inring = True
+                        ringsize = 12
+                        break
+                    elif bd_a5[1] == bd_b5[1]:
+                        inring = True
+                        ringsize = 13
+                        break
+
+        if not inring and not terminalbd:
+            if not bonds_a5 and not bonds_b5:
+                pass 
+            else:
+                print("Search for rings stopped at ring size 13")
+
+        print("Bond {0} in ring? {1}".format(checkbond, inring))
+        if inring:
+            print("Size of ring: " + str(ringsize))
+
+        return inring        
+
+    def ringcheckatm(self, checkatom):
+        """ (Molecule) -> Bool
+
+        Checks whether or not the atom given forms part of a ring, by checking bonds in which it is contained
+        """
+
+        # Construct a list of bonds containing the atom in question
+        a = checkatom
+        atmbonds = []
+        for i in range(len(self.bonds)):
+            if a == self.bonds[i][0] or a == self.bonds[i][1]:
+                atmbonds.append(i)
+
+        #print("\n----------------------------------------")
+        #print("Checking whether atom {0} is in a ring".format(a))
+
+        atminring = False        
+        # Check whether any of those bonds are contained in a ring
+        for atmbd in atmbonds:
+            bdinring = self.ringcheckbd(atmbd)
+            if bdinring:
+                atminring = True
+
+        #print("Atom {0} in ring? {1}\n".format(checkatom, atminring))
+
+        return atminring
+
     def screen_ES(self, a, b):
         """ (Molecule) -> Number
     
@@ -2841,35 +3121,6 @@ class Molecule:
         if verbosity >= 1:
             print("With bends, energy = " + str(energy))
 
-        for i in self.tors:
-            # Calculate the vectors lying along bonds, and their cross products
-            atom_e1 = [cartCoordinates[3 * i.atom1], cartCoordinates[3 * i.atom1 + 1], cartCoordinates[3 * i.atom1 + 2]]
-            atom_b1 = [cartCoordinates[3 * i.atom2], cartCoordinates[3 * i.atom2 + 1], cartCoordinates[3 * i.atom2 + 2]]
-            atom_b2 = [cartCoordinates[3 * i.atom3], cartCoordinates[3 * i.atom3 + 1], cartCoordinates[3 * i.atom3 + 2]]
-            atom_e2 = [cartCoordinates[3 * i.atom4], cartCoordinates[3 * i.atom4 + 1], cartCoordinates[3 * i.atom4 + 2]]
-            end_1 = [atom_e1[i] - atom_b1[i] for i in range(3)]
-            bridge = [atom_b1[i] - atom_b2[i] for i in range(3)]
-            end_2 = [atom_b2[i] - atom_e2[i] for i in range(3)]
-            vnormal_1 = np.cross(end_1, bridge)
-            vnormal_2 = np.cross(bridge, end_2)
-
-            # Construct a set of orthogonal basis vectors to define a frame with vnormal_2 as the x axis
-            vcross = np.cross(vnormal_2, bridge)
-            norm_vn2 = np.linalg.norm(vnormal_2)
-            norm_b = np.linalg.norm(bridge)
-            norm_vc = np.linalg.norm(vcross)
-            basis_vn2 = [vnormal_2[i] / norm_vn2 for i in range(3)]
-            basis_b = [bridge[i] / norm_b for i in range(3)]
-            basis_cv = [vcross[i] / norm_vc for i in range(3)]
-
-            # Find the signed angle between vnormal_1 and vnormal_2 in the new frame
-            vn1_coord_n2 = np.dot(vnormal_1, basis_vn2)
-            vn1_coord_vc = np.dot(vnormal_1, basis_cv)
-            psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
-            energy = energy + i.energy(psi)
-        if verbosity >= 1:
-            print("With torsion, energy = " + str(energy))
-
         for j in range(len(self.inv)):
             i = self.inv[j]
             k_inv0 = i.k_inv  # Store the force constant k originally associated with this inversion potential 
@@ -2923,8 +3174,43 @@ class Molecule:
         if verbosity >= 1:
             print("With inversion, energy = " + str(energy))
 
-        # if verbosity >= 1: # REMOVE ONCE FIXED
-        #      print("Omitting all non-covalent interactions") # REMOVE ONCE FIXED
+        for j in range(len(self.tors)):
+            i = self.tors[j]
+            if i.typ == 1 or i.typ == 3:
+                k_tors0 = i.k # Store the original k value associated with this torsion potential
+                i.setk(ForceConstants[len(self.stretch) + len(self.str13) + len(self.bend) + len(self.inv) + j])
+            # Calculate the vectors lying along bonds, and their cross products
+            atom_e1 = [cartCoordinates[3 * i.atom1], cartCoordinates[3 * i.atom1 + 1], cartCoordinates[3 * i.atom1 + 2]]
+            atom_b1 = [cartCoordinates[3 * i.atom2], cartCoordinates[3 * i.atom2 + 1], cartCoordinates[3 * i.atom2 + 2]]
+            atom_b2 = [cartCoordinates[3 * i.atom3], cartCoordinates[3 * i.atom3 + 1], cartCoordinates[3 * i.atom3 + 2]]
+            atom_e2 = [cartCoordinates[3 * i.atom4], cartCoordinates[3 * i.atom4 + 1], cartCoordinates[3 * i.atom4 + 2]]
+            end_1 = [atom_e1[i] - atom_b1[i] for i in range(3)]
+            bridge = [atom_b1[i] - atom_b2[i] for i in range(3)]
+            end_2 = [atom_b2[i] - atom_e2[i] for i in range(3)]
+            vnormal_1 = np.cross(end_1, bridge)
+            vnormal_2 = np.cross(bridge, end_2)
+
+            # Construct a set of orthogonal basis vectors to define a frame with vnormal_2 as the x axis
+            vcross = np.cross(vnormal_2, bridge)
+            norm_vn2 = np.linalg.norm(vnormal_2)
+            norm_b = np.linalg.norm(bridge)
+            norm_vc = np.linalg.norm(vcross)
+            basis_vn2 = [vnormal_2[i] / norm_vn2 for i in range(3)]
+            basis_b = [bridge[i] / norm_b for i in range(3)]
+            basis_cv = [vcross[i] / norm_vc for i in range(3)]
+
+            # Find the signed angle between vnormal_1 and vnormal_2 in the new frame
+            vn1_coord_n2 = np.dot(vnormal_1, basis_vn2)
+            vn1_coord_vc = np.dot(vnormal_1, basis_cv)
+            psi = math.atan2(vn1_coord_vc, vn1_coord_n2)
+            energy = energy + i.energy(psi)
+        if i.typ == 1 or i.typ == 3:
+            i.setk(k_tors0) # Restore the original force constant associated with this torsion potential so that it is not permanently altered
+        if verbosity >= 1:
+            print("With torsion, energy = " + str(energy))
+
+        if verbosity >= 1: # REMOVE ONCE FIXED
+              print("Omitting all non-covalent interactions") # REMOVE ONCE FIXED
 
         #    if verbosity >=1: # REMOVE ONCE FIXED
         #      print("Total energy:") # REMOVE ONCE FIXED
@@ -3181,9 +3467,9 @@ class Molecule:
 
     def HessianDiffSquared(self, ForceConstants):
         """
-    Objective function to be minimised in the Hessian fit
-    Gives squared deviation between QM Hessian H_QM and Force Field Hessian H_FF
-    """
+        Objective function to be minimised in the Hessian fit
+        Gives squared deviation between QM Hessian H_QM and Force Field Hessian H_FF
+        """
         # Take the QM calculated Hessian stored as an attribute of the molecule
         H_QM = self.H_QM
         #    print("QM Hessian used for Hessian difference:") # REMOVE ONCE FIXED
@@ -3208,8 +3494,8 @@ class Molecule:
     def assembleDihedralScanFragments(self, dihedral):
         """ (Molecule) -> two Fragments (type molecule) for dihedral angle scan
 
-          Returns two fragments for the potential energy curve scan to parametrise
-          dihedral angle potentials
+        Returns two fragments for the potential energy curve scan to parametrise
+        dihedral angle potentials
         """
 
         # Create right hand side of the dihedral angle
@@ -3273,12 +3559,14 @@ class Molecule:
         return right, left
 
 
-    def HMOEnergy(self, K=1.75, charge=0, verbosity=0):
+    def HMOEnergy(self, K=1.75, charge=0, verbosity=0, typ=2):
         """ (Molecule) -> number (extended Hueckel aka Tight Binding energy)
 
           Returns a number containing the molecular energy according to the current extended Hueckel aka Tight Binding
           definition at structure specified by the provided cartesian coordinates.
         """
+
+        # Note as a temporary measure to allow choice of solvers for HC=SCE, the additional argument typ is used to select
 
         # Assemble an array that holds information about the basis set.
         molbasis = []
@@ -3411,14 +3699,99 @@ class Molecule:
 
         # Use SciPy algorithm for generalised eigenvalue problem for symmetric matrices to solve
         # HC = SCE, H and S are our input matrices, E holds the energies and C are the coefficients.
-        MOEnergies, MOVectors = scipy.linalg.eigh(hamiltonian, b=overlap)
+        if typ == 1:
+            MOEnergies, MOVectors = scipy.linalg.eigh(hamiltonian, b=overlap)
+        elif typ == 2: # Can probably be removed, long term
+            # As a temporary fix, until it is known whether the overlap matrix ought always to be positive definite, use a different SciPy algorithm which does not assume that
+            MOEnergies, MOVectors = scipy.linalg.eig(hamiltonian, b=overlap)
+            # Note that this returns the right eigenvectors by default
+            # Note also output may be less consistent with eig than eigh since no ordering by magnitude is guaranteed
+
+            # Now order the eigenvalue and eigenvector output of linalg.eig in alignmnent with the output from linalg.eigh
+            MOEnergiesOrdered = np.zeros(len(MOEnergies))
+            MOVectorsOrdered = np.zeros((len(MOVectors), len(MOVectors[0])))
+            place = 0
+            # Store the original lists of MO energies and vectors so they can be recovered once sorting is complete
+            MOEnergiesOriginal = MOEnergies
+            MOVectorsOriginal = MOVectors
+            print("MOEnergiesOriginal, length " + str(len(MOEnergiesOriginal)) + ":") #Temporary print step for troubleshooting only
+            print(MOEnergiesOriginal) #Temporary print step for troubleshooting only
+            #print("MOVectorsOrginal, shape " + str(MOVectorsOriginal.shape) + " :") #Temporary print step for troubleshooting only
+            #print(MOVectorsOriginal) #Temporary print step for troubleshooting only
+
+            # Check for infinite eigenvalues 
+            for j in range(len(MOEnergiesOriginal)):
+                if np.isinf(MOEnergiesOriginal[j]): # This condition might not be enough to pick up a double inf + nanj, need to check
+                    print("\nInfinite eigenvalue found in list of MO Energies")
+                    print("Program will continue\n")
+                else:
+                    pass
+
+            while place < len(MOEnergiesOriginal):
+                # Identify smallest unsorted MO energy and add to sorted energy list
+                #print("\nIntermediate re-ordering step " + str(place)) # Temporary print for troubleshooting only
+                nextMOenergy = min(MOEnergies)
+                #print("nextMOenergy = " + str(nextMOenergy))
+                MOEnergiesOrdered[place] = nextMOenergy
+                #print("\nOrdered MO Energies at step " + str(place)) # Temporary print step for troubleshooting only
+                #print(MOEnergiesOrdered)
+                # Identify the corresponding MO vector and add to ordered vector list
+                if np.isinf(nextMOenergy):
+                    # Location of corresponding eigenvector based on the assumption that sorting from minimum up has removed all non-infinite eigenvalues, so the next eigenvector left in the list is the correct one
+                    vectorindex = np.where(np.isinf(MOEnergies)) 
+                else:
+                    vectorindex = np.where(MOEnergies == nextMOenergy)
+                #print("MOEnergies at step " + str(place))
+                #print(MOEnergies)
+                #print("vectorindex at step " + str(place))
+                #print(vectorindex)
+                nextMOvector = MOVectors[:, vectorindex]
+                #print("nextMOvector:")
+                #print(nextMOvector)
+                for i in range(len(nextMOvector)):
+                    #print("i = " + str(i))
+                    #print("place = " + str(place))
+                    #print("vectorindex[0][0]")
+                    #print(vectorindex[0][0])
+                    #print("MOVectorsOrdered[i, place]")
+                    #print(MOVectorsOrdered[i, place])
+                    #print("MOVectors[i, vectorindex[0][0]")
+                    #print(MOVectors[i, vectorindex[0][0]])
+                    MOVectorsOrdered[i, place] = MOVectors[i, vectorindex[0][0]]
+                # Remove the MO energy and MO vector just sorted from the original lists to avoid double counting
+                #print("\nOrdered MO Vectors at step " + str(place)) # Temporary print step for troubleshooting only
+                #print(MOVectorsOrdered) # Temporary print step for troubleshooting only
+                MOEnergies = np.delete(MOEnergies, (vectorindex[0][0]))
+                MOVectors = np.delete(MOVectors, (vectorindex[0][0]), axis=1)
+                #print("\n modified unordered MO energies and vectors after step " + str(place)) # Temporary print step for troubleshooting only
+                #print(MOEnergies) # Temporary print step for troubleshooting only
+                #print(MOVectors) # Temporary print step for troubleshooting only
+                place += 1
+            print("\nOrdered MO energies and vectors")
+            print(MOEnergiesOrdered)
+            #print(MOVectorsOrdered)
+            # Restore the original, unordered lists of MOEnergies and MOVectors in case they are needed later    
+            MOEnergies = MOEnergiesOriginal
+            MOVectors = MOVectorsOriginal
 
         # Calculate total energy as sum over energies of occupied MOs
         energy = 0.0
-        for i in range(0, valence_electrons):
-            energy += MOEnergies[i // 2]
+        #print("Calculating EHT energy: " + str(energy)) # Primarily for testing treatment of infinite eignevalues
+        if typ == 1:
+            for i in range(0, valence_electrons):
+                energy += MOEnergies[i // 2]
+                #print("+ " + str(MOEnergies[i // 2]) + " = " + str(energy))
+        elif typ == 2:
+            for i in range(0, valence_electrons):
+                energy += MOEnergiesOrdered[i // 2]
+                #print("+ " + str(MOEnergiesOrdered[i // 2]) + " = " + str(energy))
+        #print("Total EHT Energy: " + str(energy_ + "\n")
 
         # Print MO energies
+        if typ == 2:
+            MOEnergies = MOEnergiesOrdered
+            MOVectors = MOVectorsOrdered
+            # Optionally these could be set back to their original values for population analysis
         if verbosity >= 3:
             print("\nMO Energies ({} electrons, total energy {: .5f} hartree)".format(valence_electrons, energy))
             s = ""
@@ -4132,7 +4505,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         molecule.addFFStretch(molecule.bonds[i][0], molecule.bonds[i][1],
                               molecule.atmatmdist(molecule.bonds[i][0], molecule.bonds[i][1]), 3,
                               [fc, "b", molecule.atoms[molecule.bonds[i][0]].symbol,
-                               molecule.atoms[molecule.bonds[i][1]].symbol])
+                               molecule.atoms[molecule.bonds[i][1]].symbol]) #, molecule.ringcheckbd(i)])
         # Note "b" as an argument in the previouw line is a placeholder so that indices are consistent in the FFstretch class
         # it  would need replacing with the appropriate value to make using the  Morse potential an option
 
@@ -4159,6 +4532,11 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
     #     if fc < 0.002:
     #         ProgramWarning()
     #         print(" This force constant is smaller than 0.002")
+    #     endinring = False
+    #     ringend0 = molecule.ringcheckatm(molecule.angles[i][0])
+    #     ringend1 = molecule.ringcheckatm(molecule.angles[i][1])
+    #     if ringend0 or ringend1:
+    #         endinring = True
     #     if verbosity >= 2:
     #         print(" {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(
     #             molecule.atoms[molecule.angles[i][0]].symbol, molecule.angles[i][0],
@@ -4166,7 +4544,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
     #     molecule.addFFStr13(molecule.angles[i][0], molecule.angles[i][2],
     #                         molecule.atmatmdist(molecule.angles[i][0], molecule.angles[i][2]), 4,
     #                         [fc, "b", molecule.atoms[molecule.angles[i][0]].symbol,
-    #                          molecule.atoms[molecule.angles[i][2]].symbol])
+    #                          molecule.atoms[molecule.angles[i][2]].symbol, endinring])
 
     # Then angle bends:
     if verbosity >= 2:
@@ -4261,6 +4639,8 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             ProgramWarning()
             print(" This force constant is smaller than 0.002")
 
+        # NOTE: eventually if simple torsion is used, could save time by skipping this step altogether
+
         # Setup list of angles at which the torsion potential has to be calculated for the fitting procedure
         torsionfit_points = 20  # Number of points for the fit; '20' equals steps of 18 degrees
         torsionfit_angles = np.zeros(torsionfit_points)
@@ -4281,7 +4661,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         rightside, leftside = molecule.assembleDihedralScanFragments(molecule.dihedrals[i])
 
         # Determine the energies along the dihedral scan
-        torsionfit_energies = np.zeros(torsionfit_points)
+        HMO_energies = np.zeros(torsionfit_points)
         for k in range(0, torsionfit_points):
 
             # Rotating the left side (around the middle bond in the dihedral)
@@ -4304,13 +4684,170 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
 
             # Calculate Extended Hückel Energy for the "supermolecule"
             bothsides.orient()
-            torsionfit_energies[k] = bothsides.HMOEnergy()
+            HMO_energies[k] = bothsides.HMOEnergy()
             # for k in range(0, torsionfit_points):
             #     print(torsionfit_energies[k])
 
         # Debug only: Print the energies that will be used for fitting
-        print("Energies: ", torsionfit_energies)
+        print("HMO energies: ", HMO_energies)
 
+        # Check if any of the energy values is infinite, remove that data point from fit set if so
+        modifycheck = 0
+        for j in range(len(HMO_energies)):
+            if np.isinf(HMO_energies[j]):
+                del(HMO_energies[j])
+                del(torsionfit_angles[j])
+                modifycheck += 1
+            else:
+                pass
+        if modifycheck > 0:
+            print("Revised energies: ", HMO_energies)
+        else:
+            pass
+
+        # Fitting routine to determine values of k_tors_n begins here
+        # Calculate the inputs needed for the torsion potential
+        #theta0 = molecule.dihedralangle(i)
+        sym1 = molecule.atoms[molecule.dihedrals[i][0]].symbol
+        sym2 = molecule.atoms[molecule.dihedrals[i][1]].symbol
+        sym3 = molecule.atoms[molecule.dihedrals[i][2]].symbol
+        sym4 = molecule.atoms[molecule.dihedrals[i][3]].symbol
+        r_12 = molecule.atmatmdist(molecule.dihedrals[i][0], molecule.dihedrals[i][1])
+        r_23 = molecule.atmatmdist(molecule.dihedrals[i][1], molecule.dihedrals[i][2])
+        r_34 = molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3])
+        f_dmp_12 = DampingFunction(sym1, sym2, r_12)
+        f_dmp_23 = DampingFunction(sym2, sym3, r_23)
+        f_dmp_34 = DampingFunction(sym3, sym4, r_34)
+        f_dmp = f_dmp_12 * f_dmp_23 * f_dmp_34 
+        # Determine the equilibrium dihedral angle from EHT calculations to use in fitting
+        minHMOenergy = min(HMO_energies)
+        eqHMOindex = np.where(HMO_energies == minHMOenergy)
+        eqHMO = torsionfit_angles[eqHMOindex[0][0]] # NOTE: using the first, rather than second or later, angle in the list of fit points at which HMO energy is minimal as the equilibrium angle may affect results
+        print("eqHMOindex:")
+        print(eqHMOindex)
+        print("eqHMO:")
+        print(eqHMO)
+
+        # Define objective functions for the difference between HMOEnergy and energy from the torsion potential
+         
+        def TorsEnergyDiff(k_tors, energies, angles, theta0, f_dmp):
+            energydiffs = np.zeros(len(energies))
+            for j in range(len(energies)):
+                energydiff = abs(potTorsion(math.radians(angles[j]), theta0, f_dmp, k_tors) - energies[j])
+                energydiffs[j] = energydiff
+            return energydiffs 
+        
+        def TorsLeastSq(k_tors, energies, angles, theta0, f_dmp):
+            sum_sq_diffs = 0.0
+            for j in range(len(energies)):
+                ediff = potTorsion(math.radians(angles[j]), theta0, f_dmp, k_tors) - energies[j]
+                absdiff = abs(ediff)
+                sqdiff = absdiff ** 2
+                sum_sq_diffs += sqdiff
+            return sum_sq_diffs
+
+        def CosSeriesLeastSq(k_tors, energies, angles, theta0):
+            sq_diffs_sum = 0.0
+            for j in range(len(energies)):
+                difference = potCosineSum(math.radians(angles[j]), theta0, k_tors) - energies[j]
+                absolutediff = abs(difference)
+                squarediff = absolutediff ** 2
+                sq_diffs_sum += squarediff
+            return sq_diffs_sum
+
+        # Offset HMO energies to center around zero for fitting
+        offset = (max(HMO_energies) + min(HMO_energies))/2.0
+        torsionfit_energies = np.zeros(len(HMO_energies))
+        for j in range(len(HMO_energies)):
+            torsionfit_energies[j] = HMO_energies[j] - offset
+        # Print the modified energies to be used in fitting
+        print("torsionfit_energies:")
+        print(torsionfit_energies)
+        
+        # Set up initial k_tors values for the optimisation
+        k_tors_init = np.zeros(4) # NOTE: Setting values to a non-zero guess value may be useful to avoid problems currently arising in geometry optimisation with bonds dissociating
+        for j in range(len(k_tors_init)):
+            k_tors_init[j] = 1 # 1 is just a guess to try and ensure optimisation reaches a reasonable solution
+        print("Starting values of k_tors for fitting:")
+        print(k_tors_init)
+        # Use the SciPy leastsq optimiser to carry out a least squares fit for k_tors
+        #k_tors = scipy.optimize.leastsq(TorsEnergyDiff, k_tors_init, (torsionfit_energies, torsionfit_angles, theta0, f_dmp))
+        # Use a built in optimiser and the TorsLeastSq objective function to obtain a least squares fit for k_tors values
+        #k_tors_opt = scipy.optimize.minimize(TorsLeastSq, k_tors_init, (torsionfit_energies, torsionfit_angles, math.radians(eqHMO), f_dmp)) #, method='BFGS', options={'disp': True, 'gtol':1e-05}, tol=None)
+        k_tors_opt = scipy.optimize.minimize(CosSeriesLeastSq, k_tors_init, (torsionfit_energies, torsionfit_angles, math.radians(eqHMO))) #, method='BFGS', options={'disp': True, 'gtol':1e-05}, tol=None)
+        k_tors = k_tors_opt.x
+
+        #Check quality of fit, print a warning if difference in any two energies exceeds a chosen threshold
+        for j in range(len(torsionfit_angles)):
+            #torsfittedenergy = potTorsion(math.radians(torsionfit_angles[j]), math.radians(eqHMO), f_dmp, k_tors)
+            torsfittedenergy = potCosineSum(math.radians(torsionfit_angles[j]), math.radians(eqHMO), k_tors)
+            if abs(torsfittedenergy - torsionfit_energies[j]) > 0.4: # This value could be tailored depending on margin of error permissible
+                print("Warning: energy from torsion fit not within 0.4 of EHT energy")
+                 #ProgramAbort() #NOTE: Must delete this to test fit further once suitable candidate is found
+                break
+
+        #print("Optimisation output:")
+        print(k_tors_opt)
+        print("Optimised values of k_tors:")
+        print(k_tors)
+        """
+        k_tors_1 = k_tors[0]
+        k_tors_2 = k_tors[1]
+        k_tors_3 = k_tors[2]
+        k_tors_4 = k_tors[3] 
+        # Debugging only, access the individual constants and print        
+        print("k_tors_1 = " + str(k_tors_1))
+        print("k_tors_2 = " + str(k_tors_2))
+        print("k_tors_3 = " + str(k_tors_3))
+        print("k_tors_4 = " + str(k_tors_4))
+        # Debug for h2o2 only
+        print("Printing atom list")
+        print(str(molecule.atoms))
+        print("Printing dihedral list")
+        print(molecule.dihedrals)
+        print("Printing dihedrals[0]")
+        print(molecule.dihedrals[0])
+        print("Printing dihedrals[i]")
+        print(molecule.dihedrals[i])
+        print("Printing dihedrals[i][0]")
+        print(molecule.dihedrals[i][0])
+        print("Printing the atom at index dihedrals[i][0]")
+        print(molecule.atoms[molecule.dihedrals[i][0]])
+        """
+
+        # As a temporary measure, calculate and print both HMO and PotTors energies to be plotted as a check on the fit
+        torsionfitted_energies = np.zeros(len(torsionfit_angles))
+        torsfit_ediffs = np.zeros(len(torsionfit_angles))
+        for j in range(len(torsionfit_angles)):
+            #torsionfitted_energies[j] = potTorsion(math.radians(torsionfit_angles[j]), math.radians(eqHMO), f_dmp, k_tors)
+            torsionfitted_energies[j] = potCosineSum(math.radians(torsionfit_angles[j]), math.radians(eqHMO), k_tors)
+            torsfit_ediffs[j] = torsionfitted_energies[j] - torsionfit_energies[j]
+        print("torsionfit_angles: " + str(torsionfit_angles))
+        print("torsionfit_energies: " + str(torsionfit_energies))
+        print("torsionfitted_energies: " + str(torsionfitted_energies))
+        print("\nTorsion fit comparison for dihedral " + str(i))
+        print("{:^9}  {:^13}  {:^13} {:^13} ".format("Angle", "EH energy", "FF energy", "FF - EH energy"))
+        print("{:^9}  {:^13}  {:^13} {:^13} ".format(" ", "(offset)", " ", " "))
+        for j in range(len(torsionfit_angles)):
+            print("{:>9.4f}  {:>13.9f}  {:>13.9f}  {:>13.9f}".format(torsionfit_angles[j], torsionfit_energies[j], torsionfitted_energies[j], torsfit_ediffs[j]))
+        mean_ediff = 0
+        for j in range(len(torsfit_ediffs)):
+            mean_ediff += torsfit_ediffs[j]
+        mean_ediff = mean_ediff/len(torsfit_ediffs)
+        print("Mean energy difference: " + str(mean_ediff))
+        ediff_range = max(torsfit_ediffs) - min(torsfit_ediffs)
+        print("Range in energy differences: " + str(ediff_range))
+
+        #print("Using k_tors with torsion type 3")
+
+        # Determine whether the central bond of the dihedral is in part of a ring
+        bdinring = False
+        for j in range(len(molecule.bonds)):
+            if molecule.bonds[j][0] == molecule.dihedrals[i][1] and molecule.bonds[j][1] == molecule.dihedrals[i][2]:
+                bdinring = molecule.ringcheckbd(j)
+            elif molecule.bonds[j][0] == molecule.dihedrals[i][2] and molecule.bonds[j][1] == molecule.dihedrals[i][1]:
+                bdinring = molecule.ringcheckbd(j)
+        
         # Once the torsion potential has been determined, add the torsion term to the Force Field
         if verbosity >= 2:
             print(" {:<3} ({:3d}), {:<3} ({:3d}), {:<3} ({:3d}) and {:<3} ({:3d}) (Force constant: {: .3f})".format(
@@ -4319,14 +4856,14 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                 molecule.atoms[molecule.dihedrals[i][2]].symbol, molecule.dihedrals[i][2],
                 molecule.atoms[molecule.dihedrals[i][3]].symbol, molecule.dihedrals[i][3], fc))
         molecule.addFFTorsion(molecule.dihedrals[i][0], molecule.dihedrals[i][1], molecule.dihedrals[i][2],
-                              molecule.dihedrals[i][3], molecule.dihedralangle(i), 1,
+                              molecule.dihedrals[i][3], molecule.dihedralangle(i), 4,
                               [fc, molecule.atoms[molecule.dihedrals[i][0]].symbol,
                                molecule.atoms[molecule.dihedrals[i][1]].symbol,
                                molecule.atoms[molecule.dihedrals[i][2]].symbol,
                                molecule.atoms[molecule.dihedrals[i][3]].symbol,
                                molecule.atmatmdist(molecule.dihedrals[i][0], molecule.dihedrals[i][1]),
                                molecule.atmatmdist(molecule.dihedrals[i][1], molecule.dihedrals[i][2]),
-                               molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3])])
+                               molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3]), k_tors, math.radians(eqHMO), bdinring])
         # As for bends, arg list now includes atom symbols and bond lengths, which could be separated out later
 
 
@@ -4498,6 +5035,9 @@ def fitForceConstants(molecule, verbosity=0):
         ForceConstants.append(molecule.bend[i].k)
     for i in range(len(molecule.inv)):
         ForceConstants.append(molecule.inv[i].k_inv)
+    for i in range(len(molecule.tors)):
+        if molecule.tors[i].typ == 1 or molecule.tors[i].typ == 3:
+            ForceConstants.append(molecule.tors[i].k)
     InitialFC = ForceConstants
     if verbosity >= 1:
         print("\nForce constants to be optimised:")
@@ -4533,7 +5073,11 @@ def fitForceConstants(molecule, verbosity=0):
         molecule.bend[i].setk(xopt[len(molecule.stretch) + len(molecule.str13) + i])
     for i in range(len(molecule.inv)):
         molecule.inv[i].setk(xopt[len(molecule.stretch) + len(molecule.str13) + len(molecule.bend) + i])
-
+    torscount = 0
+    for i in range(len(molecule.tors)):
+        if molecule.tors[i].typ == 1 or molecule.tors[i].typ == 3:
+            molecule.tors[i].setk(xopt[len(molecule.stretch) + len(molecule.str13) + len(molecule.bend) + len(molecule.inv) + torscount])
+            torscount += 1
 
 ######################################################################################
 # Functions for additional calculations, optional to the program, defined below here #
@@ -4812,7 +5356,13 @@ ProgramHeader()
 
 reactant_mol = Molecule("Reactant", 0)
 extractCoordinates(args.reactant, reactant_mol, verbosity=args.verbosity, bondcutoff=args.bondcutoff)
-# fitForceConstants(reactant_mol, verbosity=args.verbosity)
+fitForceConstants(reactant_mol, verbosity=args.verbosity)
+
+#for i in range(len(reactant_mol.bonds)):
+#    reactant_mol.ringcheckbd(i)
+
+#for i in range(len(reactant_mol.atoms)):
+#    reactant_mol.ringcheckatm(i)
 
 print("\nForce Field Energy of molecule:", reactant_mol.name)
 print("\nHere we go:", reactant_mol.FFEnergy(reactant_mol.cartesianCoordinates(), verbosity=args.verbosity))
@@ -4823,11 +5373,11 @@ xopt = scipy.optimize.fmin_bfgs(reactant_mol.FFEnergy, initialcoords2optimiseR, 
 
 reactant_mol.setGeometry(xopt)
 print("\nOptimized Geometry in Gaussian format for molecule:", reactant_mol.name)
-print(reactant_mol.gaussString())
+print(reactant_mol.gaussString()) 
 
 # product_mol = Molecule("Product",0)
-# extractCoordinates(infile2, product_mol, verbosity = 2)
-# fitForceConstants(product_mol, verbosity = 2)
+# extractCoordinates(,rgs.product product_mol, verbosity = args.verbosity, bondcutoff = args.bondcutoff)
+# fitForceConstants(product_mol, verbosity = args.verbosity)
 
 # print("\nCartesian Coordinates of Product (as one list):")
 # print(product_mol.cartesianCoordinates())
@@ -4835,14 +5385,14 @@ print(reactant_mol.gaussString())
 # print("\nForce Field Energy of Product:")
 # print(product_mol.FFEnergy(product_mol.cartesianCoordinates(), verbosity = 1))
 
-# print("\nGeometry Optimizer (Product):")
+# print("\nOptimising geometry of molecule:", reactant_mol.name)
 # initialcoords2optimiseP = product_mol.cartesianCoordinates()
 # xopt = scipy.optimize.fmin_bfgs(product_mol.FFEnergy, initialcoords2optimiseP, gtol=0.00005)
 # print("\Optimized Geometry coordinates (Product):")
 # print(xopt)
 
 # product_mol.setGeometry(xopt)
-# print("\nOptimized Geometry in Gaussian format (Product):")
+# print("\nOptimized Geometry in Gaussian format for molecule:", product_mol.name)
 # print(product_mol.gaussString())
 
 
