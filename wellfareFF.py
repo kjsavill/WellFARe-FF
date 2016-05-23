@@ -3503,6 +3503,10 @@ class Molecule:
         dihedral angle potentials
         """
 
+        # Debug only: print coordinates of the molecule at the point function is called
+        print("\nCreating dihedral scan fragments. Molecule starting geometry:")
+        print(self.xyzString())
+        
         # Create right hand side of the dihedral angle
         right = Molecule("Right side of the dihedral", 0)
 
@@ -3510,8 +3514,11 @@ class Molecule:
         left = Molecule("Left side of the dihedral", 0)
 
         # Add the two "middle atoms" of the dihedral to the right and left side
-        right.addAtom(self.atoms[dihedral[1]])
-        left.addAtom(self.atoms[dihedral[2]])
+        #right.addAtom(self.atoms[dihedral[1]])
+        # Test whether adding an atom using individual attributes to create new atom solves alteration problems compared to adding an existing atom
+        right.addAtom(Atom(self.atoms[dihedral[1]].symbol, self.atoms[dihedral[1]].coord[0], self.atoms[dihedral[1]].coord[1], self.atoms[dihedral[1]].coord[2], self.atoms[dihedral[1]].charge))
+        #left.addAtom(self.atoms[dihedral[2]])
+        right.addAtom(Atom(self.atoms[dihedral[2]].symbol, self.atoms[dihedral[2]].coord[0], self.atoms[dihedral[2]].coord[1], self.atoms[dihedral[2]].coord[2], self.atoms[dihedral[2]].charge))
 
         # Setup two lists to keep track of atoms on either side
         rightlist = []
@@ -3521,17 +3528,31 @@ class Molecule:
         # Also add the new atoms to the prepared lists
         for i in self.bonds:
             if i[0] == dihedral[1] and i[1] != dihedral[2]:
-                right.addAtom(self.atoms[i[1]])
+                #right.addAtom(self.atoms[i[1]])
+                right.addAtom(Atom(self.atoms[i[1]].symbol, self.atoms[i[1]].coord[0], self.atoms[i[1]].coord[1], self.atoms[i[1]].coord[2], self.atoms[i[1]].charge))
                 rightlist.append(i[1])
             if i[1] == dihedral[1] and i[0] != dihedral[2]:
-                right.addAtom(self.atoms[i[0]])
+                #right.addAtom(self.atoms[i[0]])
+                right.addAtom(Atom(self.atoms[i[0]].symbol, self.atoms[i[0]].coord[0], self.atoms[i[0]].coord[1], self.atoms[i[0]].coord[2], self.atoms[i[0]].charge))
                 rightlist.append(i[0])
             if i[0] == dihedral[2] and i[1] != dihedral[1]:
-                left.addAtom(self.atoms[i[1]])
+                #left.addAtom(self.atoms[i[1]])
+                left.addAtom(Atom(self.atoms[i[1]].symbol, self.atoms[i[1]].coord[0], self.atoms[i[1]].coord[1], self.atoms[i[1]].coord[2], self.atoms[i[1]].charge))
                 leftlist.append(i[1])
             if i[1] == dihedral[2] and i[0] != dihedral[1]:
-                left.addAtom(self.atoms[i[0]])
+                #left.addAtom(self.atoms[i[0]])
+                left.addAtom(Atom(self.atoms[i[0]].symbol, self.atoms[i[0]].coord[0], self.atoms[i[0]].coord[1], self.atoms[i[0]].coord[2], self.atoms[i[0]].charge))
                 leftlist.append(i[0])
+
+        # Debug only: print the lists produced
+        print("\nAtoms directly bonded, rightlist:")
+        print(rightlist)
+        for i in rightlist:
+            print(self.atoms[i].coord)
+        print("\nAtoms directly bonded, leftlist:")
+        print(leftlist)
+        for i in leftlist:
+            print(self.atoms[i].coord)
 
         # Setup two more lists to keep track of "second shell"  atoms
         rightlist2 = []
@@ -3560,6 +3581,16 @@ class Molecule:
                 #print(Atom("H", self.atoms[i[0]].coord[0], self.atoms[i[0]].coord[1], self.atoms[i[0]].coord[2], 1.0))
                 left.addAtom(Atom("H", self.atoms[i[0]].coord[0], self.atoms[i[0]].coord[1], self.atoms[i[0]].coord[2], 1.0))
                 leftlist2.append(i[0])
+
+        #Debug only: print the lists of atoms one layer out
+        print("\nAtoms one bond away, rightlist2:")
+        print(rightlist2)
+        for i in rightlist2:
+            print(self.atoms[i].coord)
+        print("\nAtoms one bond away, leftlist2:")
+        print(leftlist2)
+        for i in leftlist2:
+            print(self.atoms[i].coord)
 
         return right, left
 
@@ -4603,6 +4634,9 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
     if verbosity >= 2:
         print("\nAdding Force Field torsion terms to WellFARe molecule: ", molecule.name)
     for i in range(0, len(molecule.dihedrals)):
+        # Debug only, print molecule geometry prior to beginning with each dihedral
+        print("\nGeometry before calculations for torsion potential at dihedral " + str(i))
+        print(molecule.xyzString())
         a = np.array(
             [molecule.atoms[molecule.dihedrals[i][0]].coord[0], molecule.atoms[molecule.dihedrals[i][0]].coord[1],
              molecule.atoms[molecule.dihedrals[i][0]].coord[2]])
@@ -4664,6 +4698,17 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
 
         # Assemble the two sides from the molecule
         rightside, leftside = molecule.assembleDihedralScanFragments(molecule.dihedrals[i])
+        # Debug only: Print the geometry of each side of the dihedral fragment, prior to rotation and assembly
+        print("\nDihedral fragment rightside:")
+        print(rightside.xyzString())
+        print("\nDihedral fragment leftside:")
+        print(leftside.xyzString())
+
+        # Debug only, pring geometry of original molecule after constructing fragments
+        print("\nGeometry of molecule after identifying fragments, dihedral " + str(i))
+        print(molecule.xyzString())
+
+        # NOTE: geometry problems arise after this point
 
         # Determine the energies along the dihedral scan
         HMO_energies = np.zeros(torsionfit_points)
@@ -4676,25 +4721,53 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                 [molecule.atoms[molecule.dihedrals[i][2]].coord[0], molecule.atoms[molecule.dihedrals[i][2]].coord[1],
                  molecule.atoms[molecule.dihedrals[i][2]].coord[2]], (360 / torsionfit_points))
 
+            # Debug only, print molecule geometry after rotation
+            print("\nLeftside geometry after rotation")
+            print(leftside.xyzString())
+            print("\nGeometry of molecule after leftside rotation, fit point " + str(k))
+            print(molecule.xyzString())
+
             # Creating the "supermolecule" by copying all atoms from right and left into one
             bothsides = Molecule(
-                "Dihedral at {: .1f} degrees rotation ({: .1f} deg)".format(k * (360 / torsionfit_points),
+                "Dihedral {:^} at {: .1f} degrees rotation ({: .1f} deg)".format(i, k * (360 / torsionfit_points),
                                                                             torsionfit_angles[k]), 0)
             for j in range(0, rightside.numatoms()):
                 bothsides.addAtom(rightside.atoms[j])
             for j in range(0, leftside.numatoms()):
                 bothsides.addAtom(leftside.atoms[j])
             # Debug only: Print the geometries that are used for the fitting
+            print("Coordinates before orienting dihedral fragment:")
             print(bothsides.xyzString())
+
+            # Debug only, print molecule geometry before HMO calculation and after bothsides construction
+            print("\nGeometry of molecule after bothsides constructon, fit point " + str(k))
+            print(molecule.xyzString())
 
             # Calculate Extended Hückel Energy for the "supermolecule"
             bothsides.orient()
+            # Debug only: Print the geometries after orienting along principal axes of inertia
+            print("\nCoordinates after orienting fragment, to be used for fitting")
+            print(bothsides.xyzString())
+
+            # Debug only, print molecule geometry after bothsides.orient
+            print("\nGeometry of molecule after orienting fragment, fit point " + str(k))
+            print(molecule.xyzString())
+
             HMO_energies[k] = bothsides.HMOEnergy()
             # for k in range(0, torsionfit_points):
             #     print(torsionfit_energies[k])
 
+            # Debug only, print original molecule geometry after each point is calculated
+            print("\nGeometry of molecule after calculating HMO energy for fit point " + str(k))
+            print(molecule.xyzString())
+        # NOTE: geometry problems arise by this point
+
+        # Debug only: print whole molecule geometry after calculating HMO energies
+        print("\nGeometry after calculating HMO energies for dihedral " + str(i))
+        print(molecule.xyzString())
+
         # Debug only: Print the energies that will be used for fitting
-        print("HMO energies: ", HMO_energies)
+        print("\nHMO energies: ", HMO_energies)
 
         # Check if any of the energy values is infinite, remove that data point from fit set if so
         modifycheck = 0
@@ -4832,6 +4905,10 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         print(molecule.atoms[molecule.dihedrals[i][0]])
         """
 
+        # Debug only: print geometry of molecule before second fitting procedure
+        #print("\nGeometry after standard torsion fit for dihedral " + str(i))
+        #print(molecule.xyzString())
+
         # Perform a second fitting procedure following proof of concept code known to work in order to compare and debug
         print("\nFitting again for comparison\n")        
 
@@ -4952,6 +5029,10 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             ktorsdiffs[j] = k_tors[j] - optcoeff.x[j]
         print(ktorsdiffs)
 
+        # Debug only: print geometry of molecule after Extended Huckel calculation has been completed
+        #print("\nGeometry of molecule after twice fitting torsion for dihedral " + str(i))
+        #print(molecule.xyzString())
+
         #print("Using k_tors with torsion type 3")
 
         # Determine whether the central bond of the dihedral is in part of a ring
@@ -4961,6 +5042,10 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                 bdinring = molecule.ringcheckbd(j)
             elif molecule.bonds[j][0] == molecule.dihedrals[i][2] and molecule.bonds[j][1] == molecule.dihedrals[i][1]:
                 bdinring = molecule.ringcheckbd(j)
+
+        # Debug only: print geometry of molecule after searching for ring
+        #print("\nGeometry of molecule after ring check for dihedral " + str(i))
+        #print(molecule.xyzString())
         
         # Once the torsion potential has been determined, add the torsion term to the Force Field
         if verbosity >= 2:
@@ -4977,7 +5062,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                                molecule.atoms[molecule.dihedrals[i][3]].symbol,
                                molecule.atmatmdist(molecule.dihedrals[i][0], molecule.dihedrals[i][1]),
                                molecule.atmatmdist(molecule.dihedrals[i][1], molecule.dihedrals[i][2]),
-                               molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3]), k_tors, math.radians(eqHMO), bdinring])
+                        molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3]), k_tors, math.radians(eqHMO), bdinring])
         # As for bends, arg list now includes atom symbols and bond lengths, which could be separated out later
 
 
