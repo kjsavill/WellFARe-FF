@@ -3505,8 +3505,8 @@ class Molecule:
         left = Molecule("Left side of the dihedral", 0)
 
         # Add the two "middle atoms" of the dihedral to the right and left side
-        right.addAtom(self.atoms[dihedral[1]])
-        left.addAtom(self.atoms[dihedral[2]])
+        right.addAtom(Atom(self.atoms[dihedral[1]].symbol, self.atoms[dihedral[1]].coord[0], self.atoms[dihedral[1]].coord[1], self.atoms[dihedral[1]].coord[2], self.atoms[dihedral[1]].charge))
+        left.addAtom(Atom(self.atoms[dihedral[2]].symbol, self.atoms[dihedral[2]].coord[0], self.atoms[dihedral[2]].coord[1], self.atoms[dihedral[2]].coord[2], self.atoms[dihedral[2]].charge))
 
         # Setup two lists to keep track of atoms on either side
         rightlist = []
@@ -3516,16 +3516,16 @@ class Molecule:
         # Also add the new atoms to the prepared lists
         for i in self.bonds:
             if i[0] == dihedral[1] and i[1] != dihedral[2]:
-                right.addAtom(self.atoms[i[1]])
+                right.addAtom(Atom(self.atoms[i[1]].symbol, self.atoms[i[1]].coord[0], self.atoms[i[1]].coord[1], self.atoms[[1]].coord[2], self.atoms[i[1]].charge))
                 rightlist.append(i[1])
             if i[1] == dihedral[1] and i[0] != dihedral[2]:
-                right.addAtom(self.atoms[i[0]])
+                right.addAtom(Atom(self.atoms[i[0]].symbol, self.atoms[i[0]].coord[0], self.atoms[i[0]].coord[1], self.atoms[i[0]].coord[2], self.atoms[i[0]].charge))
                 rightlist.append(i[0])
             if i[0] == dihedral[2] and i[1] != dihedral[1]:
-                left.addAtom(self.atoms[i[1]])
+                left.addAtom(Atom(self.atoms[i[1]].symbol, self.atoms[i[1]].coord[0], self.atoms[i[1]].coord[1], self.atoms[i[1]].coord[2], self.atoms[i[1]].charge))
                 leftlist.append(i[1])
             if i[1] == dihedral[2] and i[0] != dihedral[1]:
-                left.addAtom(self.atoms[i[0]])
+                left.addAtom(Atom(self.atoms[i[0]].symbol, self.atoms[i[0]].coord[0], self.atoms[i[0]].coord[1], self.atoms[i[0]].coord[2], self.atoms[i[0]].charge))
                 leftlist.append(i[0])
 
         # Setup two more lists to keep track of "second shell"  atoms
@@ -4666,10 +4666,8 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
 
             # Rotating the left side (around the middle bond in the dihedral)
             leftside.rotateMoleculeArbAxis(
-                [molecule.atoms[molecule.dihedrals[i][1]].coord[0], molecule.atoms[molecule.dihedrals[i][1]].coord[1],
-                 molecule.atoms[molecule.dihedrals[i][1]].coord[2]],
-                [molecule.atoms[molecule.dihedrals[i][2]].coord[0], molecule.atoms[molecule.dihedrals[i][2]].coord[1],
-                 molecule.atoms[molecule.dihedrals[i][2]].coord[2]], (360 / torsionfit_points))
+                [rightside.atoms[0].coord[0], rightside.atoms[0].coord[1], rightside.atoms[0].coord[2]],
+                [leftside.atoms[0].coord[0], leftside.atoms[0].coord[1], leftside.atoms[0].coord[2]], (360/torsionfit_points))
 
             # Creating the "supermolecule" by copying all atoms from right and left into one
             bothsides = Molecule(
