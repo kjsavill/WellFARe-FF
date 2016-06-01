@@ -1003,7 +1003,7 @@ class FFTorsion:
         self.atom3 = c
         self.atom4 = d
         self.theta0 = theta0
-        self.ring = arg[10]
+        #self.ring = arg[10]
         if typ == 1:
             self.typ = typ
             self.k = arg[0]
@@ -1899,6 +1899,10 @@ class Molecule:
     (re-)Orient the molecule along the principal axes of inertia.
     """
 
+        # Debug only, print starting geometry
+        print("\nGeometry when orient is called:")
+        print(self.xyzString())
+
         # The molecular center of mass
         xValue = 0.0
         yValue = 0.0
@@ -1916,6 +1920,10 @@ class Molecule:
             i.coord[0] = i.coord[0] - xValue
             i.coord[1] = i.coord[1] - yValue
             i.coord[2] = i.coord[2] - zValue
+
+        # Debug only, print translated geometry
+        print("\nGeometry after translating into center of mass frame:")
+        print(self.xyzString())
 
         # Build inertia tensor
         inertiaTensor = []
@@ -1960,6 +1968,10 @@ class Molecule:
         inertiaMoments = inertiaMoments[idx]
         inertialAxes = inertialAxes[:, idx]
 
+        # Debug only, print intertial axes
+        print("\nInertial axes:")
+        print(inertialAxes)
+
         # Transform molecular coordinates into new frame of principal axes of inertia
         for i in self.atoms:
             vector = [i.coord[0], i.coord[1], i.coord[2]]
@@ -1969,6 +1981,10 @@ class Molecule:
             i.coord[0] = vector[0]
             i.coord[1] = vector[1]
             i.coord[2] = vector[2]
+
+        # Debug only, print geometry after transforming into new frame
+        print("\nGeometry in frame of principal axes of inertia:")
+        print(self.xyzString())
 
     def addBond(self, a, b):
         """ (Molecule) -> NoneType
@@ -4739,24 +4755,29 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             for j in range(0, leftside.numatoms()):
                 bothsides.addAtom(leftside.atoms[j])
             # Debug only: Print the geometries that are used for the fitting
-            print("Coordinates before orienting dihedral fragment:")
-            print(bothsides.xyzString())
+            #print("Coordinates before orienting dihedral fragment:")
+            #print(bothsides.xyzString())
 
             # Debug only, print molecule geometry before HMO calculation and after bothsides construction
             #print("\nGeometry of molecule after bothsides constructon, fit point " + str(k))
             #print(molecule.xyzString())
 
             # Calculate Extended Hückel Energy for the "supermolecule"
+            
+            # Debug only, print message for orient step
+            print("\nOrienting dihedral fragment " + str(i))
+  
             bothsides.orient()
             # Debug only: Print the geometries after orienting along principal axes of inertia
-            print("\nCoordinates after orienting fragment, to be used for fitting")
-            print(bothsides.xyzString())
+            #print("\nCoordinates after orienting fragment, to be used for fitting")
+            #print(bothsides.xyzString())
 
             # Debug only, print molecule geometry after bothsides.orient
             #print("\nGeometry of molecule after orienting fragment, fit point " + str(k))
             #print(molecule.xyzString())
 
             #NOTE:Skipping HMO_energy calculations and output only to diagnose problems with fragment construction and scan. Reinstate later!
+            """
             HMO_energies[k] = bothsides.HMOEnergy()
             for k in range(0, torsionfit_points):
                 print(HMO_energies[k])
@@ -4884,7 +4905,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         print(k_tors_opt)
         print("Optimised values of k_tors:")
         print(k_tors)
-        """# Put back long comment out here
+        # Put back long comment out here
         k_tors_1 = k_tors[0]
         k_tors_2 = k_tors[1]
         k_tors_3 = k_tors[2]
@@ -4908,7 +4929,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         print("Printing the atom at index dihedrals[i][0]")
         print(molecule.atoms[molecule.dihedrals[i][0]])
         # Put back long comment out here
-        """
+        
 
         # Debug only: print geometry of molecule before second fitting procedure
         #print("\nGeometry after standard torsion fit for dihedral " + str(i))
@@ -5039,7 +5060,7 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         #print(molecule.xyzString())
 
         #print("Using k_tors with torsion type 3")
-        
+        """
         # Determine whether the central bond of the dihedral is in part of a ring
         bdinring = False
         for j in range(len(molecule.bonds)):
@@ -5060,14 +5081,14 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
                 molecule.atoms[molecule.dihedrals[i][2]].symbol, molecule.dihedrals[i][2],
                 molecule.atoms[molecule.dihedrals[i][3]].symbol, molecule.dihedrals[i][3], fc))
         molecule.addFFTorsion(molecule.dihedrals[i][0], molecule.dihedrals[i][1], molecule.dihedrals[i][2],
-                              molecule.dihedrals[i][3], molecule.dihedralangle(i), 4,
+                              molecule.dihedrals[i][3], molecule.dihedralangle(i), 1,
                               [fc, molecule.atoms[molecule.dihedrals[i][0]].symbol,
                                molecule.atoms[molecule.dihedrals[i][1]].symbol,
                                molecule.atoms[molecule.dihedrals[i][2]].symbol,
                                molecule.atoms[molecule.dihedrals[i][3]].symbol,
                                molecule.atmatmdist(molecule.dihedrals[i][0], molecule.dihedrals[i][1]),
                                molecule.atmatmdist(molecule.dihedrals[i][1], molecule.dihedrals[i][2]),
-                        molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3]), k_tors, math.radians(eqHMO), bdinring])
+                        molecule.atmatmdist(molecule.dihedrals[i][2], molecule.dihedrals[i][3])]) #, k_tors, math.radians(eqHMO), bdinring])
         # As for bends, arg list now includes atom symbols and bond lengths, which could be separated out later
 
 
