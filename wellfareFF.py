@@ -3505,8 +3505,10 @@ class Molecule:
         left = Molecule("Left side of the dihedral", 0)
 
         # Add the two "middle atoms" of the dihedral to the right and left side
-        right.addAtom(self.atoms[dihedral[1]])
-        left.addAtom(self.atoms[dihedral[2]])
+        #right.addAtom(self.atoms[dihedral[1]])
+        #left.addAtom(self.atoms[dihedral[2]])
+        right.addAtom(Atom(self.atoms[dihedral[1]].symbol, self.atoms[dihedral[1]].coord[0], self.atoms[dihedral[1]].coord[1], self.atoms[dihedral[1]].coord[2], self.atoms[dihedral[1]].charge))
+        left.addAtom(Atom(self.atoms[dihedral[2]].symbol, self.atoms[dihedral[2]].coord[0], self.atoms[dihedral[2]].coord[1], self.atoms[dihedral[2]].coord[2], self.atoms[dihedral[2]].charge))
 
         # Setup two lists to keep track of atoms on either side
         rightlist = []
@@ -3514,18 +3516,35 @@ class Molecule:
 
         # Loop though all bonds and add all directly bonded atoms to either right or left
         # Also add the new atoms to the prepared lists
+        # for i in self.bonds:
+        #     if i[0] == dihedral[1] and i[1] != dihedral[2]:
+        #         right.addAtom(self.atoms[i[1]])
+        #         rightlist.append(i[1])
+        #     if i[1] == dihedral[1] and i[0] != dihedral[2]:
+        #         right.addAtom(self.atoms[i[0]])
+        #         rightlist.append(i[0])
+        #     if i[0] == dihedral[2] and i[1] != dihedral[1]:
+        #         left.addAtom(self.atoms[i[1]])
+        #         leftlist.append(i[1])
+        #     if i[1] == dihedral[2] and i[0] != dihedral[1]:
+        #         left.addAtom(self.atoms[i[0]])
+        #         leftlist.append(i[0])
         for i in self.bonds:
             if i[0] == dihedral[1] and i[1] != dihedral[2]:
-                right.addAtom(self.atoms[i[1]])
+                right.addAtom(Atom(self.atoms[i[1]].symbol, self.atoms[i[1]].coord[0], self.atoms[i[1]].coord[1],
+                                   self.atoms[i[1]].coord[2], self.atoms[i[1]].charge))
                 rightlist.append(i[1])
             if i[1] == dihedral[1] and i[0] != dihedral[2]:
-                right.addAtom(self.atoms[i[0]])
+                right.addAtom(Atom(self.atoms[i[0]].symbol, self.atoms[i[0]].coord[0], self.atoms[i[0]].coord[1],
+                                   self.atoms[i[0]].coord[2], self.atoms[i[0]].charge))
                 rightlist.append(i[0])
             if i[0] == dihedral[2] and i[1] != dihedral[1]:
-                left.addAtom(self.atoms[i[1]])
+                left.addAtom(Atom(self.atoms[i[1]].symbol, self.atoms[i[1]].coord[0], self.atoms[i[1]].coord[1],
+                                  self.atoms[i[1]].coord[2], self.atoms[i[1]].charge))
                 leftlist.append(i[1])
             if i[1] == dihedral[2] and i[0] != dihedral[1]:
-                left.addAtom(self.atoms[i[0]])
+                left.addAtom(Atom(self.atoms[i[0]].symbol, self.atoms[i[0]].coord[0], self.atoms[i[0]].coord[1],
+                                  self.atoms[i[0]].coord[2], self.atoms[i[0]].charge))
                 leftlist.append(i[0])
 
         # Setup two more lists to keep track of "second shell"  atoms
@@ -3714,8 +3733,8 @@ class Molecule:
             # Store the original lists of MO energies and vectors so they can be recovered once sorting is complete
             MOEnergiesOriginal = MOEnergies
             MOVectorsOriginal = MOVectors
-            print("MOEnergiesOriginal, length " + str(len(MOEnergiesOriginal)) + ":") #Temporary print step for troubleshooting only
-            print(MOEnergiesOriginal) #Temporary print step for troubleshooting only
+            #print("MOEnergiesOriginal, length " + str(len(MOEnergiesOriginal)) + ":") #Temporary print step for troubleshooting only
+            #print(MOEnergiesOriginal) #Temporary print step for troubleshooting only
             #print("MOVectorsOrginal, shape " + str(MOVectorsOriginal.shape) + " :") #Temporary print step for troubleshooting only
             #print(MOVectorsOriginal) #Temporary print step for troubleshooting only
 
@@ -3767,8 +3786,8 @@ class Molecule:
                 #print(MOEnergies) # Temporary print step for troubleshooting only
                 #print(MOVectors) # Temporary print step for troubleshooting only
                 place += 1
-            print("\nOrdered MO energies and vectors")
-            print(MOEnergiesOrdered)
+            #print("\nOrdered MO energies and vectors")
+            #print(MOEnergiesOrdered)
             #print(MOVectorsOrdered)
             # Restore the original, unordered lists of MOEnergies and MOVectors in case they are needed later    
             MOEnergies = MOEnergiesOriginal
@@ -4649,27 +4668,32 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             if torsionfit_angles[j] > 180.0:
                 torsionfit_angles[j] -= 360.0
 
-        # Create two "molecules", one with all atoms to consider on the right side of the dihedral, one for the left.
 
-        # Creating "right side" first
-        rightside = Molecule("Right side of the dihedral", 0)
-
-        # Creating the left side
-        leftside = Molecule("Left side of the dihedral", 0)
-
-        # Assemble the two sides from the molecule
-        rightside, leftside = molecule.assembleDihedralScanFragments(molecule.dihedrals[i])
 
         # Determine the energies along the dihedral scan
         HMO_energies = np.zeros(torsionfit_points)
         for k in range(0, torsionfit_points):
+            # Create two "molecules", one with all atoms to consider on the right side of the dihedral, one for the left.
+
+            # Creating "right side" first
+            rightside = Molecule("Right side of the dihedral", 0)
+
+            # Creating the left side
+            leftside = Molecule("Left side of the dihedral", 0)
+
+            # Assemble the two sides from the molecule
+            rightside, leftside = molecule.assembleDihedralScanFragments(molecule.dihedrals[i])
 
             # Rotating the left side (around the middle bond in the dihedral)
+            # leftside.rotateMoleculeArbAxis(
+            #     [molecule.atoms[molecule.dihedrals[i][1]].coord[0], molecule.atoms[molecule.dihedrals[i][1]].coord[1],
+            #      molecule.atoms[molecule.dihedrals[i][1]].coord[2]],
+            #     [molecule.atoms[molecule.dihedrals[i][2]].coord[0], molecule.atoms[molecule.dihedrals[i][2]].coord[1],
+            #      molecule.atoms[molecule.dihedrals[i][2]].coord[2]], (360 / torsionfit_points))
             leftside.rotateMoleculeArbAxis(
-                [molecule.atoms[molecule.dihedrals[i][1]].coord[0], molecule.atoms[molecule.dihedrals[i][1]].coord[1],
-                 molecule.atoms[molecule.dihedrals[i][1]].coord[2]],
-                [molecule.atoms[molecule.dihedrals[i][2]].coord[0], molecule.atoms[molecule.dihedrals[i][2]].coord[1],
-                 molecule.atoms[molecule.dihedrals[i][2]].coord[2]], (360 / torsionfit_points))
+                [rightside.atoms[0].coord[0], rightside.atoms[0].coord[1], rightside.atoms[0].coord[2]],
+                [leftside.atoms[0].coord[0], leftside.atoms[0].coord[1], leftside.atoms[0].coord[2]],
+                (360 / torsionfit_points)*k)
 
             # Creating the "supermolecule" by copying all atoms from right and left into one
             bothsides = Molecule(
@@ -4680,6 +4704,9 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             for j in range(0, leftside.numatoms()):
                 bothsides.addAtom(leftside.atoms[j])
             # Debug only: Print the geometries that are used for the fitting
+            if bothsides.mult == 2:
+                bothsides.charge = 1
+                bothsides.mult = 1
             print(bothsides.xyzString())
 
             # Calculate Extended Hückel Energy for the "supermolecule"
@@ -4837,6 +4864,9 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         print("Mean energy difference: " + str(mean_ediff))
         ediff_range = max(torsfit_ediffs) - min(torsfit_ediffs)
         print("Range in energy differences: " + str(ediff_range))
+        # Stop after certain dihedral for examination
+        if i == 2:
+            exit(0)
 
         #print("Using k_tors with torsion type 3")
 
@@ -5284,7 +5314,7 @@ parser = argparse.ArgumentParser(
     description="WellFAReFF: Wellington Fast Assessment of Reactions - Force Field",
     epilog="recognised filetypes: g09, orca")
 parser.add_argument("-r", "--reactant", metavar='file', help="input file with qc data of the reactant",
-                    default="g09-benzene.log")
+                    default="g09-dielsalder-r.log")
 parser.add_argument("-p", "--product", metavar='file', help="input file with qc data of the product",
                     default="g09-dielsalder-p.log")
 parser.add_argument("-v", "--verbosity", help="increase output verbosity", type=int, choices=[0, 1, 2, 3], default=2)
