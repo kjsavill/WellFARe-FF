@@ -2,6 +2,7 @@ import sys
 import getopt
 import math
 import time
+import subprocess
 from importlib.util import find_spec
 from src import wellfareSTO
 
@@ -4707,13 +4708,35 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             if bothsides.mult == 2:
                 bothsides.charge = 1
                 bothsides.mult = 1
-            print(bothsides.xyzString())
+            #print(bothsides.xyzString())
 
-            # Calculate Extended Hückel Energy for the "supermolecule"
-            bothsides.orient()
-            HMO_energies[k] = bothsides.HMOEnergy()
-            # for k in range(0, torsionfit_points):
-            #     print(torsionfit_energies[k])
+            ## Calculate Extended Hückel Energy for the "supermolecule"
+            #bothsides.orient()
+            #HMO_energies[k] = bothsides.HMOEnergy()
+            ## for k in range(0, torsionfit_points):
+            ##     print(torsionfit_energies[k])
+
+            # Temporary Fix: Calculate Huckel energies with Gaussian
+            filecontent = "#T huckel\n"
+            filecontent += bothsides.gaussString()
+
+            #print(filecontent)
+
+            afile = open("tmpinp", 'w', encoding='utf-8')
+            afile.write(filecontent)
+            afile.close()
+
+            gaussOutput = subprocess.check_output("./run-gauss.bash tmpinp 2> /dev/null", shell=True)
+            gaussOutput = gaussOutput.decode('ascii')
+            try:
+              gaussOutput = float(gaussOutput.strip())
+            except:
+              gaussOutput = np.inf
+            subprocess.check_output("rm tmpinp", shell=True)
+            subprocess.check_output("rm tmpinp.out", shell=True)
+
+            HMO_energies[k] = gaussOutput
+            
 
         # Debug only: Print the energies that will be used for fitting
         print("HMO energies: ", HMO_energies)
@@ -4721,13 +4744,19 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         # Check if any of the energy values is infinite, remove that data point from fit set if so
         modifycheck = 0
         for j in range(len(HMO_energies)):
+            if j == len(HMO_energies):
+              break
             if np.isinf(HMO_energies[j]):
+                HMO_energies= np.ndarray.tolist(HMO_energies)
+                torsionfit_angles = np.ndarray.tolist(torsionfit_angles)
                 del(HMO_energies[j])
                 del(torsionfit_angles[j])
                 modifycheck += 1
             else:
                 pass
         if modifycheck > 0:
+            HMO_energies = np.asarray(HMO_energies)
+            torsionfit_angles = np.asarray(torsionfit_angles)
             print("Revised energies: ", HMO_energies)
         else:
             pass
@@ -4749,6 +4778,9 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         # Determine the equilibrium dihedral angle from EHT calculations to use in fitting
         minHMOenergy = min(HMO_energies)
         eqHMOindex = np.where(HMO_energies == minHMOenergy)
+        print(minHMOenergy)
+        print(eqHMOindex)
+        print("---------")
         eqHMO = torsionfit_angles[eqHMOindex[0][0]] # NOTE: using the first, rather than second or later, angle in the list of fit points at which HMO energy is minimal as the equilibrium angle may affect results
         print("eqHMOindex:")
         print(eqHMOindex)
@@ -4865,8 +4897,8 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         ediff_range = max(torsfit_ediffs) - min(torsfit_ediffs)
         print("Range in energy differences: " + str(ediff_range))
         # Stop after certain dihedral for examination
-        if i == 2:
-            exit(0)
+        #if i == 2:
+        #    exit(0)
 
         #print("Using k_tors with torsion type 3")
 
