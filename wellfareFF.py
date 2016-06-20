@@ -4747,13 +4747,19 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             if j == len(HMO_energies):
               break
             if np.isinf(HMO_energies[j]):
+              try:
                 HMO_energies= np.ndarray.tolist(HMO_energies)
+              except:
+                HMO_energies = HMO_energies
+              try:
                 torsionfit_angles = np.ndarray.tolist(torsionfit_angles)
-                del(HMO_energies[j])
-                del(torsionfit_angles[j])
-                modifycheck += 1
+              except:
+                torsionfit_angles = torsionfit_angles
+              del(HMO_energies[j])
+              del(torsionfit_angles[j])
+              modifycheck += 1
             else:
-                pass
+              pass
         if modifycheck > 0:
             HMO_energies = np.asarray(HMO_energies)
             torsionfit_angles = np.asarray(torsionfit_angles)
