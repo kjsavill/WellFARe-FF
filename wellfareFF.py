@@ -2,6 +2,7 @@ import sys
 import getopt
 import math
 import time
+import subprocess
 from importlib.util import find_spec
 from src import wellfareSTO
 
@@ -3514,18 +3515,35 @@ class Molecule:
 
         # Loop though all bonds and add all directly bonded atoms to either right or left
         # Also add the new atoms to the prepared lists
+        # for i in self.bonds:
+        #     if i[0] == dihedral[1] and i[1] != dihedral[2]:
+        #         right.addAtom(self.atoms[i[1]])
+        #         rightlist.append(i[1])
+        #     if i[1] == dihedral[1] and i[0] != dihedral[2]:
+        #         right.addAtom(self.atoms[i[0]])
+        #         rightlist.append(i[0])
+        #     if i[0] == dihedral[2] and i[1] != dihedral[1]:
+        #         left.addAtom(self.atoms[i[1]])
+        #         leftlist.append(i[1])
+        #     if i[1] == dihedral[2] and i[0] != dihedral[1]:
+        #         left.addAtom(self.atoms[i[0]])
+        #         leftlist.append(i[0])
         for i in self.bonds:
             if i[0] == dihedral[1] and i[1] != dihedral[2]:
-                right.addAtom(Atom(self.atoms[i[1]].symbol, self.atoms[i[1]].coord[0], self.atoms[i[1]].coord[1], self.atoms[[1]].coord[2], self.atoms[i[1]].charge))
+                right.addAtom(Atom(self.atoms[i[1]].symbol, self.atoms[i[1]].coord[0], self.atoms[i[1]].coord[1],
+                                   self.atoms[i[1]].coord[2], self.atoms[i[1]].charge))
                 rightlist.append(i[1])
             if i[1] == dihedral[1] and i[0] != dihedral[2]:
-                right.addAtom(Atom(self.atoms[i[0]].symbol, self.atoms[i[0]].coord[0], self.atoms[i[0]].coord[1], self.atoms[i[0]].coord[2], self.atoms[i[0]].charge))
+                right.addAtom(Atom(self.atoms[i[0]].symbol, self.atoms[i[0]].coord[0], self.atoms[i[0]].coord[1],
+                                   self.atoms[i[0]].coord[2], self.atoms[i[0]].charge))
                 rightlist.append(i[0])
             if i[0] == dihedral[2] and i[1] != dihedral[1]:
-                left.addAtom(Atom(self.atoms[i[1]].symbol, self.atoms[i[1]].coord[0], self.atoms[i[1]].coord[1], self.atoms[i[1]].coord[2], self.atoms[i[1]].charge))
+                left.addAtom(Atom(self.atoms[i[1]].symbol, self.atoms[i[1]].coord[0], self.atoms[i[1]].coord[1],
+                                  self.atoms[i[1]].coord[2], self.atoms[i[1]].charge))
                 leftlist.append(i[1])
             if i[1] == dihedral[2] and i[0] != dihedral[1]:
-                left.addAtom(Atom(self.atoms[i[0]].symbol, self.atoms[i[0]].coord[0], self.atoms[i[0]].coord[1], self.atoms[i[0]].coord[2], self.atoms[i[0]].charge))
+                left.addAtom(Atom(self.atoms[i[0]].symbol, self.atoms[i[0]].coord[0], self.atoms[i[0]].coord[1],
+                                  self.atoms[i[0]].coord[2], self.atoms[i[0]].charge))
                 leftlist.append(i[0])
 
         # Setup two more lists to keep track of "second shell"  atoms
@@ -3714,8 +3732,8 @@ class Molecule:
             # Store the original lists of MO energies and vectors so they can be recovered once sorting is complete
             MOEnergiesOriginal = MOEnergies
             MOVectorsOriginal = MOVectors
-            print("MOEnergiesOriginal, length " + str(len(MOEnergiesOriginal)) + ":") #Temporary print step for troubleshooting only
-            print(MOEnergiesOriginal) #Temporary print step for troubleshooting only
+            #print("MOEnergiesOriginal, length " + str(len(MOEnergiesOriginal)) + ":") #Temporary print step for troubleshooting only
+            #print(MOEnergiesOriginal) #Temporary print step for troubleshooting only
             #print("MOVectorsOrginal, shape " + str(MOVectorsOriginal.shape) + " :") #Temporary print step for troubleshooting only
             #print(MOVectorsOriginal) #Temporary print step for troubleshooting only
 
@@ -3767,8 +3785,8 @@ class Molecule:
                 #print(MOEnergies) # Temporary print step for troubleshooting only
                 #print(MOVectors) # Temporary print step for troubleshooting only
                 place += 1
-            print("\nOrdered MO energies and vectors")
-            print(MOEnergiesOrdered)
+            #print("\nOrdered MO energies and vectors")
+            #print(MOEnergiesOrdered)
             #print(MOVectorsOrdered)
             # Restore the original, unordered lists of MOEnergies and MOVectors in case they are needed later    
             MOEnergies = MOEnergiesOriginal
@@ -4649,25 +4667,32 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             if torsionfit_angles[j] > 180.0:
                 torsionfit_angles[j] -= 360.0
 
-        # Create two "molecules", one with all atoms to consider on the right side of the dihedral, one for the left.
 
-        # Creating "right side" first
-        rightside = Molecule("Right side of the dihedral", 0)
-
-        # Creating the left side
-        leftside = Molecule("Left side of the dihedral", 0)
-
-        # Assemble the two sides from the molecule
-        rightside, leftside = molecule.assembleDihedralScanFragments(molecule.dihedrals[i])
 
         # Determine the energies along the dihedral scan
         HMO_energies = np.zeros(torsionfit_points)
         for k in range(0, torsionfit_points):
+            # Create two "molecules", one with all atoms to consider on the right side of the dihedral, one for the left.
+
+            # Creating "right side" first
+            rightside = Molecule("Right side of the dihedral", 0)
+
+            # Creating the left side
+            leftside = Molecule("Left side of the dihedral", 0)
+
+            # Assemble the two sides from the molecule
+            rightside, leftside = molecule.assembleDihedralScanFragments(molecule.dihedrals[i])
 
             # Rotating the left side (around the middle bond in the dihedral)
+            # leftside.rotateMoleculeArbAxis(
+            #     [molecule.atoms[molecule.dihedrals[i][1]].coord[0], molecule.atoms[molecule.dihedrals[i][1]].coord[1],
+            #      molecule.atoms[molecule.dihedrals[i][1]].coord[2]],
+            #     [molecule.atoms[molecule.dihedrals[i][2]].coord[0], molecule.atoms[molecule.dihedrals[i][2]].coord[1],
+            #      molecule.atoms[molecule.dihedrals[i][2]].coord[2]], (360 / torsionfit_points))
             leftside.rotateMoleculeArbAxis(
                 [rightside.atoms[0].coord[0], rightside.atoms[0].coord[1], rightside.atoms[0].coord[2]],
-                [leftside.atoms[0].coord[0], leftside.atoms[0].coord[1], leftside.atoms[0].coord[2]], (360/torsionfit_points))
+                [leftside.atoms[0].coord[0], leftside.atoms[0].coord[1], leftside.atoms[0].coord[2]],
+                (360 / torsionfit_points)*k)
 
             # Creating the "supermolecule" by copying all atoms from right and left into one
             bothsides = Molecule(
@@ -4678,13 +4703,38 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
             for j in range(0, leftside.numatoms()):
                 bothsides.addAtom(leftside.atoms[j])
             # Debug only: Print the geometries that are used for the fitting
-            print(bothsides.xyzString())
+            if bothsides.mult == 2:
+                bothsides.charge = 1
+                bothsides.mult = 1
+            #print(bothsides.xyzString())
 
-            # Calculate Extended Hückel Energy for the "supermolecule"
-            bothsides.orient()
-            HMO_energies[k] = bothsides.HMOEnergy()
-            # for k in range(0, torsionfit_points):
-            #     print(torsionfit_energies[k])
+            ## Calculate Extended Hückel Energy for the "supermolecule"
+            #bothsides.orient()
+            #HMO_energies[k] = bothsides.HMOEnergy()
+            ## for k in range(0, torsionfit_points):
+            ##     print(torsionfit_energies[k])
+
+            # Temporary Fix: Calculate Huckel energies with Gaussian
+            filecontent = "#T huckel\n"
+            filecontent += bothsides.gaussString()
+
+            #print(filecontent)
+
+            afile = open("tmpinp", 'w', encoding='utf-8')
+            afile.write(filecontent)
+            afile.close()
+
+            gaussOutput = subprocess.check_output("./run-gauss.bash tmpinp 2> /dev/null", shell=True)
+            gaussOutput = gaussOutput.decode('ascii')
+            try:
+              gaussOutput = float(gaussOutput.strip())
+            except:
+              gaussOutput = np.inf
+            subprocess.check_output("rm tmpinp", shell=True)
+            subprocess.check_output("rm tmpinp.out", shell=True)
+
+            HMO_energies[k] = gaussOutput
+            
 
         # Debug only: Print the energies that will be used for fitting
         print("HMO energies: ", HMO_energies)
@@ -4692,13 +4742,25 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         # Check if any of the energy values is infinite, remove that data point from fit set if so
         modifycheck = 0
         for j in range(len(HMO_energies)):
+            if j == len(HMO_energies):
+              break
             if np.isinf(HMO_energies[j]):
-                del(HMO_energies[j])
-                del(torsionfit_angles[j])
-                modifycheck += 1
+              try:
+                HMO_energies= np.ndarray.tolist(HMO_energies)
+              except:
+                HMO_energies = HMO_energies
+              try:
+                torsionfit_angles = np.ndarray.tolist(torsionfit_angles)
+              except:
+                torsionfit_angles = torsionfit_angles
+              del(HMO_energies[j])
+              del(torsionfit_angles[j])
+              modifycheck += 1
             else:
-                pass
+              pass
         if modifycheck > 0:
+            HMO_energies = np.asarray(HMO_energies)
+            torsionfit_angles = np.asarray(torsionfit_angles)
             print("Revised energies: ", HMO_energies)
         else:
             pass
@@ -4720,6 +4782,9 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         # Determine the equilibrium dihedral angle from EHT calculations to use in fitting
         minHMOenergy = min(HMO_energies)
         eqHMOindex = np.where(HMO_energies == minHMOenergy)
+        print(minHMOenergy)
+        print(eqHMOindex)
+        print("---------")
         eqHMO = torsionfit_angles[eqHMOindex[0][0]] # NOTE: using the first, rather than second or later, angle in the list of fit points at which HMO energy is minimal as the equilibrium angle may affect results
         print("eqHMOindex:")
         print(eqHMOindex)
@@ -4835,6 +4900,9 @@ def extractCoordinates(filename, molecule, verbosity=0, distfactor=1.3, bondcuto
         print("Mean energy difference: " + str(mean_ediff))
         ediff_range = max(torsfit_ediffs) - min(torsfit_ediffs)
         print("Range in energy differences: " + str(ediff_range))
+        # Stop after certain dihedral for examination
+        #if i == 2:
+        #    exit(0)
 
         #print("Using k_tors with torsion type 3")
 
@@ -5282,7 +5350,7 @@ parser = argparse.ArgumentParser(
     description="WellFAReFF: Wellington Fast Assessment of Reactions - Force Field",
     epilog="recognised filetypes: g09, orca")
 parser.add_argument("-r", "--reactant", metavar='file', help="input file with qc data of the reactant",
-                    default="g09-benzene.log")
+                    default="g09-dielsalder-r.log")
 parser.add_argument("-p", "--product", metavar='file', help="input file with qc data of the product",
                     default="g09-dielsalder-p.log")
 parser.add_argument("-v", "--verbosity", help="increase output verbosity", type=int, choices=[0, 1, 2, 3], default=2)
